@@ -1,0 +1,772 @@
+/*
+ * Copyright (C) 2014 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package nuclei.media.playback;
+
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.media.AudioManager;
+import android.media.PlaybackParams;
+import android.net.Uri;
+import android.net.wifi.WifiManager;
+import android.os.Build;
+import android.os.Handler;
+import android.os.PowerManager;
+import android.support.v4.media.MediaMetadataCompat;
+import android.support.v4.media.session.PlaybackStateCompat;
+import android.text.TextUtils;
+import android.view.Surface;
+
+import com.google.android.exoplayer2.DefaultLoadControl;
+import com.google.android.exoplayer2.ExoPlaybackException;
+import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.exoplayer2.ExoPlayerFactory;
+import com.google.android.exoplayer2.Format;
+import com.google.android.exoplayer2.SimpleExoPlayer;
+import com.google.android.exoplayer2.Timeline;
+import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
+import com.google.android.exoplayer2.source.AdaptiveMediaSourceEventListener;
+import com.google.android.exoplayer2.source.ExtractorMediaSource;
+import com.google.android.exoplayer2.source.MediaSource;
+import com.google.android.exoplayer2.source.hls.HlsMediaSource;
+import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
+import com.google.android.exoplayer2.upstream.DataSource;
+import com.google.android.exoplayer2.upstream.DataSpec;
+import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
+import com.google.android.exoplayer2.upstream.FileDataSourceFactory;
+import com.google.android.exoplayer2.upstream.HttpDataSource;
+import com.google.android.exoplayer2.util.Util;
+
+import java.io.IOException;
+
+import nuclei.media.MediaId;
+import nuclei.media.MediaMetadata;
+import nuclei.media.MediaProvider;
+import nuclei.media.MediaService;
+import nuclei.task.http.ErrorUtil;
+import nuclei.logs.Log;
+import nuclei.logs.Logs;
+
+public class ExoPlayerPlayback
+        implements
+        Playback,
+        AudioManager.OnAudioFocusChangeListener,
+        ExoPlayer.EventListener,
+        ExtractorMediaSource.EventListener,
+        AdaptiveMediaSourceEventListener {
+
+    private static final Log LOG = Logs.newLog(ExoPlayerPlayback.class);
+
+    // The volume we set the media player to when we lose audio focus, but are
+    // allowed to reduce the volume instead of stopping playback.
+    private static final float VOLUME_DUCK = 0.2f;
+    // The volume we set the media player when we have audio focus.
+    private static final float VOLUME_NORMAL = 1.0f;
+
+    // we don't have audio focus, and can't duck (play at a low volume)
+    private static final int AUDIO_NO_FOCUS_NO_DUCK = 0;
+    // we don't have focus, but can duck (play at a low volume)
+    private static final int AUDIO_NO_FOCUS_CAN_DUCK = 1;
+    // we have full audio focus
+    private static final int AUDIO_FOCUSED = 2;
+
+    private static final DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
+
+    private final Handler mHandler;
+    private final MediaService mService;
+    private final WifiManager.WifiLock mWifiLock;
+    private int mState;
+    private boolean mPlayOnFocusGain;
+    private Callback mCallback;
+    private volatile boolean mAudioNoisyReceiverRegistered;
+    private volatile int mCurrentPosition;
+    private volatile MediaId mCurrentMediaId;
+    private volatile MediaMetadata mMediaMetadata;
+    private boolean mPrepared;
+    private boolean mRestart;
+    private boolean mPlayWhenReady = true;
+
+    // Type of audio focus we have:
+    private int mAudioFocus = AUDIO_NO_FOCUS_NO_DUCK;
+    private final AudioManager mAudioManager;
+    private SimpleExoPlayer mMediaPlayer;
+
+    private long mSurfaceId;
+    private Surface mSurface;
+    private PlaybackParams mPlaybackParams;
+
+    private PowerManager.WakeLock mWakeLock;
+
+    private final IntentFilter mAudioNoisyIntentFilter =
+            new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
+
+    private int mIllegalStateRetries;
+
+    private final BroadcastReceiver mAudioNoisyReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (AudioManager.ACTION_AUDIO_BECOMING_NOISY.equals(intent.getAction())) {
+                LOG.d("Headphones disconnected.");
+                if (isPlaying()) {
+                    Intent i = new Intent(context, MediaService.class);
+                    i.setAction(MediaService.ACTION_CMD);
+                    i.putExtra(MediaService.CMD_NAME, MediaService.CMD_PAUSE);
+                    mService.startService(i);
+                }
+            }
+        }
+    };
+
+    public ExoPlayerPlayback(MediaService service) {
+        mService = service;
+        mHandler = new Handler();
+        mAudioManager = (AudioManager) service.getSystemService(Context.AUDIO_SERVICE);
+        PowerManager powerManager = (PowerManager) service.getSystemService(Context.POWER_SERVICE);
+        WifiManager wifiManager = (WifiManager) service.getSystemService(Context.WIFI_SERVICE);
+        // Create the Wifi lock (this does not acquire the lock, this just creates it)
+        mWifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, "nuclei_media_wifi_lock");
+        mWakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "nuclei_media_cpu_lock");
+    }
+
+    @Override
+    public void start() {
+    }
+
+    @Override
+    public void stop(boolean notifyListeners) {
+        LOG.d("stop");
+        mState = PlaybackStateCompat.STATE_STOPPED;
+        if (notifyListeners && mCallback != null) {
+            mCallback.onPlaybackStatusChanged(mState);
+        }
+        //mCurrentPosition = getCurrentStreamPosition();
+        // Give up Audio focus
+        giveUpAudioFocus();
+        unregisterAudioNoisyReceiver();
+        // Relax all resources
+        relaxResources(true);
+    }
+
+    @Override
+    public void updateLastKnownStreamPosition() {
+        if (mMediaPlayer != null) {
+            mCurrentPosition = (int) mMediaPlayer.getCurrentPosition();
+        }
+    }
+
+    public void stopFully() {
+        stop(true);
+    }
+
+    @Override
+    public void setState(int state) {
+        mState = state;
+        if (state == PlaybackStateCompat.STATE_ERROR) {
+            try {
+                mCurrentPosition = mMediaPlayer == null ? 0 : (int) mMediaPlayer.getCurrentPosition();
+            } catch (Exception err) {
+                LOG.e("Error capturing current pos", err);
+            }
+        }
+    }
+
+    @Override
+    public int getState() {
+        return mState;
+    }
+
+    @Override
+    public boolean isConnected() {
+        return true;
+    }
+
+    @Override
+    public boolean isPlaying() {
+        return mPlayOnFocusGain || (isMediaPlayerPlaying()
+                || mState == PlaybackStateCompat.STATE_PLAYING
+                || mState == PlaybackStateCompat.STATE_BUFFERING
+                || mState == PlaybackStateCompat.STATE_CONNECTING);
+    }
+
+    @Override
+    public int getCurrentStreamPosition() {
+        if (mMediaPlayer != null) {
+            return (int) mMediaPlayer.getCurrentPosition();
+        }
+        return mCurrentPosition;
+    }
+
+    @Override
+    public void play(MediaMetadata metadataCompat) {
+        mPlayOnFocusGain = true;
+        tryToGetAudioFocus();
+        registerAudioNoisyReceiver();
+        boolean mediaHasChanged = mCurrentMediaId == null
+                || !TextUtils.equals(metadataCompat.getDescription().getMediaId(), mCurrentMediaId.toString());
+        if (mediaHasChanged || mRestart) {
+            mRestart = false;
+            mCurrentPosition = 0;
+            mMediaMetadata = metadataCompat;
+            mMediaMetadata.setCallback(mCallback);
+            mCurrentMediaId = MediaProvider.getInstance().getMediaId(metadataCompat.getDescription().getMediaId());
+        }
+
+        mPlayWhenReady = true;
+        if (mState == PlaybackStateCompat.STATE_PAUSED && !mediaHasChanged && mMediaPlayer != null) {
+            if (!mWakeLock.isHeld())
+                mWakeLock.acquire();
+            if (!mWifiLock.isHeld())
+                mWifiLock.acquire();
+            configMediaPlayerState(false, true);
+        } else {
+            mState = PlaybackStateCompat.STATE_STOPPED;
+            relaxResources(false); // release everything except MediaPlayer
+            setTrack(metadataCompat);
+        }
+    }
+
+    @Override
+    public void prepare(MediaMetadata metadataCompat) {
+        boolean mediaHasChanged = mCurrentMediaId == null
+                || !TextUtils.equals(metadataCompat.getDescription().getMediaId(), mCurrentMediaId.toString());
+        if (mediaHasChanged) {
+            pause();
+
+            mCurrentPosition = 0;
+            mMediaMetadata = metadataCompat;
+            mMediaMetadata.setCallback(mCallback);
+            mCurrentMediaId = MediaProvider.getInstance().getMediaId(metadataCompat.getDescription().getMediaId());
+
+            if (mCallback != null)
+                mCallback.onMetadataChanged(mMediaMetadata);
+
+            mPlayWhenReady = false;
+            mState = PlaybackStateCompat.STATE_PAUSED;
+            relaxResources(false); // release everything except MediaPlayer
+            setTrack(metadataCompat);
+        }
+    }
+
+    void setTrack(MediaMetadata track) {
+        @SuppressWarnings("ResourceType") String source = track.getString(MediaProvider.CUSTOM_METADATA_TRACK_SOURCE);
+        @SuppressWarnings("ResourceType") int type = (int) track.getLong(MediaProvider.CUSTOM_METADATA_TRACK_TYPE);
+        if (LOG.isLoggable(Log.INFO))
+            LOG.i("setTrack=" + source + ", type=" + type);
+        createMediaPlayer(source, type);
+
+        mState = PlaybackStateCompat.STATE_BUFFERING;
+
+        // If we are streaming from the internet, we want to hold a
+        // Wifi lock, which prevents the Wifi radio from going to
+        // sleep while the song is playing.
+        if (!mWifiLock.isHeld())
+            mWifiLock.acquire();
+        if (!mWakeLock.isHeld())
+            mWakeLock.acquire();
+
+        if (mCallback != null) {
+            mCallback.onPlaybackStatusChanged(mState);
+        }
+    }
+
+    private boolean isMediaPlayerPlaying() {
+        if (mMediaPlayer == null || !mMediaPlayer.getPlayWhenReady())
+            return false;
+        int state = mMediaPlayer.getPlaybackState();
+        return state == ExoPlayer.STATE_READY || state == ExoPlayer.STATE_BUFFERING;
+    }
+
+    @Override
+    public void pause() {
+        LOG.d("pause");
+        if (mState == PlaybackStateCompat.STATE_PLAYING || mState == PlaybackStateCompat.STATE_BUFFERING) {
+            // Pause media player and cancel the 'foreground service' state.
+            if (isMediaPlayerPlaying()) {
+                mCurrentPosition = (int) mMediaPlayer.getCurrentPosition();
+                mMediaPlayer.setPlayWhenReady(false);
+            }
+        }
+        // while paused, retain the MediaPlayer but give up audio focus
+        relaxResources(false);
+        giveUpAudioFocus();
+        mState = PlaybackStateCompat.STATE_PAUSED;
+        if (mCallback != null) {
+            mCallback.onPlaybackStatusChanged(mState);
+        }
+        unregisterAudioNoisyReceiver();
+    }
+
+    @Override
+    public void seekTo(int position) {
+        if (LOG.isLoggable(Log.DEBUG))
+            LOG.d("seekTo called with " + position);
+        internalSeekTo(position);
+    }
+
+    void internalSeekTo(int position) {
+        if (LOG.isLoggable(Log.INFO))
+            LOG.d("internalSeekTo");
+        if (mMediaPlayer == null) {
+            // If we do not have a current media player, simply update the current position
+            mCurrentPosition = position;
+            if (mCallback != null) {
+                mCallback.onPlaybackStatusChanged(mState);
+            }
+        } else {
+            if (isPlaying()) {
+                mState = PlaybackStateCompat.STATE_BUFFERING;
+            }
+            mMediaPlayer.seekTo(position);
+            if (mCallback != null) {
+                mCallback.onPlaybackStatusChanged(mState);
+            }
+        }
+    }
+
+    @Override
+    public void setCallback(Callback callback) {
+        this.mCallback = callback;
+    }
+
+    @Override
+    public void setCurrentStreamPosition(int pos) {
+        this.mCurrentPosition = pos;
+    }
+
+    @Override
+    public void setCurrentMediaId(MediaId mediaId) {
+        this.mCurrentMediaId = mediaId;
+    }
+
+    @Override
+    public MediaId getCurrentMediaId() {
+        return mCurrentMediaId;
+    }
+
+    /**
+     * Try to get the system audio focus.
+     */
+    private void tryToGetAudioFocus() {
+        LOG.d("tryToGetAudioFocus");
+        if (mAudioFocus != AUDIO_FOCUSED) {
+            int result = mAudioManager.requestAudioFocus(this, AudioManager.STREAM_MUSIC,
+                    AudioManager.AUDIOFOCUS_GAIN);
+            if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+                mAudioFocus = AUDIO_FOCUSED;
+            }
+        }
+    }
+
+    /**
+     * Give up the audio focus.
+     */
+    private void giveUpAudioFocus() {
+        LOG.d("giveUpAudioFocus");
+        if (mAudioFocus == AUDIO_FOCUSED) {
+            if (mAudioManager.abandonAudioFocus(this) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+                mAudioFocus = AUDIO_NO_FOCUS_NO_DUCK;
+            }
+        }
+    }
+
+    /**
+     * Reconfigures MediaPlayer according to audio focus settings and
+     * starts/restarts it. This method starts/restarts the MediaPlayer
+     * respecting the current audio focus state. So if we have focus, it will
+     * play normally; if we don't have focus, it will either leave the
+     * MediaPlayer paused or set it to a low volume, depending on what is
+     * allowed by the current focus settings. This method assumes mPlayer !=
+     * null, so if you are calling it, you have to do so from a context where
+     * you are sure this is the case.
+     */
+    private void configMediaPlayerState(boolean updateMetaData, boolean forcePlay) {
+        if (LOG.isLoggable(Log.DEBUG))
+            LOG.d("configMediaPlayerState. mAudioFocus=" + mAudioFocus);
+        if (mAudioFocus == AUDIO_NO_FOCUS_NO_DUCK) {
+            // If we don't have audio focus and can't duck, we have to pause,
+            if (mState == PlaybackStateCompat.STATE_PLAYING) {
+                pause();
+            }
+        } else {  // we have audio focus:
+            if (mAudioFocus == AUDIO_NO_FOCUS_CAN_DUCK) {
+                if (mMediaPlayer != null) {
+                    mMediaPlayer.setVolume(VOLUME_DUCK); // we'll be relatively quiet
+                }
+            } else {
+                if (mMediaPlayer != null) {
+                    mMediaPlayer.setVolume(VOLUME_NORMAL); // we can be loud again
+                } // else do something for remote client.
+            }
+            // If we were playing when we lost focus, we need to resume playing.
+            if (mPlayOnFocusGain) {
+                if (!isMediaPlayerPlaying()) {
+                    if (LOG.isLoggable(Log.INFO))
+                        LOG.d("configMediaPlayerState startMediaPlayer. seeking to " + mCurrentPosition);
+                    if (mState == PlaybackStateCompat.STATE_PAUSED || mState == PlaybackStateCompat.STATE_STOPPED) {
+                        if (forcePlay || mCurrentPosition != mMediaPlayer.getCurrentPosition()) {
+                            if (!mWakeLock.isHeld())
+                                mWakeLock.acquire();
+                            if (!mWifiLock.isHeld())
+                                mWifiLock.acquire();
+                            mState = PlaybackStateCompat.STATE_BUFFERING;
+                            mMediaPlayer.seekTo(mCurrentPosition);
+                            mMediaPlayer.setPlayWhenReady(true);
+                        } else
+                            mState = PlaybackStateCompat.STATE_PLAYING;
+                    } else {
+                        mMediaPlayer.seekTo(mCurrentPosition);
+                        mState = PlaybackStateCompat.STATE_BUFFERING;
+                    }
+                }
+                mPlayOnFocusGain = false;
+            }
+        }
+        if (mCallback != null) {
+            if (updateMetaData)
+                mCallback.onMetadataChanged(mMediaMetadata);
+            mCallback.onPlaybackStatusChanged(mState);
+        }
+    }
+
+    /**
+     * Called by AudioManager on audio focus changes.
+     * Implementation of {@link AudioManager.OnAudioFocusChangeListener}
+     */
+    @Override
+    public void onAudioFocusChange(int focusChange) {
+        if (LOG.isLoggable(Log.INFO))
+            LOG.d("onAudioFocusChange. focusChange=" + focusChange);
+        if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
+            // We have gained focus:
+            mAudioFocus = AUDIO_FOCUSED;
+
+        } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS
+                || focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT
+                || focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) {
+            // We have lost focus. If we can duck (low playback volume), we can keep playing.
+            // Otherwise, we need to pause the playback.
+            boolean canDuck = focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK;
+            mAudioFocus = canDuck ? AUDIO_NO_FOCUS_CAN_DUCK : AUDIO_NO_FOCUS_NO_DUCK;
+
+            // If we are playing, we need to reset media player by calling configMediaPlayerState
+            // with mAudioFocus properly set.
+            if (mState == PlaybackStateCompat.STATE_PLAYING && !canDuck) {
+                // If we don't have audio focus and can't duck, we save the information that
+                // we were playing, so that we can resume playback once we get the focus back.
+                mPlayOnFocusGain = true;
+            }
+        } else {
+            LOG.e("onAudioFocusChange: Ignoring unsupported focusChange: " + focusChange);
+        }
+        configMediaPlayerState(false, false);
+    }
+
+    /**
+     * Returns a new DataSource factory.
+     *
+     * @param useBandwidthMeter Whether to set {@link #BANDWIDTH_METER} as a listener to the new
+     *                          DataSource factory.
+     * @return A new DataSource factory.
+     */
+    private DataSource.Factory buildDataSourceFactory(Context context, boolean useBandwidthMeter, boolean http) {
+        return http
+               ? buildHttpDataSourceFactory(context, useBandwidthMeter)
+               : buildFileDataSourceFactory(useBandwidthMeter);
+    }
+
+    private HttpDataSource.Factory buildHttpDataSourceFactory(Context context, boolean useBandwidthMeter) {
+        final String userAgent = Util.getUserAgent(context, "NucleiPlayer");
+        return new DefaultHttpDataSourceFactory(userAgent, useBandwidthMeter ? BANDWIDTH_METER : null);
+    }
+
+    private DataSource.Factory buildFileDataSourceFactory(boolean useBandwidthMeter) {
+        return new FileDataSourceFactory(useBandwidthMeter ? BANDWIDTH_METER : null);
+    }
+
+    /**
+     * Makes sure the media player exists and has been reset. This will create
+     * the media player if needed, or reset the existing media player if one
+     * already exists.
+     */
+    private void createMediaPlayer(String url, int type) {
+        if (mMediaPlayer != null) {
+            mMediaPlayer.release();
+            mMediaPlayer.removeListener(this);
+        }
+        mPrepared = false;
+        mMediaPlayer = ExoPlayerFactory.newSimpleInstance(mService.getApplicationContext(),
+                new DefaultTrackSelector(mHandler), new DefaultLoadControl());
+        mMediaPlayer.addListener(this);
+        boolean file = url.startsWith("file://");
+        if (file || type == MediaId.TYPE_AUDIO) {
+            MediaSource mediaSource = new ExtractorMediaSource(Uri.parse(url),
+                    buildDataSourceFactory(mService.getApplication(), true, !file),
+                    new DefaultExtractorsFactory(),
+                    mHandler,
+                    this);
+            mMediaPlayer.prepare(mediaSource);
+        } else {
+            MediaSource mediaSource = new HlsMediaSource(Uri.parse(url),
+                    buildDataSourceFactory(mService.getApplication(), true, true),
+                    mHandler,
+                    this);
+            mMediaPlayer.prepare(mediaSource);
+        }
+        // Make sure the media player will acquire a wake-lock while
+        // playing. If we don't do that, the CPU might go to sleep while the
+        // song is playing, causing playback to stop.
+        if (!mWakeLock.isHeld())
+            mWakeLock.acquire();
+        if (!mWifiLock.isHeld())
+            mWifiLock.acquire();
+    }
+
+    @Override
+    public void onLoadingChanged(boolean isLoading) {
+
+    }
+
+    @Override
+    public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
+        if (LOG.isLoggable(Log.DEBUG))
+            LOG.d("onStateChanged=" + playbackState + ", " + playWhenReady);
+        if (!mPrepared && playbackState == ExoPlayer.STATE_READY && mMediaPlayer != null) {
+            mPrepared = true;
+            if (!mWakeLock.isHeld())
+                mWakeLock.acquire();
+            if (!mWifiLock.isHeld())
+                mWifiLock.acquire();
+            configMediaPlayerState(true, false);
+            setSurface(mSurfaceId, mSurface);
+            mMediaPlayer.seekTo(mCurrentPosition);
+            mMediaPlayer.setPlayWhenReady(mPlayWhenReady);
+        } else if (mMediaPlayer != null
+                && mState != PlaybackStateCompat.STATE_ERROR
+                && mState != PlaybackStateCompat.STATE_BUFFERING)
+            mCurrentPosition = (int) mMediaPlayer.getCurrentPosition();
+
+        if (mMediaPlayer != null
+                && mMediaMetadata != null
+                && mMediaMetadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION) != mMediaPlayer.getDuration()) {
+            mMediaMetadata.setDuration(mMediaPlayer.getDuration());
+        }
+
+        switch (playbackState) {
+            case ExoPlayer.STATE_BUFFERING:
+                mState = PlaybackStateCompat.STATE_BUFFERING;
+                mIllegalStateRetries = 0;
+                break;
+            case ExoPlayer.STATE_ENDED:
+                mState = PlaybackStateCompat.STATE_NONE;
+                mIllegalStateRetries = 0;
+                break;
+            case ExoPlayer.STATE_IDLE:
+                if (mState != PlaybackStateCompat.STATE_ERROR)
+                    mState = PlaybackStateCompat.STATE_NONE;
+                break;
+            case ExoPlayer.STATE_READY:
+                mIllegalStateRetries = 0;
+                if (isMediaPlayerPlaying()) {
+                    mState = PlaybackStateCompat.STATE_PLAYING;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        if (mPlaybackParams != null)
+                            mMediaPlayer.setPlaybackParams(mPlaybackParams);
+                    }
+                } else
+                    mState = PlaybackStateCompat.STATE_PAUSED;
+                break;
+            default:
+                mState = PlaybackStateCompat.STATE_NONE;
+                break;
+        }
+
+        if (mCallback != null)
+            mCallback.onPlaybackStatusChanged(mState);
+
+        if (playbackState == ExoPlayer.STATE_ENDED) {
+            mRestart = true;
+            if (mCallback != null)
+                mCallback.onCompletion();
+        }
+    }
+
+    @Override
+    public void onTimelineChanged(Timeline timeline, Object manifest) {
+
+    }
+
+    @Override
+    public void onPlayerError(ExoPlaybackException error) {
+        onError(error);
+    }
+
+    @Override
+    public void onPositionDiscontinuity() {
+
+    }
+
+    @Override
+    public void onLoadStarted(DataSpec dataSpec, int dataType, int trackType, Format trackFormat, int trackSelectionReason, Object trackSelectionData, long
+            mediaStartTimeMs, long mediaEndTimeMs, long elapsedRealtimeMs) {
+
+    }
+
+    @Override
+    public void onLoadCompleted(DataSpec dataSpec, int dataType, int trackType, Format trackFormat, int trackSelectionReason, Object trackSelectionData, long
+            mediaStartTimeMs, long mediaEndTimeMs, long elapsedRealtimeMs, long loadDurationMs, long bytesLoaded) {
+
+    }
+
+    @Override
+    public void onLoadCanceled(DataSpec dataSpec, int dataType, int trackType, Format trackFormat, int trackSelectionReason, Object trackSelectionData, long
+            mediaStartTimeMs, long mediaEndTimeMs, long elapsedRealtimeMs, long loadDurationMs, long bytesLoaded) {
+
+    }
+
+    @Override
+    public void onLoadError(DataSpec dataSpec, int dataType, int trackType, Format trackFormat, int trackSelectionReason, Object trackSelectionData, long
+            mediaStartTimeMs, long mediaEndTimeMs, long elapsedRealtimeMs, long loadDurationMs, long bytesLoaded, IOException error, boolean wasCanceled) {
+        onError(error);
+    }
+
+    @Override
+    public void onUpstreamDiscarded(int trackType, long mediaStartTimeMs, long mediaEndTimeMs) {
+
+    }
+
+    @Override
+    public void onDownstreamFormatChanged(int trackType, Format trackFormat, int trackSelectionReason, Object trackSelectionData, long mediaTimeMs) {
+
+    }
+
+    @Override
+    public void onLoadError(IOException error) {
+        onError(error);
+    }
+
+    private void onError(Exception e) {
+        LOG.e("onError", e);
+
+        if (e instanceof ExoPlaybackException && e.getCause() instanceof IllegalStateException) {
+            final int maxRetries = 4;
+            if (mIllegalStateRetries < maxRetries) {
+                mIllegalStateRetries++;
+                pause();
+                relaxResources(true);
+                if (mMediaMetadata != null) {
+                    play(mMediaMetadata);
+                    return;
+                }
+            }
+        }
+
+        Throwable err = e;
+        do {
+            if (err instanceof IOException) {
+                if (mCallback != null) {
+                    mCallback.onError(MediaService.ERROR_NETWORK);
+                    int pos = getCurrentStreamPosition();
+                    stop(true);
+                    mCurrentPosition = pos;
+                }
+                return;
+            }
+            err = err.getCause();
+        } while (err != null);
+
+        if (mCallback != null) {
+            stop(true);
+            int type = ErrorUtil.getErrorType(e);
+            if (type == ErrorUtil.NO_CONNECTION || type == ErrorUtil.GENERIC_IO || type == ErrorUtil.TIMEOUT)
+                mCallback.onError(MediaService.ERROR_NETWORK);
+            else
+                mCallback.onError(e.getMessage());
+        }
+    }
+
+    /**
+     * Releases resources used by the service for playback. This includes the
+     * "foreground service" status, the wake locks and possibly the MediaPlayer.
+     *
+     * @param releaseMediaPlayer Indicates whether the Media Player should also
+     *                           be released or not
+     */
+    private void relaxResources(boolean releaseMediaPlayer) {
+        if (LOG.isLoggable(Log.DEBUG))
+            LOG.d("relaxResources. releaseMediaPlayer=" + releaseMediaPlayer);
+
+        mService.stopForeground(true);
+
+        // stop and release the Media Player, if it's available
+        if (releaseMediaPlayer && mMediaPlayer != null) {
+            mSurface = null;
+            mMediaPlayer.setVideoSurface(null);
+            mMediaPlayer.release();
+            mMediaPlayer.removeListener(this);
+            mMediaPlayer = null;
+            mPrepared = false;
+        }
+        if (mWifiLock.isHeld())
+            mWifiLock.release();
+        if (mWakeLock.isHeld())
+            mWakeLock.release();
+    }
+
+    private void registerAudioNoisyReceiver() {
+        if (!mAudioNoisyReceiverRegistered) {
+            mService.registerReceiver(mAudioNoisyReceiver, mAudioNoisyIntentFilter);
+            mAudioNoisyReceiverRegistered = true;
+        }
+    }
+
+    private void unregisterAudioNoisyReceiver() {
+        if (mAudioNoisyReceiverRegistered) {
+            mService.unregisterReceiver(mAudioNoisyReceiver);
+            mAudioNoisyReceiverRegistered = false;
+        }
+    }
+
+    @Override
+    public long getSurfaceId() {
+        return mSurfaceId;
+    }
+
+    @Override
+    public Surface getSurface() {
+        return mSurface;
+    }
+
+    @Override
+    public void setSurface(final long surfaceId, final Surface surface) {
+        if (surface == null && mSurfaceId != surfaceId)
+            return;
+        mSurfaceId = surfaceId;
+        mSurface = surface;
+        if (mMediaPlayer != null)
+            mMediaPlayer.setVideoSurface(surface);
+    }
+
+    @Override
+    public void setPlaybackParams(PlaybackParams playbackParams) {
+        mPlaybackParams = playbackParams;
+        if (mMediaPlayer != null) {
+            mMediaPlayer.setPlaybackParams(mPlaybackParams);
+        }
+    }
+
+}

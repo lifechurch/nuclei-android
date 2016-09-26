@@ -1,0 +1,360 @@
+package nuclei.ui.view;
+
+import android.animation.ValueAnimator;
+import android.annotation.TargetApi;
+import android.content.Context;
+import android.content.res.TypedArray;
+import android.database.DataSetObserver;
+import android.graphics.PorterDuff;
+import android.os.Parcel;
+import android.os.Parcelable;
+import android.support.v4.content.res.ResourcesCompat;
+import android.support.v4.util.ArrayMap;
+import android.util.AttributeSet;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import io.nuclei.R;
+
+public class ButtonBarView extends FrameLayout {
+
+    private ButtonAdapter mAdapter;
+    private Item[] mItems;
+    private List<OnItemSelectedListener> mListeners = new ArrayList<>();
+    private int mSelectedTint;
+    private int mUnselectedTint;
+    private int mSelectedItem = -1;
+    private LinearLayout mButtons;
+    private AdapterObserver mObserver;
+    private ArrayMap<Item, ValueAnimator> mLabelAnimators = new ArrayMap<>();
+    private boolean mStateRestored;
+
+    public ButtonBarView(Context context) {
+        super(context);
+        init(context, null, 0, 0);
+    }
+
+    public ButtonBarView(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        init(context, attrs, 0, 0);
+    }
+
+    public ButtonBarView(Context context, AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
+        init(context, attrs, defStyleAttr, 0);
+    }
+
+    @TargetApi(21)
+    public ButtonBarView(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+        super(context, attrs, defStyleAttr, defStyleRes);
+        init(context, attrs, defStyleAttr, defStyleRes);
+    }
+
+    private void init(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+        final TypedArray a = context.obtainStyledAttributes(attrs,
+                R.styleable.ButtonBarView, defStyleAttr, defStyleRes);
+
+        boolean bottom = a.getBoolean(R.styleable.ButtonBarView_bottom, false);
+
+        int layout = a.getResourceId(R.styleable.ButtonBarView_control_layout,
+                bottom
+                ? R.layout.cyto_view_button_bar_bottom
+                : R.layout.cyto_view_button_bar);
+
+        View view = LayoutInflater.from(context).inflate(layout, this, false);
+        addView(view);
+
+        mButtons = (LinearLayout) view.findViewById(R.id.buttons);
+
+        mSelectedTint = a.getColor(R.styleable.ButtonBarView_selected_color, ResourcesCompat.getColor(getResources(), R.color.black, context.getTheme()));
+        mUnselectedTint = a.getColor(R.styleable.ButtonBarView_unselected_color, ResourcesCompat.getColor(getResources(), R.color.grey, context.getTheme()));
+
+        a.recycle();
+    }
+
+    @Override
+    protected Parcelable onSaveInstanceState() {
+        Parcelable superState = super.onSaveInstanceState();
+        SavedState savedState = new SavedState(superState);
+        savedState.selected = mSelectedItem;
+        return savedState;
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Parcelable state) {
+        super.onRestoreInstanceState(state);
+        if (!(state instanceof SavedState)) {
+            super.onRestoreInstanceState(state);
+            return;
+        }
+        mStateRestored = true;
+        SavedState savedState = (SavedState) state;
+        setSelectedItemState(savedState.selected);
+        onEnsurePosition();
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        if (!mStateRestored) {
+            mStateRestored = true;
+            onEnsurePosition();
+        }
+    }
+
+    public void setAdapter(ButtonAdapter adapter) {
+        if (mAdapter != null) {
+            mAdapter.setViewObserver(null);
+
+            if (mAdapter instanceof FragmentButtonAdapter)
+                removeOnItemSelectedListener((OnItemSelectedListener) mAdapter);
+        }
+
+        mAdapter = adapter;
+
+        if (mAdapter != null) {
+            if (mObserver == null) {
+                mObserver = new AdapterObserver();
+            }
+            mAdapter.setViewObserver(mObserver);
+            if (mAdapter instanceof FragmentButtonAdapter)
+                addOnItemSelectedListener((OnItemSelectedListener) mAdapter);
+
+            dataSetChanged();
+
+            if (mStateRestored) {
+                onEnsurePosition();
+            }
+        }
+    }
+
+    private void onEnsurePosition() {
+        if (mAdapter != null) {
+            if (mSelectedItem == -1)
+                setSelectedItem(0);
+            else if (mSelectedItem > mAdapter.getCount())
+                setSelectedItem(mAdapter.getCount() - 1);
+        }
+    }
+
+    public void addOnItemSelectedListener(OnItemSelectedListener listener) {
+        mListeners.add(listener);
+    }
+
+    public void removeOnItemSelectedListener(OnItemSelectedListener listener) {
+        mListeners.remove(listener);
+    }
+
+    private void setSelectedItemState(int position) {
+        int pos = 0;
+        for (Item item : mItems) {
+            boolean selected = pos == position;
+            item.imageView.setSelected(selected);
+            if (selected) {
+                mSelectedItem = pos;
+                item.imageView.setColorFilter(mSelectedTint, PorterDuff.Mode.SRC_ATOP);
+                item.textView.setTextColor(mSelectedTint);
+                setSelected(item, true);
+            } else {
+                item.imageView.setColorFilter(mUnselectedTint, PorterDuff.Mode.SRC_ATOP);
+                item.textView.setTextColor(mUnselectedTint);
+                setSelected(item, false);
+            }
+            pos++;
+        }
+    }
+
+    public void setSelectedItem(int position) {
+        if (position > -1 && position != mSelectedItem && mItems != null) {
+            setSelectedItemState(position);
+            final int size = mListeners.size();
+            for (int i = 0; i < size; i++)
+                mListeners.get(i).onSelected(mSelectedItem);
+        }
+    }
+
+    private void setSelected(final Item item, boolean selected) {
+        if (mItems.length < 5)
+            return;
+        if (selected) {
+            item.imageView.setColorFilter(mSelectedTint, PorterDuff.Mode.SRC_ATOP);
+            if (item.textView != null) {
+                item.textView.setTextColor(mSelectedTint);
+                item.textView.setVisibility(View.VISIBLE);
+                item.textView.setTextSize(0);
+                ValueAnimator animator = mLabelAnimators.get(item);
+                if (animator != null)
+                    animator.cancel();
+                animator = new ValueAnimator();
+                mLabelAnimators.put(item, animator);
+                animator.setDuration(200);
+                animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                    @Override
+                    public void onAnimationUpdate(ValueAnimator valueAnimator) {
+                        int animatedValue = (Integer) valueAnimator.getAnimatedValue();
+                        item.textView.setTextSize(animatedValue);
+                    }
+                });
+                animator.setIntValues(0, 14);
+                animator.start();
+            }
+        } else {
+            item.imageView.setColorFilter(mUnselectedTint, PorterDuff.Mode.SRC_ATOP);
+            if (item.textView != null) {
+                item.textView.setTextColor(mUnselectedTint);
+                ValueAnimator animator = mLabelAnimators.get(item);
+                if (animator != null)
+                    animator.cancel();
+                animator = new ValueAnimator();
+                mLabelAnimators.put(item, animator);
+                animator.setDuration(200);
+                animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                    @Override
+                    public void onAnimationUpdate(ValueAnimator valueAnimator) {
+                        int animatedValue = (Integer) valueAnimator.getAnimatedValue();
+                        item.textView.setTextSize(animatedValue);
+                        if (animatedValue == 0)
+                            item.textView.setVisibility(View.GONE);
+                    }
+                });
+                animator.setIntValues(14, 0);
+                animator.start();
+            }
+        }
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        mLabelAnimators.clear();
+    }
+
+    void dataSetChanged() {
+        mLabelAnimators.clear();
+        mButtons.removeAllViews();
+
+        if (mAdapter == null) {
+            mItems = null;
+            return;
+        }
+
+        final int count = mAdapter.getCount();
+        final View.OnClickListener listener = new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                int position = 0;
+                for (Item item : mItems) {
+                    if (item.view == v) {
+                        setSelectedItem(position);
+                        break;
+                    }
+                    position++;
+                }
+            }
+        };
+
+        LayoutInflater inflater = LayoutInflater.from(getContext());
+
+        if (mItems == null || mItems.length != count)
+            mItems = new Item[count];
+
+        for (int i = 0; i < count; i++) {
+            final int textId = mAdapter.getTitle(i);
+            final int imageId = mAdapter.getDrawable(i);
+            Item item = new Item(textId, imageId);
+
+            item.view = (ViewGroup) inflater.inflate(R.layout.cyto_view_button_bar_item, this, false);
+            item.view.setOnClickListener(listener);
+
+            item.imageView = (ImageView) item.view.findViewById(R.id.image);
+            item.imageView.setImageResource(item.imageId);
+            item.imageView.setColorFilter(mUnselectedTint, PorterDuff.Mode.SRC_ATOP);
+
+            item.textView = (TextView) item.view.findViewById(R.id.text);
+            item.textView.setText(item.textId);
+
+            if (count > 4)
+                item.textView.setVisibility(GONE);
+
+            mItems[i] = item;
+            mButtons.addView(item.view, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+        }
+    }
+
+    private class AdapterObserver extends DataSetObserver {
+        AdapterObserver() {
+        }
+
+        @Override
+        public void onChanged() {
+            dataSetChanged();
+        }
+
+        @Override
+        public void onInvalidated() {
+            dataSetChanged();
+        }
+    }
+
+    private static class Item {
+
+        final int textId;
+        final int imageId;
+        ViewGroup view;
+        TextView textView;
+        ImageView imageView;
+
+        public Item(int textId, int imageId) {
+            this.textId = textId;
+            this.imageId = imageId;
+        }
+
+    }
+
+    public interface OnItemSelectedListener {
+
+        void onSelected(int position);
+
+    }
+
+    public static class SavedState extends BaseSavedState {
+
+        int selected;
+
+        SavedState(Parcelable superState) {
+            super(superState);
+        }
+
+        @Override
+        public void writeToParcel(Parcel out, int flags) {
+            super.writeToParcel(out, flags);
+            out.writeInt(selected);
+        }
+
+        @SuppressWarnings("hiding")
+        public static final Parcelable.Creator<ButtonBarView.SavedState> CREATOR = new Parcelable.Creator<ButtonBarView.SavedState>() {
+            public ButtonBarView.SavedState createFromParcel(Parcel in) {
+                return new ButtonBarView.SavedState(in);
+            }
+
+            public ButtonBarView.SavedState[] newArray(int size) {
+                return new ButtonBarView.SavedState[size];
+            }
+        };
+
+        private SavedState(Parcel in) {
+            super(in);
+            selected = in.readInt();
+        }
+
+    }
+
+}

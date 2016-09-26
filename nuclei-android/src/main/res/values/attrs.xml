@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <attr name="url" format="string" />
+    <attr name="control_layout" format="reference" />
+    <attr name="bottom" format="boolean" />
+
+    <declare-styleable name="HeaderImageView">
+        <attr name="url" />
+    </declare-styleable>
+
+    <declare-styleable name="GlideImageView">
+        <attr name="url" />
+        <attr name="ratio" format="float" />
+        <attr name="radius" format="dimension" />
+        <attr name="circle" format="boolean" />
+        <attr name="placeholder" format="reference" />
+        <attr name="border_color" format="color" />
+        <attr name="border_width" format="dimension" />
+        <attr name="preload" format="boolean" />
+    </declare-styleable>
+
+    <declare-styleable name="MediaPlayerControlsView">
+        <attr name="control_layout" />
+        <attr name="bottom" />
+        <attr name="auto_show" format="boolean" />
+        <attr name="has_next" format="boolean" />
+        <attr name="has_previous" format="boolean" />
+    </declare-styleable>
+
+    <declare-styleable name="ButtonBarView">
+        <attr name="control_layout" />
+        <attr name="bottom" />
+        <attr name="selected_color" format="color" />
+        <attr name="unselected_color" format="color" />
+    </declare-styleable>
+
+</resources>

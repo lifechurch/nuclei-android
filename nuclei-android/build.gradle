@@ -1,0 +1,83 @@
+apply plugin: 'com.android.library'
+
+def versionId = "2.0.0-beta1"
+
+android {
+    compileSdkVersion rootProject.ext.compileSdkVersion
+    buildToolsVersion rootProject.ext.buildToolsVersion
+
+    defaultConfig {
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 1
+        versionName "1.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+        }
+    }
+
+    lintOptions {
+        lintConfig file("../config/lint/default.xml")
+    }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    testCompile 'junit:junit:4.12'
+
+    // glide image library
+    compile "com.github.bumptech.glide:glide:$rootProject.ext.glideVersion"
+
+    // google cast
+    compile ("com.google.android.libraries.cast.companionlibrary:ccl:2.8.4") {
+        exclude group: "com.google.android.gms"
+    }
+
+    // play services
+    compile "com.google.android.gms:play-services-gcm:$rootProject.ext.playServicesVersion"
+    compile "com.google.android.gms:play-services-cast:$rootProject.ext.playServicesVersion"
+
+    // support libraries
+    compile "com.android.support:appcompat-v7:$rootProject.ext.supportLibVersion"
+    compile "com.android.support:mediarouter-v7:$rootProject.ext.supportLibVersion"
+    compile "com.android.support:recyclerview-v7:$rootProject.ext.supportLibVersion"
+    compile "com.android.support:design:$rootProject.ext.supportLibVersion"
+
+    // exoplayer
+    compile "com.google.android.exoplayer:exoplayer:$rootProject.ext.exoPlayerVersion"
+
+    // okhttp3
+    compile 'com.squareup.okhttp3:okhttp:' + rootProject.ext.okHttpVersion
+    compile 'com.squareup.okhttp3:okhttp-urlconnection:' + rootProject.ext.okHttpVersion
+}
+
+ext {
+    bintrayRepo = 'maven'
+    bintrayName = 'nuclei-android'
+
+    publishedGroupId = 'nuclei.android'
+    libraryName = 'Nuclei Android'
+    artifact = 'nuclei-android'
+
+    libraryDescription = 'UI, Tasks/Threads, Media, and Persistence Library for Android'
+
+    siteUrl = 'https://github.com/lifechurch/nuclei-android/'
+    gitUrl = 'https://github.com/lifechurch/nuclei-android/'
+
+    libraryVersion = versionId
+
+    developerId = 'lifechurch'
+    developerName = 'Life.Church'
+    developerEmail = 'developers@youversion.com'
+
+    licenseName = 'The Apache Software License, Version 2.0'
+    licenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+    allLicenses = ["Apache-2.0"]
+}
+
+apply from: '../bintray.gradle'
+apply from: '../maven.gradle'
