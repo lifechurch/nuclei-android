@@ -111,8 +111,8 @@ public class MediaPlayerController implements MediaController.MediaPlayerControl
             return;
         if (mMediaControls != null) {
             if (mCallbacks != null) {
-                mCallbacks.onLoading();
-                mCallbacks.onPlaying();
+                mCallbacks.onLoading(this);
+                mCallbacks.onPlaying(this);
             }
             String currentMediaId = null;
             MediaMetadataCompat metadataCompat = mMediaControls.getMetadata();
@@ -141,7 +141,7 @@ public class MediaPlayerController implements MediaController.MediaPlayerControl
     @Override
     public void pause() {
         if (mCallbacks != null)
-            mCallbacks.onPaused();
+            mCallbacks.onPaused(this);
         if (mMediaControls != null)
             mMediaControls.getTransportControls().pause();
     }

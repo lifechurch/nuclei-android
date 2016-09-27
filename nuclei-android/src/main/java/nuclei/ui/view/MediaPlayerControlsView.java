@@ -6,6 +6,7 @@ import android.content.res.TypedArray;
 import android.graphics.PorterDuff;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.AttributeSet;
@@ -24,6 +25,7 @@ import java.util.Arrays;
 import io.nuclei.R;
 import nuclei.media.MediaId;
 import nuclei.media.MediaInterface;
+import nuclei.media.MediaPlayerController;
 import nuclei.media.MediaProvider;
 import nuclei.media.MediaService;
 import nuclei.media.ResourceProvider;
@@ -257,6 +259,10 @@ public class MediaPlayerControlsView extends FrameLayout {
         menu.show();
     }
 
+    public boolean isShown() {
+        return getChildAt(0).getVisibility() == VISIBLE;
+    }
+
     public void show() {
         getChildAt(0).setVisibility(VISIBLE);
     }
@@ -265,17 +271,17 @@ public class MediaPlayerControlsView extends FrameLayout {
         getChildAt(0).setVisibility(GONE);
     }
 
-    public MediaInterface newMediaInterface(AppCompatActivity appCompatActivity, MediaId id) {
+    public MediaInterface newMediaInterface(FragmentActivity appCompatActivity, MediaId id) {
         mMediaInterface = new MediaInterface(appCompatActivity, id, newMediaInterfaceCallback(null));
         return mMediaInterface;
     }
 
-    public MediaInterface newMediaInterface(AppCompatActivity appCompatActivity, OnConnectedListener listener) {
+    public MediaInterface newMediaInterface(FragmentActivity appCompatActivity, OnConnectedListener listener) {
         mMediaInterface = new MediaInterface(appCompatActivity, null, newMediaInterfaceCallback(listener));
         return mMediaInterface;
     }
 
-    public MediaInterface newMediaInterface(AppCompatActivity appCompatActivity) {
+    public MediaInterface newMediaInterface(FragmentActivity appCompatActivity) {
         mMediaInterface = new MediaInterface(appCompatActivity, null, newMediaInterfaceCallback(null));
         return mMediaInterface;
     }
@@ -307,37 +313,37 @@ public class MediaPlayerControlsView extends FrameLayout {
             final ImageView previous = (ImageView) findViewById(R.id.btn_previous);
 
             @Override
-            public void onConnected() {
+            public void onConnected(MediaInterface mediaInterface) {
                 if (listener != null && mMediaInterface != null)
                     listener.onConnected(MediaPlayerControlsView.this, mMediaInterface);
             }
 
             @Override
-            public void onLoading() {
+            public void onLoading(MediaPlayerController controller) {
                 loading.setVisibility(View.VISIBLE);
             }
 
             @Override
-            public void onLoaded() {
+            public void onLoaded(MediaPlayerController controller) {
                 loading.setVisibility(View.GONE);
             }
 
             @Override
-            public void onPlaying() {
+            public void onPlaying(MediaPlayerController controller) {
                 play.setActivated(true);
                 if (mAutoShow)
                     show();
             }
 
             @Override
-            public void onPaused() {
+            public void onPaused(MediaPlayerController controller) {
                 play.setActivated(false);
                 if (mAutoShow)
                     hide();
             }
 
             @Override
-            public void onTimerChanged(long t) {
+            public void onTimerChanged(MediaInterface mediaInterface, long t) {
                 mTimer = t;
                 if (timer != null) {
                     if (t < 1)
@@ -348,27 +354,27 @@ public class MediaPlayerControlsView extends FrameLayout {
             }
 
             @Override
-            public void onSpeedChanged(float s) {
+            public void onSpeedChanged(MediaInterface mediaInterface, float s) {
                 speed.setText(ResourceProvider.getInstance().getSelectedSpeed());
             }
 
             @Override
-            public void onStateChanged(PlaybackStateCompat state) {
+            public void onStateChanged(MediaInterface mediaInterface, PlaybackStateCompat state) {
                 onHandleState(next, previous, state);
             }
 
             @Override
-            public TextView getTimePlayed() {
+            public TextView getTimePlayed(MediaInterface mediaInterface) {
                 return timePlayed;
             }
 
             @Override
-            public TextView getTimeRemaining() {
+            public TextView getTimeRemaining(MediaInterface mediaInterface) {
                 return timeRemaining;
             }
 
             @Override
-            public SeekBar getProgress() {
+            public SeekBar getProgress(MediaInterface mediaInterface) {
                 return seekBar;
             }
 

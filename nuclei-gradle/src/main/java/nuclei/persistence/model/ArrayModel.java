@@ -36,7 +36,10 @@ public class ArrayModel extends SimpleModel {
     }
 
     public String getTypeName() {
-        return type.substring(0, 1).toUpperCase() + type.substring(1, type.length());
+        String name = type.substring(0, 1).toUpperCase() + type.substring(1, type.length());
+        if ("Integer".equals(name))
+            return "Int";
+        return name;
     }
 
     public void setType(String type) {

@@ -6,12 +6,12 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.RemoteException;
 import android.provider.MediaStore;
+import android.support.v4.app.FragmentActivity;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
-import android.support.v7.app.AppCompatActivity;
-import android.widget.MediaController;
+import android.view.Surface;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
@@ -22,22 +22,22 @@ public class MediaInterface {
 
     private static final Log LOG = Logs.newLog(MediaInterface.class);
 
-    private AppCompatActivity mActivity;
+    private FragmentActivity mActivity;
     private MediaInterfaceCallback mCallbacks;
     private MediaBrowserCompat mMediaBrowser;
     private MediaControllerCompat mMediaControls;
     private MediaControllerCompat.Callback mMediaCallback;
     private MediaPlayerController mPlayerControls;
 
-    public MediaInterface(AppCompatActivity activity, MediaId mediaId, MediaInterfaceCallback callback) {
+    public MediaInterface(FragmentActivity activity, MediaId mediaId, MediaInterfaceCallback callback) {
         mActivity = activity;
         mCallbacks = callback;
         mPlayerControls = new MediaPlayerController(mediaId);
         mPlayerControls.setMediaControls(mCallbacks, null);
         mPlayerControls.setViews(
-                mCallbacks.getTimePlayed(),
-                mCallbacks.getTimeRemaining(),
-                mCallbacks.getProgress());
+                mCallbacks.getTimePlayed(this),
+                mCallbacks.getTimeRemaining(this),
+                mCallbacks.getProgress(this));
         mMediaBrowser = new MediaBrowserCompat(activity.getApplicationContext(),
                 new ComponentName(activity, MediaService.class),
                 new MediaBrowserCompat.ConnectionCallback() {
@@ -55,6 +55,13 @@ public class MediaInterface {
 
     public MediaControllerCompat getMediaController() {
         return mMediaControls;
+    }
+
+    public void setSurface(Surface surface) {
+        Bundle args = new Bundle();
+        args.putParcelable(MediaService.EXTRA_SURFACE, surface);
+        getMediaController()
+                .getTransportControls().sendCustomAction(MediaService.ACTION_SET_TIMER, args);
     }
 
     public void clearViews() {
@@ -119,7 +126,7 @@ public class MediaInterface {
                         .playFromSearch(query, params);
             }
             if (mCallbacks != null)
-                mCallbacks.onConnected();
+                mCallbacks.onConnected(this);
         } catch (RemoteException err) {
             LOG.e("Error in onConnected", err);
         }
@@ -127,16 +134,16 @@ public class MediaInterface {
 
     private void onPlaybackStateChanged(PlaybackStateCompat state) {
         if (state.getState() != PlaybackStateCompat.STATE_BUFFERING) {
-            mCallbacks.onLoaded();
+            mCallbacks.onLoaded(mPlayerControls);
         } else if (state.getState() == PlaybackStateCompat.STATE_BUFFERING) {
-            mCallbacks.onLoading();
+            mCallbacks.onLoading(mPlayerControls);
         }
-        mCallbacks.onStateChanged(state);
+        mCallbacks.onStateChanged(this, state);
         if (mPlayerControls != null) {
             if (MediaPlayerController.isPlaying(mMediaControls, state, mPlayerControls.getMediaId()))
-                mCallbacks.onPlaying();
+                mCallbacks.onPlaying(mPlayerControls);
             else
-                mCallbacks.onPaused();
+                mCallbacks.onPaused(mPlayerControls);
         }
         if (state.getState() == PlaybackStateCompat.STATE_PLAYING) {
             if (mPlayerControls != null && !MediaPlayerController.isEquals(mMediaControls, mPlayerControls.getMediaId())) {
@@ -149,9 +156,9 @@ public class MediaInterface {
                     }
                     mPlayerControls.setMediaControls(mCallbacks, mMediaControls);
                     mPlayerControls.setViews(
-                            mCallbacks.getTimePlayed(),
-                            mCallbacks.getTimeRemaining(),
-                            mCallbacks.getProgress());
+                            mCallbacks.getTimePlayed(this),
+                            mCallbacks.getTimeRemaining(this),
+                            mCallbacks.getProgress(this));
                 }
             }
         }
@@ -162,9 +169,9 @@ public class MediaInterface {
     private void onSessionEvent(String event, Bundle extras) {
         if (mCallbacks != null) {
             if (event.startsWith(MediaService.EVENT_TIMER)) {
-                mCallbacks.onTimerChanged(MediaService.getTimerFromEvent(event));
+                mCallbacks.onTimerChanged(this, MediaService.getTimerFromEvent(event));
             } else if (event.startsWith(MediaService.EVENT_SPEED)) {
-                mCallbacks.onSpeedChanged(MediaService.getSpeedFromEvent(event));
+                mCallbacks.onSpeedChanged(this, MediaService.getSpeedFromEvent(event));
             }
         }
     }
@@ -176,27 +183,27 @@ public class MediaInterface {
 
     public interface MediaInterfaceCallback {
 
-        void onConnected();
+        void onConnected(MediaInterface mediaInterface);
 
-        void onLoading();
+        void onLoading(MediaPlayerController controller);
 
-        void onLoaded();
+        void onLoaded(MediaPlayerController controller);
 
-        void onPlaying();
+        void onPlaying(MediaPlayerController controller);
 
-        void onPaused();
+        void onPaused(MediaPlayerController controller);
 
-        void onTimerChanged(long timer);
+        void onTimerChanged(MediaInterface mediaInterface, long timer);
 
-        void onSpeedChanged(float speed);
+        void onSpeedChanged(MediaInterface mediaInterface, float speed);
 
-        void onStateChanged(PlaybackStateCompat state);
+        void onStateChanged(MediaInterface mediaInterface, PlaybackStateCompat state);
 
-        TextView getTimePlayed();
+        TextView getTimePlayed(MediaInterface mediaInterface);
 
-        TextView getTimeRemaining();
+        TextView getTimeRemaining(MediaInterface mediaInterface);
 
-        SeekBar getProgress();
+        SeekBar getProgress(MediaInterface mediaInterface);
 
     }
 
