@@ -279,8 +279,14 @@ public class MediaService extends MediaBrowserServiceCompat implements
         return MediaProvider.getInstance().getAudioSpeed();
     }
 
+    private Queue mCurrentQueue;
+
     @Override
     public void onQueue(Queue queue) {
+        if (mCurrentQueue != null && mCurrentQueue != queue) {
+            MediaProvider.getInstance().evictQueue(mCurrentQueue);
+        }
+        mCurrentQueue = queue;
         if (queue == null) {
             mSession.setQueueTitle(null);
             mSession.setQueue(null);

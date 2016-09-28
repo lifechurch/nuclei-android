@@ -7,14 +7,20 @@ import java.util.List;
 
 public class Queue {
 
+    private MediaId mId;
     private CharSequence mTitle;
     private List<QueueItem> mItems;
     private int mItemPosition;
 
-    public Queue(CharSequence title, List<QueueItem> items) {
+    public Queue(MediaId id, CharSequence title, List<QueueItem> items) {
+        mId = id;
         mTitle = title;
         mItems = items;
         mItemPosition = 0;
+    }
+
+    public MediaId getId() {
+        return mId;
     }
 
     public String getCurrentId() {

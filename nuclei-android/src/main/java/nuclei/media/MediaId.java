@@ -14,22 +14,22 @@ public abstract class MediaId {
     public MediaId(Uri uri) {
         this.uri = uri;
         this.queue = Boolean.parseBoolean(uri.getQueryParameter("_queue"));
-        this.type = getInt("_type");
+        this.type = getInt("_type", -1);
     }
 
-    protected int getInt(String name) {
+    protected int getInt(String name, int defaultValue) {
         try {
             return Integer.parseInt(uri.getQueryParameter(name));
         } catch (Exception ignore) {
-            return  -1;
+            return defaultValue;
         }
     }
 
-    protected long getLong(String name) {
+    protected long getLong(String name, long defaultValue) {
         try {
             return Long.parseLong(uri.getQueryParameter(name));
         } catch (Exception ignore) {
-            return  -1;
+            return defaultValue;
         }
     }
 

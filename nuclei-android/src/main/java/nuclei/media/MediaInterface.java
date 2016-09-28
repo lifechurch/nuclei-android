@@ -4,6 +4,8 @@ import android.app.SearchManager;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.os.RemoteException;
 import android.provider.MediaStore;
 import android.support.v4.app.FragmentActivity;
@@ -12,11 +14,12 @@ import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.view.Surface;
-import android.widget.SeekBar;
-import android.widget.TextView;
+
+import java.lang.ref.WeakReference;
 
 import nuclei.logs.Log;
 import nuclei.logs.Logs;
+import nuclei.media.playback.PlaybackManager;
 
 public class MediaInterface {
 
@@ -28,16 +31,13 @@ public class MediaInterface {
     private MediaControllerCompat mMediaControls;
     private MediaControllerCompat.Callback mMediaCallback;
     private MediaPlayerController mPlayerControls;
+    private ProgressHandler mHandler = new ProgressHandler(this);
 
     public MediaInterface(FragmentActivity activity, MediaId mediaId, MediaInterfaceCallback callback) {
         mActivity = activity;
         mCallbacks = callback;
         mPlayerControls = new MediaPlayerController(mediaId);
         mPlayerControls.setMediaControls(mCallbacks, null);
-        mPlayerControls.setViews(
-                mCallbacks.getTimePlayed(this),
-                mCallbacks.getTimeRemaining(this),
-                mCallbacks.getProgress(this));
         mMediaBrowser = new MediaBrowserCompat(activity.getApplicationContext(),
                 new ComponentName(activity, MediaService.class),
                 new MediaBrowserCompat.ConnectionCallback() {
@@ -58,22 +58,18 @@ public class MediaInterface {
     }
 
     public void setSurface(Surface surface) {
-        Bundle args = new Bundle();
-        args.putParcelable(MediaService.EXTRA_SURFACE, surface);
-        getMediaController()
-                .getTransportControls().sendCustomAction(MediaService.ACTION_SET_TIMER, args);
-    }
-
-    public void clearViews() {
-        if (mPlayerControls != null)
-            mPlayerControls.clearViews();
+        if (mMediaControls != null) {
+            Bundle args = new Bundle();
+            args.putParcelable(MediaService.EXTRA_SURFACE, surface);
+            mMediaControls.getTransportControls().sendCustomAction(MediaService.ACTION_SET_SURFACE, args);
+        }
     }
 
     public void onDestroy() {
-        clearViews();
+        if (mCallbacks != null)
+            mCallbacks.onDestroy(this);
         if (mPlayerControls != null) {
             mPlayerControls.setMediaControls(null, null);
-            mPlayerControls.clearViews();
         }
         if (mMediaControls != null && mMediaCallback != null)
             mMediaControls.unregisterCallback(mMediaCallback);
@@ -85,6 +81,7 @@ public class MediaInterface {
         mMediaBrowser = null;
         mCallbacks = null;
         mActivity = null;
+        mHandler = null;
     }
 
     private void onConnected() {
@@ -125,8 +122,18 @@ public class MediaInterface {
                 mMediaControls.getTransportControls()
                         .playFromSearch(query, params);
             }
-            if (mCallbacks != null)
+            if (mCallbacks != null) {
                 mCallbacks.onConnected(this);
+                MediaMetadataCompat metadataCompat = mMediaControls.getMetadata();
+                if (metadataCompat != null) {
+                    long duration = metadataCompat.getLong(MediaMetadataCompat.METADATA_KEY_DURATION);
+                    if (duration > 0)
+                        mCallbacks.setTimeTotal(this, duration);
+                }
+            }
+
+            if (mPlayerControls != null && mPlayerControls.isPlaying())
+                mHandler.start();
         } catch (RemoteException err) {
             LOG.e("Error in onConnected", err);
         }
@@ -140,10 +147,13 @@ public class MediaInterface {
         }
         mCallbacks.onStateChanged(this, state);
         if (mPlayerControls != null) {
-            if (MediaPlayerController.isPlaying(mMediaControls, state, mPlayerControls.getMediaId()))
+            if (MediaPlayerController.isPlaying(mMediaControls, state, mPlayerControls.getMediaId())) {
                 mCallbacks.onPlaying(mPlayerControls);
-            else
+                mHandler.start();
+            } else {
                 mCallbacks.onPaused(mPlayerControls);
+                mHandler.stop();
+            }
         }
         if (state.getState() == PlaybackStateCompat.STATE_PLAYING) {
             if (mPlayerControls != null && !MediaPlayerController.isEquals(mMediaControls, mPlayerControls.getMediaId())) {
@@ -151,19 +161,12 @@ public class MediaInterface {
                 if (mediaId != null) {
                     MediaId id = MediaProvider.getInstance().getMediaId(mediaId);
                     if (!id.equals(mPlayerControls.getMediaId())) {
-                        mPlayerControls.clearViews();
                         mPlayerControls = new MediaPlayerController(id);
                     }
                     mPlayerControls.setMediaControls(mCallbacks, mMediaControls);
-                    mPlayerControls.setViews(
-                            mCallbacks.getTimePlayed(this),
-                            mCallbacks.getTimeRemaining(this),
-                            mCallbacks.getProgress(this));
                 }
             }
         }
-        if (mPlayerControls != null)
-            mPlayerControls.update();
     }
 
     private void onSessionEvent(String event, Bundle extras) {
@@ -177,8 +180,12 @@ public class MediaInterface {
     }
 
     private void onMetadataChanged(MediaMetadataCompat metadata) {
-        if (mPlayerControls != null)
-            mPlayerControls.update();
+        if (mCallbacks != null) {
+            mCallbacks.onMetadataChanged(this, metadata);
+            long duration = metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION);
+            if (duration > 0)
+                mCallbacks.setTimeTotal(this, duration);
+        }
     }
 
     public interface MediaInterfaceCallback {
@@ -199,12 +206,66 @@ public class MediaInterface {
 
         void onStateChanged(MediaInterface mediaInterface, PlaybackStateCompat state);
 
-        TextView getTimePlayed(MediaInterface mediaInterface);
+        void setTimePlayed(MediaInterface mediaInterface, long played);
 
-        TextView getTimeRemaining(MediaInterface mediaInterface);
+        void setTimeTotal(MediaInterface mediaInterface, long total);
 
-        SeekBar getProgress(MediaInterface mediaInterface);
+        boolean isPositionChanging(MediaInterface mediaInterface);
 
+        void setPosition(MediaInterface mediaInterface, long max, long position, long secondaryPosition);
+
+        void onMetadataChanged(MediaInterface mediaInterface, MediaMetadataCompat mediaMetadataCompat);
+
+        void onDestroy(MediaInterface mediaInterface);
+
+    }
+
+    public static class ProgressHandler extends Handler {
+
+        private static final int SHOW_PROGRESS = 1;
+        public static final int MAX_PROGRESS = 1000;
+
+        private WeakReference<MediaInterface> mMediaInterface;
+
+        public ProgressHandler(MediaInterface mediaInterface) {
+            mMediaInterface = new WeakReference<>(mediaInterface);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case SHOW_PROGRESS:
+                    MediaInterface mediaInterface = mMediaInterface.get();
+                    if (mediaInterface != null && mediaInterface.mCallbacks != null) {
+                        if (mediaInterface.mCallbacks.isPositionChanging(mediaInterface)) {
+                            return;
+                        }
+                        long position = mediaInterface.getPlayerController().getCurrentPosition();
+                        long duration = mediaInterface.getPlayerController().getDuration();
+                        long currentPos = 0;
+                        if (duration > 0) {
+                            currentPos = PlaybackManager.ONE_SECOND * position / duration;
+                        }
+                        int percent = mediaInterface.getPlayerController().getBufferPercentage();
+                        mediaInterface.mCallbacks.setPosition(mediaInterface, MAX_PROGRESS, currentPos, percent * 10);
+                        mediaInterface.mCallbacks.setTimePlayed(mediaInterface, position);
+                        if (mediaInterface.getPlayerController().isPlaying())
+                            sendEmptyMessageDelayed(SHOW_PROGRESS, PlaybackManager.ONE_SECOND - (position % PlaybackManager.ONE_SECOND));
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        public void start() {
+            if (!hasMessages(SHOW_PROGRESS))
+                sendEmptyMessage(SHOW_PROGRESS);
+        }
+
+        public void stop() {
+            removeMessages(SHOW_PROGRESS);
+        }
     }
 
 }

@@ -6,9 +6,11 @@ import android.content.res.TypedArray;
 import android.graphics.PorterDuff;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
-import android.support.v7.app.AppCompatActivity;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -20,7 +22,10 @@ import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import java.lang.ref.WeakReference;
 import java.util.Arrays;
+import java.util.Formatter;
+import java.util.Locale;
 
 import io.nuclei.R;
 import nuclei.media.MediaId;
@@ -300,85 +305,7 @@ public class MediaPlayerControlsView extends FrameLayout {
     }
 
     public MediaInterface.MediaInterfaceCallback newMediaInterfaceCallback(final OnConnectedListener listener) {
-        return new MediaInterface.MediaInterfaceCallback() {
-
-            final View play = findViewById(R.id.btn_play);
-            final View loading = findViewById(R.id.media_loading);
-            final TextView timePlayed = (TextView) findViewById(R.id.time_played);
-            final TextView timeRemaining = (TextView) findViewById(R.id.time_remaining);
-            final TextView speed = (TextView) findViewById(R.id.btn_speed);
-            final TextView timer = (TextView) findViewById(R.id.btn_timer);
-            final SeekBar seekBar = (SeekBar) findViewById(R.id.progress);
-            final ImageView next = (ImageView) findViewById(R.id.btn_next);
-            final ImageView previous = (ImageView) findViewById(R.id.btn_previous);
-
-            @Override
-            public void onConnected(MediaInterface mediaInterface) {
-                if (listener != null && mMediaInterface != null)
-                    listener.onConnected(MediaPlayerControlsView.this, mMediaInterface);
-            }
-
-            @Override
-            public void onLoading(MediaPlayerController controller) {
-                loading.setVisibility(View.VISIBLE);
-            }
-
-            @Override
-            public void onLoaded(MediaPlayerController controller) {
-                loading.setVisibility(View.GONE);
-            }
-
-            @Override
-            public void onPlaying(MediaPlayerController controller) {
-                play.setActivated(true);
-                if (mAutoShow)
-                    show();
-            }
-
-            @Override
-            public void onPaused(MediaPlayerController controller) {
-                play.setActivated(false);
-                if (mAutoShow)
-                    hide();
-            }
-
-            @Override
-            public void onTimerChanged(MediaInterface mediaInterface, long t) {
-                mTimer = t;
-                if (timer != null) {
-                    if (t < 1)
-                        timer.setText(ResourceProvider.getInstance().getString(ResourceProvider.TIMER));
-                    else
-                        timer.setText(mMediaInterface.getPlayerController().stringForTime((int) t));
-                }
-            }
-
-            @Override
-            public void onSpeedChanged(MediaInterface mediaInterface, float s) {
-                speed.setText(ResourceProvider.getInstance().getSelectedSpeed());
-            }
-
-            @Override
-            public void onStateChanged(MediaInterface mediaInterface, PlaybackStateCompat state) {
-                onHandleState(next, previous, state);
-            }
-
-            @Override
-            public TextView getTimePlayed(MediaInterface mediaInterface) {
-                return timePlayed;
-            }
-
-            @Override
-            public TextView getTimeRemaining(MediaInterface mediaInterface) {
-                return timeRemaining;
-            }
-
-            @Override
-            public SeekBar getProgress(MediaInterface mediaInterface) {
-                return seekBar;
-            }
-
-        };
+        return new DefaultCallback(this, listener, mAutoShow);
     }
 
     public void setMediaInterface(MediaInterface mediaInterface) {
@@ -387,6 +314,202 @@ public class MediaPlayerControlsView extends FrameLayout {
 
     public interface OnConnectedListener {
         void onConnected(MediaPlayerControlsView view, MediaInterface mediaInterface);
+    }
+
+    public static class DefaultCallback implements MediaInterface.MediaInterfaceCallback {
+
+        private static final int ONE_MINUTE = 60;
+        private static final int ONE_HOUR = 3600;
+
+        private final StringBuilder mFormatBuilder = new StringBuilder();
+        private final Formatter mFormatter = new Formatter(mFormatBuilder, Locale.getDefault());
+
+        private final ImageView play;
+        private final View loading;
+        private final TextView timePlayed;
+        private final TextView timeTotal;
+        private final TextView speed;
+        private final TextView timer;
+        private final SeekBar seekBar;
+        private final ImageView next;
+        private final ImageView previous;
+
+        private MediaPlayerControlsView mView;
+        private OnConnectedListener mConnectedListener;
+        private boolean mAutoShow;
+
+        public DefaultCallback(MediaPlayerControlsView view, OnConnectedListener listener, boolean autoShow) {
+            mView = view;
+            mAutoShow = autoShow;
+            mConnectedListener = listener;
+            play = (ImageView) view.findViewById(R.id.btn_play);
+            loading = view.findViewById(R.id.media_loading);
+            timePlayed = (TextView) view.findViewById(R.id.time_played);
+            timeTotal = (TextView) view.findViewById(R.id.time_total);
+            speed = (TextView) view.findViewById(R.id.btn_speed);
+            timer = (TextView) view.findViewById(R.id.btn_timer);
+            seekBar = (SeekBar) view.findViewById(R.id.progress);
+            next = (ImageView) view.findViewById(R.id.btn_next);
+            previous = (ImageView) view.findViewById(R.id.btn_previous);
+            if (seekBar != null) {
+                seekBar.setOnSeekBarChangeListener(mSeekListener);
+                seekBar.setMax(MediaInterface.ProgressHandler.MAX_PROGRESS);
+            }
+        }
+
+        private MediaInterface.ProgressHandler mHandler;
+        private boolean mDragging;
+        private final SeekBar.OnSeekBarChangeListener mSeekListener = new SeekBar.OnSeekBarChangeListener() {
+
+            @Override
+            public void onStartTrackingTouch(SeekBar bar) {
+                mDragging = true;
+                mHandler.stop();
+            }
+
+            @Override
+            public void onProgressChanged(SeekBar bar, int progress, boolean fromuser) {
+                if (!fromuser) {
+                    return;
+                }
+                if (mView.mMediaInterface == null)
+                    return;
+                MediaInterface mediaInterface = mView.mMediaInterface;
+                MediaPlayerController controller = mediaInterface.getPlayerController();
+                long duration = controller.getDuration();
+                long newPosition = (duration * progress) / PlaybackManager.ONE_SECOND;
+                controller.seekTo((int) newPosition);
+                setPosition(mediaInterface, MediaInterface.ProgressHandler.MAX_PROGRESS, newPosition, -1);
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar bar) {
+                mDragging = false;
+                if (mHandler != null)
+                    mHandler.start();
+            }
+
+        };
+
+        @Override
+        public void onConnected(nuclei.media.MediaInterface mediaInterface) {
+            if (mConnectedListener != null) {
+                if (mView == null || mView.mMediaInterface == null)
+                    return;
+                mConnectedListener.onConnected(mView, mediaInterface);
+            }
+            if (mHandler == null)
+                mHandler = new MediaInterface.ProgressHandler(mediaInterface);
+            mHandler.start();
+        }
+
+        @Override
+        public void onLoading(MediaPlayerController controller) {
+            loading.setVisibility(View.VISIBLE);
+            if (mHandler != null)
+                mHandler.start();
+        }
+
+        @Override
+        public void onLoaded(MediaPlayerController controller) {
+            loading.setVisibility(View.GONE);
+        }
+
+        @Override
+        public void onPlaying(MediaPlayerController controller) {
+            play.setActivated(true);
+            if (mHandler != null)
+                mHandler.start();
+            if (mAutoShow && mView != null) {
+                mView.show();
+            }
+        }
+
+        @Override
+        public void onPaused(MediaPlayerController controller) {
+            play.setActivated(false);
+            if (mHandler != null)
+                mHandler.stop();
+            if (mAutoShow && mView != null) {
+                mView.hide();
+            }
+        }
+
+        @Override
+        public void onTimerChanged(nuclei.media.MediaInterface mediaInterface, long t) {
+            if (mView == null)
+                return;
+            mView.mTimer = t;
+            if (timer != null) {
+                if (t < 1)
+                    timer.setText(ResourceProvider.getInstance().getString(ResourceProvider.TIMER));
+                else
+                    timer.setText(stringForTime(t));
+            }
+        }
+
+        @Override
+        public void onSpeedChanged(nuclei.media.MediaInterface mediaInterface, float s) {
+            speed.setText(ResourceProvider.getInstance().getSelectedSpeed());
+        }
+
+        @Override
+        public void onStateChanged(nuclei.media.MediaInterface mediaInterface, PlaybackStateCompat state) {
+            if (mView == null)
+                return;
+            mView.onHandleState(next, previous, state);
+        }
+
+        @Override
+        public void setTimePlayed(nuclei.media.MediaInterface mediaInterface, long played) {
+            timePlayed.setText(stringForTime(played));
+        }
+
+        @Override
+        public void setTimeTotal(nuclei.media.MediaInterface mediaInterface, long remaining) {
+            timeTotal.setText(stringForTime(remaining));
+        }
+
+        @Override
+        public boolean isPositionChanging(MediaInterface mediaInterface) {
+            return mDragging;
+        }
+
+        @Override
+        public void setPosition(nuclei.media.MediaInterface mediaInterface, long max, long position, long secondaryPosition) {
+            if (seekBar != null) {
+                seekBar.setProgress((int) position);
+                seekBar.setSecondaryProgress((int) secondaryPosition);
+            }
+        }
+
+        @Override
+        public void onMetadataChanged(MediaInterface mediaInterface, MediaMetadataCompat mediaMetadataCompat) {
+
+        }
+
+        @Override
+        public void onDestroy(MediaInterface mediaInterface) {
+            mView = null;
+            if (mHandler != null)
+                mHandler.stop();
+            mHandler = null;
+        }
+
+        private String stringForTime(long timeMs) {
+            long totalSeconds = timeMs / PlaybackManager.ONE_SECOND;
+
+            int seconds = (int) (totalSeconds % ONE_MINUTE);
+            int minutes = (int) ((totalSeconds / ONE_MINUTE) % ONE_MINUTE);
+            int hours = (int) (totalSeconds / ONE_HOUR);
+
+            mFormatBuilder.setLength(0);
+            if (hours > 0) {
+                return mFormatter.format("%d:%02d:%02d", hours, minutes, seconds).toString();
+            } else {
+                return mFormatter.format("%02d:%02d", minutes, seconds).toString();
+            }
+        }
     }
 
 }

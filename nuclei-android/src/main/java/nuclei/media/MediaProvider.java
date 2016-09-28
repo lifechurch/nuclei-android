@@ -127,6 +127,10 @@ public abstract class MediaProvider {
         mQueueCache.evictAll();
     }
 
+    public void evictQueue(Queue queue) {
+        mQueueCache.remove(queue.getId().toString());
+    }
+
     public Result<Queue> getQueue(final MediaId id) {
         return Tasks.execute(new Task<Queue>() {
             @Override
