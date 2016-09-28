@@ -63,8 +63,8 @@ ext {
 
     libraryDescription = 'Android Sqlite3 Content Provider Generator'
 
-    siteUrl = 'https://github.com/lifechurch/yv-nuclei/'
-    gitUrl = 'https://github.com/lifechurch/yv-nuclei/'
+    siteUrl = 'https://github.com/lifechurch/nuclei-android/'
+    gitUrl = 'https://github.com/lifechurch/nuclei-android/'
 
     libraryVersion = version
 

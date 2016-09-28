@@ -15,7 +15,7 @@ bintray {
     pkg {
         repo = bintrayRepo
         name = bintrayName
-        userOrg = 'Life.Church'
+        userOrg = 'lifechurch'
         desc = libraryDescription
         websiteUrl = siteUrl
         vcsUrl = gitUrl

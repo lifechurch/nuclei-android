@@ -35,7 +35,7 @@ bintray {
     pkg {
         repo = bintrayRepo
         name = bintrayName
-        userOrg = 'nuclei-io'
+        userOrg = 'lifechurch'
         desc = libraryDescription
         websiteUrl = siteUrl
         vcsUrl = gitUrl
