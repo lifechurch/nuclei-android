@@ -205,6 +205,8 @@ public abstract class MediaProvider {
 
     public abstract void onPlaybackPause(Playback playback, MediaId id);
 
+    public abstract void onPlaybackSeekTo(Playback playback, MediaId id, long currentPosition, long newPosition);
+
     public abstract void onPlaybackStop(Playback playback, MediaId id);
 
     public abstract void onPlaybackNext(Playback playback, MediaId id);

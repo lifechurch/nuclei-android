@@ -307,7 +307,9 @@ public class PlaybackManager implements Playback.Callback {
 
         @Override
         public void onSeekTo(long position) {
+            long current = mPlayback.getCurrentStreamPosition();
             mPlayback.seekTo((int) position);
+            mServiceCallback.onPlaybackSeekTo(mPlayback.getCurrentMediaId(), current, position);
         }
 
         private void onQueue(Queue queue, final Bundle extras, boolean play) {
@@ -469,12 +471,18 @@ public class PlaybackManager implements Playback.Callback {
 
         @Override
         public void onFastForward() {
-            mPlayback.seekTo(mPlayback.getCurrentStreamPosition() + THIRY_SECOND);
+            long current = mPlayback.getCurrentStreamPosition();
+            long position = current + THIRY_SECOND;
+            mPlayback.seekTo(position);
+            mServiceCallback.onPlaybackSeekTo(mPlayback.getCurrentMediaId(), current, position);
         }
 
         @Override
         public void onRewind() {
-            mPlayback.seekTo(Math.max(0, mPlayback.getCurrentStreamPosition() - THIRY_SECOND));
+            long current = mPlayback.getCurrentStreamPosition();
+            long position = Math.max(0, current - THIRY_SECOND);
+            mPlayback.seekTo(position);
+            mServiceCallback.onPlaybackSeekTo(mPlayback.getCurrentMediaId(), current, position);
         }
 
         @Override
@@ -574,6 +582,8 @@ public class PlaybackManager implements Playback.Callback {
         void onPlaybackStop(MediaId mediaId);
 
         void onPlaybackNext(MediaId mediaId);
+
+        void onPlaybackSeekTo(MediaId mediaId, long currentPosition, long newPosition);
 
         void onPlaybackPrevious(MediaId mediaId);
 

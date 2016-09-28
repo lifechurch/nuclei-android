@@ -362,6 +362,13 @@ public class MediaService extends MediaBrowserServiceCompat implements
     }
 
     @Override
+    public void onPlaybackSeekTo(MediaId id, long currentPosition, long newPosition) {
+        Playback playback = mPlaybackManager.getPlayback();
+        if (playback != null)
+            MediaProvider.getInstance().onPlaybackSeekTo(playback, id, currentPosition, newPosition);
+    }
+
+    @Override
     public void onPlaybackPrevious(MediaId id) {
         Playback playback = mPlaybackManager.getPlayback();
         if (playback != null)
