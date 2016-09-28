@@ -296,6 +296,11 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
     }
 
     @Override
+    public MediaMetadata getCurrentMetadata() {
+        return mMetadata;
+    }
+
+    @Override
     public long getSurfaceId() {
         return mSurfaceId;
     }

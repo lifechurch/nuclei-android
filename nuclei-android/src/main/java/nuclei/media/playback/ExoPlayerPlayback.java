@@ -367,6 +367,11 @@ public class ExoPlayerPlayback extends BasePlayback
         return mCurrentMediaId;
     }
 
+    @Override
+    public MediaMetadata getCurrentMetadata() {
+        return mMediaMetadata;
+    }
+
     /**
      * Try to get the system audio focus.
      */

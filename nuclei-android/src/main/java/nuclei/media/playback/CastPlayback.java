@@ -271,6 +271,11 @@ public class CastPlayback extends BasePlayback implements Playback {
     }
 
     @Override
+    public MediaMetadata getCurrentMetadata() {
+        return mMediaMetadata;
+    }
+
+    @Override
     public void setCallback(Callback callback) {
         this.mCallback = callback;
     }

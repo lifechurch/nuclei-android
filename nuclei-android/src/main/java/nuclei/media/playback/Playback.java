@@ -65,6 +65,8 @@ public interface Playback {
 
     MediaId getCurrentMediaId();
 
+    MediaMetadata getCurrentMetadata();
+
     long getSurfaceId();
 
     Surface getSurface();
