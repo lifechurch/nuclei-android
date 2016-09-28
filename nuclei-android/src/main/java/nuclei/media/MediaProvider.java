@@ -22,6 +22,8 @@ public abstract class MediaProvider {
 
     public static final String CUSTOM_METADATA_TRACK_SOURCE = "__SOURCE__";
     public static final String CUSTOM_METADATA_TRACK_TYPE = "__SOURCE_TYPE__";
+    public static final String CUSTOM_METADATA_TIMING_START = "__TIMING_START__";
+    public static final String CUSTOM_METADATA_TIMING_END = "__TIMING_END__";
 
     public static final String MEDIA_ID_SCHEME = "nuclei-media";
     private static Context CONTEXT;
@@ -131,6 +133,10 @@ public abstract class MediaProvider {
         mQueueCache.remove(queue.getId().toString());
     }
 
+    public void evictMetadataCache(MediaMetadata metadata) {
+        mMetadataCache.remove(metadata.getMediaId());
+    }
+
     public Result<Queue> getQueue(final MediaId id) {
         return Tasks.execute(new Task<Queue>() {
             @Override
@@ -200,6 +206,10 @@ public abstract class MediaProvider {
     public abstract void onPlaybackPause(Playback playback, MediaId id);
 
     public abstract void onPlaybackStop(Playback playback, MediaId id);
+
+    public abstract void onPlaybackNext(Playback playback, MediaId id);
+
+    public abstract void onPlaybackPrevious(Playback playback, MediaId id);
 
     public abstract void onPlaybackCompletion(Playback playback, MediaId id);
 

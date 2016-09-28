@@ -151,20 +151,17 @@ public class MediaInterface {
                 mCallbacks.onPlaying(mPlayerControls);
                 mHandler.start();
             } else {
-                mCallbacks.onPaused(mPlayerControls);
+                if (state.getState() == PlaybackStateCompat.STATE_STOPPED)
+                    mCallbacks.onStopped(mPlayerControls);
+                else
+                    mCallbacks.onPaused(mPlayerControls);
                 mHandler.stop();
             }
         }
         if (state.getState() == PlaybackStateCompat.STATE_PLAYING) {
-            if (mPlayerControls != null && !MediaPlayerController.isEquals(mMediaControls, mPlayerControls.getMediaId())) {
-                String mediaId = MediaPlayerController.getMediaId(mMediaControls);
-                if (mediaId != null) {
-                    MediaId id = MediaProvider.getInstance().getMediaId(mediaId);
-                    if (!id.equals(mPlayerControls.getMediaId())) {
-                        mPlayerControls = new MediaPlayerController(id);
-                    }
-                    mPlayerControls.setMediaControls(mCallbacks, mMediaControls);
-                }
+            if (mPlayerControls != null
+                    && (!mPlayerControls.isMediaControlsSet() || !MediaPlayerController.isEquals(mMediaControls, mPlayerControls.getMediaId()))) {
+                mPlayerControls.setMediaControls(mCallbacks, mMediaControls);
             }
         }
     }
@@ -199,6 +196,8 @@ public class MediaInterface {
         void onPlaying(MediaPlayerController controller);
 
         void onPaused(MediaPlayerController controller);
+
+        void onStopped(MediaPlayerController controller);
 
         void onTimerChanged(MediaInterface mediaInterface, long timer);
 

@@ -27,6 +27,8 @@ public interface Playback {
 
     void stop(boolean notifyListeners);
 
+    void temporaryStop();
+
     void setState(int state);
 
     int getState();
@@ -35,9 +37,19 @@ public interface Playback {
 
     boolean isPlaying();
 
-    int getCurrentStreamPosition();
+    Timing getTiming();
 
-    void setCurrentStreamPosition(int pos);
+    void setTiming(Timing timing);
+
+    void setTiming(Timing timing, boolean seek);
+
+    long getStartStreamPosition();
+
+    long getCurrentStreamPosition();
+
+    void setCurrentStreamPosition(long pos);
+
+    long getDuration();
 
     void updateLastKnownStreamPosition();
 
@@ -47,7 +59,7 @@ public interface Playback {
 
     void pause();
 
-    void seekTo(int position);
+    void seekTo(long position);
 
     void setCurrentMediaId(MediaId mediaId);
 

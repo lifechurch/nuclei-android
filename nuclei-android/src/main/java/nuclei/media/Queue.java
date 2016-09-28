@@ -11,16 +11,32 @@ public class Queue {
     private CharSequence mTitle;
     private List<QueueItem> mItems;
     private int mItemPosition;
+    private MediaId mPrevious;
+    private MediaId mNext;
 
-    public Queue(MediaId id, CharSequence title, List<QueueItem> items) {
+    public Queue(MediaId id, CharSequence title, List<QueueItem> items, MediaId previous, MediaId next) {
         mId = id;
         mTitle = title;
         mItems = items;
         mItemPosition = 0;
+        if (previous != null && !previous.queue)
+            throw new IllegalArgumentException("Previous Queue ID must be a queue");
+        mPrevious = previous;
+        if (next != null && !next.queue)
+            throw new IllegalArgumentException("Next Queue ID must be a queue");
+        mNext = next;
     }
 
     public MediaId getId() {
         return mId;
+    }
+
+    public MediaId getPreviousQueue() {
+        return mPrevious;
+    }
+
+    public MediaId getNextQueue() {
+        return mNext;
     }
 
     public String getCurrentId() {

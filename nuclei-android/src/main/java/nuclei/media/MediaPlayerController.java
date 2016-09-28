@@ -26,17 +26,16 @@ public class MediaPlayerController implements MediaController.MediaPlayerControl
             mMediaControls.getTransportControls().prepareFromMediaId(mediaId.toString(), null);
     }
 
+    protected boolean isMediaControlsSet() {
+        return mCallbacks != null && mMediaControls != null;
+    }
+
     public void setMediaControls(MediaInterface.MediaInterfaceCallback callback, MediaControllerCompat mediaControls) {
         mCallbacks = callback;
         mMediaControls = mediaControls;
-        if (mMediaId == null && mediaControls != null) {
-            MediaMetadataCompat mediaMetadataCompat = mediaControls.getMetadata();
-            if (mediaMetadataCompat != null) {
-                MediaDescriptionCompat descriptionCompat = mediaMetadataCompat.getDescription();
-                if (descriptionCompat != null && descriptionCompat.getMediaId() != null)
-                    mMediaId = MediaProvider.getInstance().getMediaId(descriptionCompat.getMediaId());
-            }
-        }
+        String mediaId = MediaPlayerController.getMediaId(mMediaControls);
+        if (mediaId != null)
+            mMediaId = MediaProvider.getInstance().getMediaId(mediaId);
         if (mStartWhenReady) {
             mStartWhenReady = false;
             start();
@@ -176,6 +175,8 @@ public class MediaPlayerController implements MediaController.MediaPlayerControl
         }
         return null;
     }
+
+
 
     public static boolean isPlaying(MediaControllerCompat mediaControllerCompat, PlaybackStateCompat playbackStateCompat, MediaId mediaId) {
         if (isEquals(mediaControllerCompat, mediaId)) {

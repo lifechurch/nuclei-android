@@ -62,7 +62,7 @@ import nuclei.task.http.ErrorUtil;
 import nuclei.logs.Log;
 import nuclei.logs.Logs;
 
-public class ExoPlayerPlayback
+public class ExoPlayerPlayback extends BasePlayback
         implements
         Playback,
         AudioManager.OnAudioFocusChangeListener,
@@ -94,7 +94,7 @@ public class ExoPlayerPlayback
     private boolean mPlayOnFocusGain;
     private Callback mCallback;
     private volatile boolean mAudioNoisyReceiverRegistered;
-    private volatile int mCurrentPosition;
+    private volatile long mCurrentPosition;
     private volatile MediaId mCurrentMediaId;
     private volatile MediaMetadata mMediaMetadata;
     private boolean mPrepared;
@@ -163,10 +163,20 @@ public class ExoPlayerPlayback
     }
 
     @Override
-    public void updateLastKnownStreamPosition() {
-        if (mMediaPlayer != null) {
-            mCurrentPosition = (int) mMediaPlayer.getCurrentPosition();
+    public void temporaryStop() {
+        LOG.d("stop");
+        mState = PlaybackStateCompat.STATE_STOPPED;
+        if (mCallback != null) {
+            mCallback.onPlaybackStatusChanged(mState);
         }
+        if (mMediaPlayer != null)
+            mMediaPlayer.stop();
+        relaxResources(false);
+    }
+
+    @Override
+    public void updateLastKnownStreamPosition() {
+        mCurrentPosition = getCurrentStreamPosition();
     }
 
     public void stopFully() {
@@ -178,7 +188,7 @@ public class ExoPlayerPlayback
         mState = state;
         if (state == PlaybackStateCompat.STATE_ERROR) {
             try {
-                mCurrentPosition = mMediaPlayer == null ? 0 : (int) mMediaPlayer.getCurrentPosition();
+                mCurrentPosition = getCurrentStreamPosition();
             } catch (Exception err) {
                 LOG.e("Error capturing current pos", err);
             }
@@ -204,15 +214,15 @@ public class ExoPlayerPlayback
     }
 
     @Override
-    public int getCurrentStreamPosition() {
+    protected long internalGetCurrentStreamPosition() {
         if (mMediaPlayer != null) {
-            return (int) mMediaPlayer.getCurrentPosition();
+            return mMediaPlayer.getCurrentPosition();
         }
         return mCurrentPosition;
     }
 
     @Override
-    public void play(MediaMetadata metadataCompat) {
+    protected void internalPlay(MediaMetadata metadataCompat) {
         mPlayOnFocusGain = true;
         tryToGetAudioFocus();
         registerAudioNoisyReceiver();
@@ -220,7 +230,7 @@ public class ExoPlayerPlayback
                 || !TextUtils.equals(metadataCompat.getDescription().getMediaId(), mCurrentMediaId.toString());
         if (mediaHasChanged || mRestart) {
             mRestart = false;
-            mCurrentPosition = 0;
+            mCurrentPosition = getStartStreamPosition();
             mMediaMetadata = metadataCompat;
             mMediaMetadata.setCallback(mCallback);
             mCurrentMediaId = MediaProvider.getInstance().getMediaId(metadataCompat.getDescription().getMediaId());
@@ -247,7 +257,7 @@ public class ExoPlayerPlayback
         if (mediaHasChanged) {
             pause();
 
-            mCurrentPosition = 0;
+            mCurrentPosition = getStartStreamPosition();
             mMediaMetadata = metadataCompat;
             mMediaMetadata.setCallback(mCallback);
             mCurrentMediaId = MediaProvider.getInstance().getMediaId(metadataCompat.getDescription().getMediaId());
@@ -297,7 +307,7 @@ public class ExoPlayerPlayback
         if (mState == PlaybackStateCompat.STATE_PLAYING || mState == PlaybackStateCompat.STATE_BUFFERING) {
             // Pause media player and cancel the 'foreground service' state.
             if (isMediaPlayerPlaying()) {
-                mCurrentPosition = (int) mMediaPlayer.getCurrentPosition();
+                mCurrentPosition = getCurrentStreamPosition();
                 mMediaPlayer.setPlayWhenReady(false);
             }
         }
@@ -312,13 +322,12 @@ public class ExoPlayerPlayback
     }
 
     @Override
-    public void seekTo(int position) {
-        if (LOG.isLoggable(Log.DEBUG))
-            LOG.d("seekTo called with " + position);
-        internalSeekTo(position);
+    protected long internalGetDuration() {
+        return mMediaPlayer == null ? -1 : mMediaPlayer.getDuration();
     }
 
-    void internalSeekTo(int position) {
+    @Override
+    protected void internalSeekTo(long position) {
         if (LOG.isLoggable(Log.INFO))
             LOG.d("internalSeekTo");
         if (mMediaPlayer == null) {
@@ -344,7 +353,7 @@ public class ExoPlayerPlayback
     }
 
     @Override
-    public void setCurrentStreamPosition(int pos) {
+    public void setCurrentStreamPosition(long pos) {
         this.mCurrentPosition = pos;
     }
 
@@ -558,12 +567,12 @@ public class ExoPlayerPlayback
         } else if (mMediaPlayer != null
                 && mState != PlaybackStateCompat.STATE_ERROR
                 && mState != PlaybackStateCompat.STATE_BUFFERING)
-            mCurrentPosition = (int) mMediaPlayer.getCurrentPosition();
+            mCurrentPosition = mMediaPlayer.getCurrentPosition();
 
-        if (mMediaPlayer != null
-                && mMediaMetadata != null
-                && mMediaMetadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION) != mMediaPlayer.getDuration()) {
-            mMediaMetadata.setDuration(mMediaPlayer.getDuration());
+        if (mMediaPlayer != null && mMediaMetadata != null) {
+            long duration = getDuration();
+            if (mMediaMetadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION) != duration)
+                mMediaMetadata.setDuration(duration);
         }
 
         switch (playbackState) {
@@ -680,7 +689,7 @@ public class ExoPlayerPlayback
             if (err instanceof IOException) {
                 if (mCallback != null) {
                     mCallback.onError(MediaService.ERROR_NETWORK);
-                    int pos = getCurrentStreamPosition();
+                    long pos = getCurrentStreamPosition();
                     stop(true);
                     mCurrentPosition = pos;
                 }

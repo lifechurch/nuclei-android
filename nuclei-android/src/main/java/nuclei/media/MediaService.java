@@ -355,6 +355,20 @@ public class MediaService extends MediaBrowserServiceCompat implements
     }
 
     @Override
+    public void onPlaybackNext(MediaId id) {
+        Playback playback = mPlaybackManager.getPlayback();
+        if (playback != null)
+            MediaProvider.getInstance().onPlaybackNext(playback, id);
+    }
+
+    @Override
+    public void onPlaybackPrevious(MediaId id) {
+        Playback playback = mPlaybackManager.getPlayback();
+        if (playback != null)
+            MediaProvider.getInstance().onPlaybackPrevious(playback, id);
+    }
+
+    @Override
     public void onMetadataUpdated(MediaMetadata mediaMetadataCompat) {
         try {
             mediaMetadataCompat.setSession(mSession);

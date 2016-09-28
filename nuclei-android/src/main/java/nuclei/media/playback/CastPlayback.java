@@ -42,7 +42,7 @@ import nuclei.media.MediaProvider;
 /**
  * An implementation of Playback that talks to Cast.
  */
-public class CastPlayback implements Playback {
+public class CastPlayback extends BasePlayback implements Playback {
 
     private static final String MIME_TYPE_AUDIO_MPEG = "audio/mpeg";
     private static final String MIME_TYPE_VIDEO_MPEG = "video/mpeg";
@@ -95,7 +95,7 @@ public class CastPlayback implements Playback {
     private MediaMetadata mMediaMetadata;
     private int mState;
     private Callback mCallback;
-    private volatile int mCurrentPosition;
+    private volatile long mCurrentPosition;
     private volatile MediaId mCurrentMediaId;
     private Surface mSurface;
     private long mSurfaceId;
@@ -136,17 +136,22 @@ public class CastPlayback implements Playback {
     }
 
     @Override
+    public void temporaryStop() {
+        stop(true);
+    }
+
+    @Override
     public void setState(int state) {
         this.mState = state;
     }
 
     @Override
-    public int getCurrentStreamPosition() {
+    protected long internalGetCurrentStreamPosition() {
         if (!VideoCastManager.getInstance().isConnected()) {
             return mCurrentPosition;
         }
         try {
-            return (int) VideoCastManager.getInstance().getCurrentMediaPosition();
+            return VideoCastManager.getInstance().getCurrentMediaPosition();
         } catch (TransientNetworkDisconnectionException | NoConnectionException e) {
 
         }
@@ -154,7 +159,20 @@ public class CastPlayback implements Playback {
     }
 
     @Override
-    public void setCurrentStreamPosition(int pos) {
+    protected long internalGetDuration() {
+        if (!VideoCastManager.getInstance().isConnected()) {
+            return -1;
+        }
+        try {
+            return VideoCastManager.getInstance().getMediaDuration();
+        } catch (TransientNetworkDisconnectionException | NoConnectionException e) {
+
+        }
+        return -1;
+    }
+
+    @Override
+    public void setCurrentStreamPosition(long pos) {
         this.mCurrentPosition = pos;
     }
 
@@ -164,7 +182,7 @@ public class CastPlayback implements Playback {
     }
 
     @Override
-    public void play(MediaMetadata metadataCompat) {
+    protected void internalPlay(MediaMetadata metadataCompat) {
         try {
             mMediaMetadata = metadataCompat;
             mMediaMetadata.setCallback(mCallback);
@@ -188,7 +206,7 @@ public class CastPlayback implements Playback {
         boolean mediaHasChanged = mCurrentMediaId == null
                 || !TextUtils.equals(metadataCompat.getDescription().getMediaId(), mCurrentMediaId.toString());
         if (mediaHasChanged) {
-            mCurrentPosition = 0;
+            mCurrentPosition = getStartStreamPosition();
             mMediaMetadata = metadataCompat;
             mMediaMetadata.setCallback(mCallback);
             mCurrentMediaId = MediaProvider.getInstance().getMediaId(metadataCompat.getDescription().getMediaId());
@@ -220,7 +238,7 @@ public class CastPlayback implements Playback {
     }
 
     @Override
-    public void seekTo(int position) {
+    protected void internalSeekTo(long position) {
         if (mCurrentMediaId == null) {
             if (mCallback != null) {
                 mCallback.onError("seekTo cannot be calling in the absence of mediaId.");
@@ -229,7 +247,7 @@ public class CastPlayback implements Playback {
         }
         try {
             if (VideoCastManager.getInstance().isRemoteMediaLoaded()) {
-                VideoCastManager.getInstance().seek(position);
+                VideoCastManager.getInstance().seek((int) position);
                 mCurrentPosition = position;
             } else {
                 mCurrentPosition = position;
@@ -284,12 +302,12 @@ public class CastPlayback implements Playback {
             return;
         if (mCurrentMediaId == null || !TextUtils.equals(metadataCompat.getDescription().getMediaId(), mCurrentMediaId.toString())) {
             mCurrentMediaId = MediaProvider.getInstance().getMediaId(metadataCompat.getDescription().getMediaId());
-            mCurrentPosition = 0;
+            mCurrentPosition = getStartStreamPosition();
         }
         JSONObject customData = new JSONObject();
         customData.put(ITEM_ID, metadataCompat.getDescription().getMediaId());
         MediaInfo media = toCastMediaMetadata(metadataCompat, customData);
-        VideoCastManager.getInstance().loadMedia(media, autoPlay, mCurrentPosition, customData);
+        VideoCastManager.getInstance().loadMedia(media, autoPlay, (int) mCurrentPosition, customData);
     }
 
     /**
@@ -348,7 +366,7 @@ public class CastPlayback implements Playback {
                 if (mCurrentMediaId == null || !TextUtils.equals(mCurrentMediaId.toString(), remoteMediaId)) {
                     mCurrentMediaId = MediaProvider.getInstance().getMediaId(remoteMediaId);
                     if (mCallback != null && mMediaMetadata != null) {
-                        mMediaMetadata.setDuration(mediaInfo.getStreamDuration());
+                        mMediaMetadata.setDuration(getDuration());
                     }
                     updateLastKnownStreamPosition();
                 }

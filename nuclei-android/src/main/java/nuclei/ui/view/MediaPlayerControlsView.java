@@ -6,8 +6,6 @@ import android.content.res.TypedArray;
 import android.graphics.PorterDuff;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -22,7 +20,6 @@ import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
-import java.lang.ref.WeakReference;
 import java.util.Arrays;
 import java.util.Formatter;
 import java.util.Locale;
@@ -99,7 +96,6 @@ public class MediaPlayerControlsView extends FrameLayout {
 
         View view = LayoutInflater.from(context).inflate(layout, this, false);
         addView(view);
-        view.setVisibility(GONE);
 
         View.OnClickListener listener = new View.OnClickListener() {
             @Override
@@ -427,6 +423,11 @@ public class MediaPlayerControlsView extends FrameLayout {
 
         @Override
         public void onPaused(MediaPlayerController controller) {
+            onStopped(controller);
+        }
+
+        @Override
+        public void onStopped(MediaPlayerController controller) {
             play.setActivated(false);
             if (mHandler != null)
                 mHandler.stop();
@@ -479,7 +480,8 @@ public class MediaPlayerControlsView extends FrameLayout {
         public void setPosition(nuclei.media.MediaInterface mediaInterface, long max, long position, long secondaryPosition) {
             if (seekBar != null) {
                 seekBar.setProgress((int) position);
-                seekBar.setSecondaryProgress((int) secondaryPosition);
+                if (secondaryPosition != -1)
+                    seekBar.setSecondaryProgress((int) secondaryPosition);
             }
         }
 

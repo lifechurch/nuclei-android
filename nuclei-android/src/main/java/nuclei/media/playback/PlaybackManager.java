@@ -54,7 +54,8 @@ public class PlaybackManager implements Playback.Callback {
     public static final int ONE_HOUR = 3600000;
     public static final int TWO_HOUR = 7200000;
 
-    private static final int TIMER_COUNT = 1;
+    private static final int TIMER_COUNTDOWN = 1;
+    private static final int TIMER_TIMING = 2;
 
     private MediaMetadata mMediaMetadata;
     private Playback mPlayback;
@@ -94,7 +95,8 @@ public class PlaybackManager implements Playback.Callback {
             mServiceCallback.onPlaybackPrepare(id);
             mPlayback.prepare(mMediaMetadata);
 
-            mHandler.removeMessages(TIMER_COUNT);
+            mHandler.removeMessages(TIMER_COUNTDOWN);
+            mHandler.removeMessages(TIMER_TIMING);
 
             if (mQueue != null && !mQueue.setMetadata(mMediaMetadata)) {
                 mQueue = null;
@@ -118,8 +120,13 @@ public class PlaybackManager implements Playback.Callback {
             mPlayback.play(mMediaMetadata);
 
             if (mTimer > -1) {
-                mHandler.removeMessages(TIMER_COUNT);
-                mHandler.sendEmptyMessageDelayed(TIMER_COUNT, ONE_SECOND);
+                mHandler.removeMessages(TIMER_COUNTDOWN);
+                mHandler.sendEmptyMessageDelayed(TIMER_COUNTDOWN, ONE_SECOND);
+            }
+
+            if (mPlayback.getTiming() != null) {
+                mHandler.removeMessages(TIMER_TIMING);
+                mHandler.sendEmptyMessageDelayed(TIMER_TIMING, ONE_SECOND);
             }
 
             if (mQueue != null && !mQueue.setMetadata(mMediaMetadata)) {
@@ -143,7 +150,6 @@ public class PlaybackManager implements Playback.Callback {
         mServiceCallback.onPlaybackStop(mediaId);
         updatePlaybackState(withError);
     }
-
 
     /**
      * Update the current media player state, optionally showing an error message.
@@ -178,7 +184,8 @@ public class PlaybackManager implements Playback.Callback {
                     mPlayback.pause();
                 }
             }
-            mHandler.removeMessages(TIMER_COUNT);
+            mHandler.removeMessages(TIMER_COUNTDOWN);
+            mHandler.removeMessages(TIMER_TIMING);
             MediaProvider.getInstance().onError(error);
         }
         //noinspection ResourceType
@@ -206,9 +213,9 @@ public class PlaybackManager implements Playback.Callback {
             actions |= PlaybackStateCompat.ACTION_PAUSE;
         }
         if (mQueue != null) {
-            if (mQueue.hasNext())
+            if (mQueue.hasNext() || mQueue.getNextQueue() != null)
                 actions |= PlaybackStateCompat.ACTION_SKIP_TO_NEXT;
-            if (mQueue.hasPrevious())
+            if (mQueue.hasPrevious() || mQueue.getPreviousQueue() != null)
                 actions |= PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS;
             actions |= PlaybackStateCompat.ACTION_SKIP_TO_QUEUE_ITEM;
         }
@@ -219,7 +226,9 @@ public class PlaybackManager implements Playback.Callback {
     public void onCompletion() {
         mServiceCallback.onCompletion();
         if (mQueue != null) {
-            if (mQueue.hasNext() && mMediaSessionCallback != null) {
+            if ((mQueue.hasNext() || mQueue.getNextQueue() != null) && mMediaSessionCallback != null) {
+                if (mPlayback.getTiming() != null)
+                    mPlayback.temporaryStop();
                 mMediaSessionCallback.onSkipToNext();
             } else {
                 mQueue = null;
@@ -258,7 +267,7 @@ public class PlaybackManager implements Playback.Callback {
         }
         // suspend the current one.
         int oldState = mPlayback.getState();
-        int pos = mPlayback.getCurrentStreamPosition();
+        long pos = mPlayback.getCurrentStreamPosition();
         MediaId currentMediaId = mPlayback.getCurrentMediaId();
         mPlayback.stop(false);
         playback.setCallback(this);
@@ -470,19 +479,31 @@ public class PlaybackManager implements Playback.Callback {
 
         @Override
         public void onSkipToNext() {
-            if (mQueue != null && mQueue.hasNext()) {
-                final QueueItem item = mQueue.next();
-                final String mediaId = item.getMediaId();
-                onPlayFromMediaId(mediaId, null);
+            mServiceCallback.onPlaybackNext(mPlayback.getCurrentMediaId());
+            if (mQueue != null) {
+                if (mQueue.hasNext()) {
+                    final QueueItem item = mQueue.next();
+                    final String mediaId = item.getMediaId();
+                    onPlayFromMediaId(mediaId, null);
+                } else {
+                    MediaId queueId = mQueue.getNextQueue();
+                    onPlayFromMediaId(queueId.toString(), null);
+                }
             }
         }
 
         @Override
         public void onSkipToPrevious() {
-            if (mQueue != null && mQueue.hasPrevious()) {
-                final QueueItem item = mQueue.previous();
-                final String mediaId = item.getMediaId();
-                onPlayFromMediaId(mediaId, null);
+            mServiceCallback.onPlaybackPrevious(mPlayback.getCurrentMediaId());
+            if (mQueue != null) {
+                if (mQueue.hasPrevious()) {
+                    final QueueItem item = mQueue.previous();
+                    final String mediaId = item.getMediaId();
+                    onPlayFromMediaId(mediaId, null);
+                } else {
+                    MediaId queueId = mQueue.getPreviousQueue();
+                    onPlayFromMediaId(queueId.toString(), null);
+                }
             }
         }
 
@@ -520,9 +541,9 @@ public class PlaybackManager implements Playback.Callback {
                     break;
                 case MediaService.ACTION_SET_TIMER:
                     mTimer = extras.getLong(MediaService.EXTRA_TIMER);
-                    mHandler.removeMessages(TIMER_COUNT);
+                    mHandler.removeMessages(TIMER_COUNTDOWN);
                     if (mTimer != -1)
-                        mHandler.sendEmptyMessageDelayed(TIMER_COUNT, ONE_SECOND);
+                        mHandler.sendEmptyMessageDelayed(TIMER_COUNTDOWN, ONE_SECOND);
                     mServiceCallback.onTimerCount(mTimer);
                     break;
                 default:
@@ -552,6 +573,10 @@ public class PlaybackManager implements Playback.Callback {
 
         void onPlaybackStop(MediaId mediaId);
 
+        void onPlaybackNext(MediaId mediaId);
+
+        void onPlaybackPrevious(MediaId mediaId);
+
         void onMetadataUpdated(MediaMetadata mediaMetadataCompat);
 
         void onPlaybackStateUpdated(PlaybackStateCompat newState);
@@ -571,20 +596,36 @@ public class PlaybackManager implements Playback.Callback {
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
-                case TIMER_COUNT:
+                case TIMER_COUNTDOWN: {
                     PlaybackManager playback = mManager.get();
                     if (playback != null && playback.mPlayback != null && playback.mPlayback.isPlaying()) {
                         if (playback.mTimer <= 0) {
-                            playback.mHandler.removeMessages(TIMER_COUNT);
+                            playback.mHandler.removeMessages(TIMER_COUNTDOWN);
                             playback.mTimer = -1;
                             playback.handlePauseRequest();
                         } else {
                             playback.mTimer -= ONE_SECOND;
                             playback.mServiceCallback.onTimerCount(playback.mTimer);
-                            sendEmptyMessageDelayed(TIMER_COUNT, ONE_SECOND);
+                            sendEmptyMessageDelayed(TIMER_COUNTDOWN, ONE_SECOND);
                         }
                     }
                     break;
+                }
+                case TIMER_TIMING: {
+                    PlaybackManager playback = mManager.get();
+                    if (playback != null && playback.mPlayback != null && playback.mPlayback.isPlaying()) {
+                        Timing timing = playback.mPlayback.getTiming();
+                        if (timing != null) {
+                            long pos = playback.mPlayback.getStartStreamPosition() + playback.mPlayback.getCurrentStreamPosition();
+                            if (timing.end > pos) {
+                                sendEmptyMessageDelayed(TIMER_TIMING, ONE_SECOND);
+                            } else {
+                                playback.onCompletion();
+                            }
+                        }
+                    }
+                    break;
+                }
                 default:
                     break;
             }

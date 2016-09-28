@@ -44,7 +44,7 @@ import static android.media.MediaPlayer.OnSeekCompleteListener;
 /**
  * A class that implements local media playback using {@link MediaPlayer}.
  */
-public class FallbackPlayback implements Playback, AudioManager.OnAudioFocusChangeListener,
+public class FallbackPlayback extends BasePlayback implements Playback, AudioManager.OnAudioFocusChangeListener,
         OnCompletionListener, OnErrorListener, OnPreparedListener, OnSeekCompleteListener {
 
     // The volume we set the media player to when we lose audio focus, but are
@@ -66,7 +66,7 @@ public class FallbackPlayback implements Playback, AudioManager.OnAudioFocusChan
     private boolean mPlayOnFocusGain;
     private Callback mCallback;
     private volatile boolean mAudioNoisyReceiverRegistered;
-    private volatile int mCurrentPosition;
+    private volatile long mCurrentPosition;
     private volatile MediaId mCurrentMediaId;
     private volatile MediaMetadata mMetadata;
 
@@ -122,6 +122,17 @@ public class FallbackPlayback implements Playback, AudioManager.OnAudioFocusChan
     }
 
     @Override
+    public void temporaryStop() {
+        mState = PlaybackStateCompat.STATE_STOPPED;
+        if (mCallback != null) {
+            mCallback.onPlaybackStatusChanged(mState);
+        }
+        if (mMediaPlayer != null)
+            mMediaPlayer.stop();
+        relaxResources(false);
+    }
+
+    @Override
     public void setState(int state) {
         this.mState = state;
     }
@@ -142,26 +153,29 @@ public class FallbackPlayback implements Playback, AudioManager.OnAudioFocusChan
     }
 
     @Override
-    public int getCurrentStreamPosition() {
+    protected long internalGetDuration() {
+        return mMediaPlayer == null ? -1 : mMediaPlayer.getDuration();
+    }
+
+    @Override
+    protected long internalGetCurrentStreamPosition() {
         return mMediaPlayer != null ? mMediaPlayer.getCurrentPosition() : mCurrentPosition;
     }
 
     @Override
     public void updateLastKnownStreamPosition() {
-        if (mMediaPlayer != null) {
-            mCurrentPosition = mMediaPlayer.getCurrentPosition();
-        }
+        mCurrentPosition = getCurrentStreamPosition();
     }
 
     @Override
-    public void play(MediaMetadata metadataCompat) {
+    protected void internalPlay(MediaMetadata metadataCompat) {
         mPlayOnFocusGain = true;
         tryToGetAudioFocus();
         registerAudioNoisyReceiver();
         boolean mediaHasChanged = mCurrentMediaId == null
             || !TextUtils.equals(metadataCompat.getDescription().getMediaId(), mCurrentMediaId.toString());
         if (mediaHasChanged) {
-            mCurrentPosition = 0;
+            mCurrentPosition = getStartStreamPosition();
             mMetadata = metadataCompat;
             mCurrentMediaId = MediaProvider.getInstance().getMediaId(metadataCompat.getDescription().getMediaId());
         }
@@ -213,7 +227,7 @@ public class FallbackPlayback implements Playback, AudioManager.OnAudioFocusChan
         boolean mediaHasChanged = mCurrentMediaId == null
                 || !TextUtils.equals(metadataCompat.getDescription().getMediaId(), mCurrentMediaId.toString());
         if (mediaHasChanged) {
-            mCurrentPosition = 0;
+            mCurrentPosition = getStartStreamPosition();
             mMetadata = metadataCompat;
             mMetadata.setCallback(mCallback);
             mCurrentMediaId = MediaProvider.getInstance().getMediaId(metadataCompat.getDescription().getMediaId());
@@ -246,7 +260,7 @@ public class FallbackPlayback implements Playback, AudioManager.OnAudioFocusChan
     }
 
     @Override
-    public void seekTo(int position) {
+    protected void internalSeekTo(long position) {
         if (mMediaPlayer == null) {
             // If we do not have a current media player, simply update the current position
             mCurrentPosition = position;
@@ -254,7 +268,7 @@ public class FallbackPlayback implements Playback, AudioManager.OnAudioFocusChan
             if (mMediaPlayer.isPlaying()) {
                 mState = PlaybackStateCompat.STATE_BUFFERING;
             }
-            mMediaPlayer.seekTo(position);
+            mMediaPlayer.seekTo((int) position);
             if (mCallback != null) {
                 mCallback.onPlaybackStatusChanged(mState);
             }
@@ -267,7 +281,7 @@ public class FallbackPlayback implements Playback, AudioManager.OnAudioFocusChan
     }
 
     @Override
-    public void setCurrentStreamPosition(int pos) {
+    public void setCurrentStreamPosition(long pos) {
         this.mCurrentPosition = pos;
     }
 
@@ -356,7 +370,7 @@ public class FallbackPlayback implements Playback, AudioManager.OnAudioFocusChan
                         mMediaPlayer.start();
                         mState = PlaybackStateCompat.STATE_PLAYING;
                     } else {
-                        mMediaPlayer.seekTo(mCurrentPosition);
+                        mMediaPlayer.seekTo((int) mCurrentPosition);
                         mState = PlaybackStateCompat.STATE_BUFFERING;
                     }
                 }
@@ -441,7 +455,7 @@ public class FallbackPlayback implements Playback, AudioManager.OnAudioFocusChan
             player.setSurface(mSurface);
 
         if (mMediaPlayer != null && mMetadata != null && mMetadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION) != mMediaPlayer.getDuration()) {
-            mMetadata.setDuration(mMediaPlayer.getDuration());
+            mMetadata.setDuration(getDuration());
             if (mCallback != null)
                 mCallback.onMetadataChanged(mMetadata);
         }
