@@ -23,9 +23,11 @@
     <declare-styleable name="MediaPlayerControlsView">
         <attr name="control_layout" />
         <attr name="bottom" />
-        <attr name="auto_show" format="boolean" />
+        <attr name="auto_hide" format="boolean" />
         <attr name="has_next" format="boolean" />
         <attr name="has_previous" format="boolean" />
+        <attr name="has_rewind" format="boolean" />
+        <attr name="has_fastforward" format="boolean" />
     </declare-styleable>
 
     <declare-styleable name="ButtonBarView">

@@ -32,6 +32,7 @@ public class MediaInterface {
     private MediaControllerCompat.Callback mMediaCallback;
     private MediaPlayerController mPlayerControls;
     private ProgressHandler mHandler = new ProgressHandler(this);
+    private Surface mSurface;
 
     public MediaInterface(FragmentActivity activity, MediaId mediaId, MediaInterfaceCallback callback) {
         mActivity = activity;
@@ -57,11 +58,19 @@ public class MediaInterface {
         return mMediaControls;
     }
 
+    public void autoHide() {
+        mHandler.removeMessages(ProgressHandler.AUTO_HIDE);
+        mHandler.sendEmptyMessageDelayed(ProgressHandler.AUTO_HIDE, 3000);
+    }
+
     public void setSurface(Surface surface) {
         if (mMediaControls != null) {
             Bundle args = new Bundle();
             args.putParcelable(MediaService.EXTRA_SURFACE, surface);
             mMediaControls.getTransportControls().sendCustomAction(MediaService.ACTION_SET_SURFACE, args);
+            mSurface = null;
+        } else {
+            mSurface = surface;
         }
     }
 
@@ -134,6 +143,9 @@ public class MediaInterface {
 
             if (mPlayerControls != null && mPlayerControls.isPlaying())
                 mHandler.start();
+
+            if (mSurface != null)
+                setSurface(mSurface);
         } catch (RemoteException err) {
             LOG.e("Error in onConnected", err);
         }
@@ -209,6 +221,8 @@ public class MediaInterface {
 
         void setTimeTotal(MediaInterface mediaInterface, long total);
 
+        void setVisible(MediaInterface mediaInterface, boolean visible);
+
         boolean isPositionChanging(MediaInterface mediaInterface);
 
         void setPosition(MediaInterface mediaInterface, long max, long position, long secondaryPosition);
@@ -222,6 +236,7 @@ public class MediaInterface {
     public static class ProgressHandler extends Handler {
 
         private static final int SHOW_PROGRESS = 1;
+        private static final int AUTO_HIDE = 2;
         public static final int MAX_PROGRESS = 1000;
 
         private WeakReference<MediaInterface> mMediaInterface;
@@ -233,7 +248,7 @@ public class MediaInterface {
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
-                case SHOW_PROGRESS:
+                case SHOW_PROGRESS: {
                     MediaInterface mediaInterface = mMediaInterface.get();
                     if (mediaInterface != null && mediaInterface.mCallbacks != null) {
                         if (mediaInterface.mCallbacks.isPositionChanging(mediaInterface)) {
@@ -252,6 +267,14 @@ public class MediaInterface {
                             sendEmptyMessageDelayed(SHOW_PROGRESS, PlaybackManager.ONE_SECOND - (position % PlaybackManager.ONE_SECOND));
                     }
                     break;
+                }
+                case AUTO_HIDE: {
+                    MediaInterface mediaInterface = mMediaInterface.get();
+                    if (mediaInterface != null && mediaInterface.mCallbacks != null) {
+                        mediaInterface.mCallbacks.setVisible(mediaInterface, false);
+                    }
+                    break;
+                }
                 default:
                     break;
             }

@@ -54,7 +54,7 @@ public class MediaPlayerControlsView extends FrameLayout {
 
     private MediaInterface mMediaInterface;
     private long mTimer;
-    private boolean mAutoShow;
+    private boolean mAutoHide;
 
     public MediaPlayerControlsView(Context context) {
         super(context);
@@ -78,10 +78,11 @@ public class MediaPlayerControlsView extends FrameLayout {
     }
 
     private void init(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+        setClickable(true);
         final TypedArray a = context.obtainStyledAttributes(attrs,
                 R.styleable.MediaPlayerControlsView, defStyleAttr, defStyleRes);
 
-        mAutoShow = a.getBoolean(R.styleable.MediaPlayerControlsView_auto_show, false);
+        mAutoHide = a.getBoolean(R.styleable.MediaPlayerControlsView_auto_hide, false);
         boolean bottom = a.getBoolean(R.styleable.MediaPlayerControlsView_bottom, false);
 
         int layout = a.getResourceId(R.styleable.MediaPlayerControlsView_control_layout,
@@ -91,6 +92,9 @@ public class MediaPlayerControlsView extends FrameLayout {
 
         boolean hasPrevious = a.getBoolean(R.styleable.MediaPlayerControlsView_has_previous, true);
         boolean hasNext = a.getBoolean(R.styleable.MediaPlayerControlsView_has_next, true);
+
+        boolean hasRewind = a.getBoolean(R.styleable.MediaPlayerControlsView_has_rewind, false);
+        boolean hasFastforward = a.getBoolean(R.styleable.MediaPlayerControlsView_has_fastforward, false);
 
         a.recycle();
 
@@ -111,6 +115,10 @@ public class MediaPlayerControlsView extends FrameLayout {
                         mMediaInterface.getMediaController().getTransportControls().skipToPrevious();
                     else if (v.getId() == R.id.btn_next)
                         mMediaInterface.getMediaController().getTransportControls().skipToNext();
+                    else if (v.getId() == R.id.btn_rewind)
+                        mMediaInterface.getMediaController().getTransportControls().rewind();
+                    else if (v.getId() == R.id.btn_fastforward)
+                        mMediaInterface.getMediaController().getTransportControls().fastForward();
                     else if (v.getId() == R.id.btn_speed)
                         onSpeedSelected(v);
                     else if (v.getId() == R.id.btn_timer)
@@ -118,31 +126,55 @@ public class MediaPlayerControlsView extends FrameLayout {
                 }
             }
         };
-        ImageView previous = (ImageView) findViewById(R.id.btn_previous);
-        ImageView next = (ImageView) findViewById(R.id.btn_next);
 
-        previous.setOnClickListener(listener);
-        previous.setVisibility(hasPrevious ? VISIBLE : GONE);
-        next.setOnClickListener(listener);
-        next.setVisibility(hasNext ? VISIBLE : GONE);
+        view.findViewById(R.id.btn_play).setOnClickListener(listener);
 
-        findViewById(R.id.btn_play).setOnClickListener(listener);
+        ImageView previous = (ImageView) view.findViewById(R.id.btn_previous);
+        ImageView next = (ImageView) view.findViewById(R.id.btn_next);
+        View rewind = view.findViewById(R.id.btn_rewind);
+        View fastforward = view.findViewById(R.id.btn_fastforward);
 
-        onHandleState(next, previous, mMediaInterface == null || mMediaInterface.getMediaController() == null
-                                      ? null
-                                      : mMediaInterface.getMediaController().getPlaybackState());
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            TextView speed = ((TextView) findViewById(R.id.btn_speed));
-            speed.setText(ResourceProvider.getInstance().getSelectedSpeed());
-            speed.setOnClickListener(listener);
-            speed.setVisibility(View.VISIBLE);
-            speed.setText(ResourceProvider.getInstance().getSelectedSpeed());
+        if (previous != null) {
+            previous.setOnClickListener(listener);
+            previous.setVisibility(hasPrevious ? VISIBLE : GONE);
         }
 
-        TextView timer = (TextView) findViewById(R.id.btn_timer);
-        timer.setText(ResourceProvider.getInstance().getString(ResourceProvider.TIMER));
-        timer.setOnClickListener(listener);
+        if (next != null) {
+            next.setOnClickListener(listener);
+            next.setVisibility(hasNext ? VISIBLE : GONE);
+        }
+
+        if (rewind != null) {
+            rewind.setOnClickListener(listener);
+            rewind.setVisibility(hasRewind ? VISIBLE : GONE);
+        }
+
+        if (fastforward != null) {
+            fastforward.setOnClickListener(listener);
+            fastforward.setVisibility(hasFastforward ? VISIBLE : GONE);
+        }
+
+        onHandleState(next, previous,
+                mMediaInterface == null || mMediaInterface.getMediaController() == null
+                ? null
+                : mMediaInterface.getMediaController().getPlaybackState());
+
+        TextView speed = ((TextView) view.findViewById(R.id.btn_speed));
+        if (speed != null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                speed.setText(ResourceProvider.getInstance().getSelectedSpeed());
+                speed.setOnClickListener(listener);
+                speed.setVisibility(View.VISIBLE);
+            } else {
+                speed.setVisibility(View.GONE);
+            }
+        }
+
+        TextView timer = (TextView) view.findViewById(R.id.btn_timer);
+        if (timer != null) {
+            timer.setText(ResourceProvider.getInstance().getString(ResourceProvider.TIMER));
+            timer.setOnClickListener(listener);
+        }
     }
 
     protected void onSpeedSelected(View v) {
@@ -266,6 +298,8 @@ public class MediaPlayerControlsView extends FrameLayout {
 
     public void show() {
         getChildAt(0).setVisibility(VISIBLE);
+        if (mMediaInterface != null)
+            mMediaInterface.autoHide();
     }
 
     public void hide() {
@@ -287,21 +321,33 @@ public class MediaPlayerControlsView extends FrameLayout {
         return mMediaInterface;
     }
 
+    public MediaInterface newMediaInterface(FragmentActivity appCompatActivity, MediaId id, MediaInterface.MediaInterfaceCallback callback) {
+        mMediaInterface = new MediaInterface(appCompatActivity, id, callback);
+        return mMediaInterface;
+    }
+
+    public MediaInterface newMediaInterface(FragmentActivity appCompatActivity, MediaInterface.MediaInterfaceCallback callback) {
+        mMediaInterface = new MediaInterface(appCompatActivity, null, callback);
+        return mMediaInterface;
+    }
+
     private void onHandleState(ImageView next, ImageView previous, PlaybackStateCompat state) {
         int enabled = ViewUtil.getThemeAttrColor(getContext(), android.R.attr.textColorPrimary);
         int disabled = ViewUtil.getThemeAttrColor(getContext(), android.R.attr.textColorSecondary);
-        next.setColorFilter(state != null && (state.getActions() & PlaybackStateCompat.ACTION_SKIP_TO_NEXT)
-                == PlaybackStateCompat.ACTION_SKIP_TO_NEXT
-                            ? enabled
-                            : disabled, PorterDuff.Mode.SRC_ATOP);
-        previous.setColorFilter(state != null && (state.getActions() & PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS)
-                == PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
+        if (next != null)
+            next.setColorFilter(state != null && (state.getActions() & PlaybackStateCompat.ACTION_SKIP_TO_NEXT)
+                    == PlaybackStateCompat.ACTION_SKIP_TO_NEXT
                                 ? enabled
                                 : disabled, PorterDuff.Mode.SRC_ATOP);
+        if (previous != null)
+            previous.setColorFilter(state != null && (state.getActions() & PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS)
+                    == PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
+                                    ? enabled
+                                    : disabled, PorterDuff.Mode.SRC_ATOP);
     }
 
     public MediaInterface.MediaInterfaceCallback newMediaInterfaceCallback(final OnConnectedListener listener) {
-        return new DefaultCallback(this, listener, mAutoShow);
+        return new DefaultCallback(this, listener, mAutoHide);
     }
 
     public void setMediaInterface(MediaInterface mediaInterface) {
@@ -332,11 +378,11 @@ public class MediaPlayerControlsView extends FrameLayout {
 
         private MediaPlayerControlsView mView;
         private OnConnectedListener mConnectedListener;
-        private boolean mAutoShow;
+        private boolean mAutoHide;
 
-        public DefaultCallback(MediaPlayerControlsView view, OnConnectedListener listener, boolean autoShow) {
+        public DefaultCallback(MediaPlayerControlsView view, OnConnectedListener listener, boolean autoHide) {
             mView = view;
-            mAutoShow = autoShow;
+            mAutoHide = autoHide;
             mConnectedListener = listener;
             play = (ImageView) view.findViewById(R.id.btn_play);
             loading = view.findViewById(R.id.media_loading);
@@ -401,14 +447,16 @@ public class MediaPlayerControlsView extends FrameLayout {
 
         @Override
         public void onLoading(MediaPlayerController controller) {
-            loading.setVisibility(View.VISIBLE);
+            if (loading != null)
+                loading.setVisibility(View.VISIBLE);
             if (mHandler != null)
                 mHandler.start();
         }
 
         @Override
         public void onLoaded(MediaPlayerController controller) {
-            loading.setVisibility(View.GONE);
+            if (loading != null)
+                loading.setVisibility(View.GONE);
         }
 
         @Override
@@ -416,9 +464,6 @@ public class MediaPlayerControlsView extends FrameLayout {
             play.setActivated(true);
             if (mHandler != null)
                 mHandler.start();
-            if (mAutoShow && mView != null) {
-                mView.show();
-            }
         }
 
         @Override
@@ -431,9 +476,6 @@ public class MediaPlayerControlsView extends FrameLayout {
             play.setActivated(false);
             if (mHandler != null)
                 mHandler.stop();
-            if (mAutoShow && mView != null) {
-                mView.hide();
-            }
         }
 
         @Override
@@ -451,7 +493,8 @@ public class MediaPlayerControlsView extends FrameLayout {
 
         @Override
         public void onSpeedChanged(nuclei.media.MediaInterface mediaInterface, float s) {
-            speed.setText(ResourceProvider.getInstance().getSelectedSpeed());
+            if (speed != null)
+                speed.setText(ResourceProvider.getInstance().getSelectedSpeed());
         }
 
         @Override
@@ -463,12 +506,24 @@ public class MediaPlayerControlsView extends FrameLayout {
 
         @Override
         public void setTimePlayed(nuclei.media.MediaInterface mediaInterface, long played) {
-            timePlayed.setText(stringForTime(played));
+            if (timePlayed != null)
+                timePlayed.setText(stringForTime(played));
         }
 
         @Override
         public void setTimeTotal(nuclei.media.MediaInterface mediaInterface, long remaining) {
-            timeTotal.setText(stringForTime(remaining));
+            if (timeTotal != null)
+                timeTotal.setText(stringForTime(remaining));
+        }
+
+        @Override
+        public void setVisible(MediaInterface mediaInterface, boolean visible) {
+            if (mView != null) {
+                if (visible)
+                    mView.show();
+                else
+                    mView.hide();
+            }
         }
 
         @Override
