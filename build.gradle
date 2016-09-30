@@ -35,4 +35,9 @@ ext {
     exoPlayerVersion = "r2.0.0"
 
     okHttpVersion = "3.4.1"
+
+    // Android Test Support Libraries
+    espressoRunnerVersion = "0.5"
+    espressoRulesVersion = "0.5"
+    espressoVersion = "2.2.2"
 }

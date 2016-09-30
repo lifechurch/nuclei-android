@@ -1,0 +1,22 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="io.nuclei">
+
+    <application android:theme="@style/Theme.AppCompat.Light">
+
+        <meta-data android:name="io.nuclei.sharing.authority" android:value="na" />
+
+        <activity android:name="nuclei.ui.TestSendActivity" android:label="Share to ME">
+            <intent-filter>
+                <category android:name="android.intent.category.DEFAULT" />
+                <action android:name="android.intent.action.SEND" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="nuclei.ui.TestShareActivity"
+            android:label="@string/share_via" />
+
+    </application>
+
+</manifest>

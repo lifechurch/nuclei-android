@@ -2,6 +2,14 @@ apply plugin: 'com.android.library'
 
 def versionId = "2.0.0-beta1"
 
+def isTest = false
+List<String> names = gradle.startParameter.taskNames
+for (String name : names) {
+    if (name.toLowerCase().contains("test")) {
+        isTest = true;
+    }
+}
+
 android {
     compileSdkVersion rootProject.ext.compileSdkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -11,9 +19,16 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+
+        multiDexEnabled = isTest
+
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
+        debug {
+
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
@@ -53,6 +68,34 @@ dependencies {
     // okhttp3
     compile 'com.squareup.okhttp3:okhttp:' + rootProject.ext.okHttpVersion
     compile 'com.squareup.okhttp3:okhttp-urlconnection:' + rootProject.ext.okHttpVersion
+
+    // Testing-only dependencies
+    androidTestCompile ("com.android.support.test:runner:$rootProject.ext.espressoRunnerVersion") {
+        exclude group: "com.android.support", module: "support-annotations"
+    }
+    androidTestCompile ("com.android.support.test:rules:$rootProject.ext.espressoRulesVersion") {
+        exclude group: "com.android.support", module: "support-annotations"
+    }
+    androidTestCompile ("com.android.support.test.espresso:espresso-core:$rootProject.ext.espressoVersion") {
+        exclude group: "com.android.support", module: "support-annotations"
+    }
+    androidTestCompile ("com.android.support.test.espresso:espresso-intents:$rootProject.ext.espressoVersion") {
+        exclude group: "com.android.support", module: "support-annotations"
+    }
+    androidTestCompile ("com.android.support.test.espresso:espresso-contrib:$rootProject.ext.espressoVersion") {
+        exclude group: "com.android.support", module: "appcompat"
+        exclude group: "com.android.support", module: "appcompat-v7"
+        exclude group: "com.android.support", module: "design"
+        exclude group: "com.android.support", module: "support-v4"
+        exclude group: "com.android.support", module: "support-annotations"
+        exclude module: "recyclerview-v7"
+    }
+    androidTestCompile ("com.android.support.test.espresso:espresso-web:$rootProject.ext.espressoVersion") {
+        exclude group: "com.android.support", module: "appcompat"
+        exclude group: "com.android.support", module: "appcompat-v7"
+        exclude group: "com.android.support", module: "support-annotations"
+    }
+
 }
 
 ext {
@@ -81,3 +124,5 @@ ext {
 
 apply from: '../bintray.gradle'
 apply from: '../maven.gradle'
+
+System.out.println("********** MULTIDEX: " + android.defaultConfig.multiDexEnabled)

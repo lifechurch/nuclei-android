@@ -78,6 +78,7 @@ public final class TaskPool implements Handler.Callback {
         BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>(128);
         taskRunnablePool = new Pools.SimplePool<>(maxThreads);
         taskQueues = new Pools.SimplePool<>(10);
+        maxThreads = Math.max(CORE_POOL_SIZE, maxThreads);
         poolExecutor = new ThreadPoolExecutor(CORE_POOL_SIZE, maxThreads, 1,
                 TimeUnit.SECONDS, workQueue, new ThreadFactory() {
             private final AtomicInteger mCount = new AtomicInteger(1);
