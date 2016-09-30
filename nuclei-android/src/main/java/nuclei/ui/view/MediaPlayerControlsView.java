@@ -414,13 +414,14 @@ public class MediaPlayerControlsView extends FrameLayout {
                 if (!fromuser) {
                     return;
                 }
-                if (mView.mMediaInterface == null)
+                if (mView == null || mView.mMediaInterface == null)
                     return;
                 MediaInterface mediaInterface = mView.mMediaInterface;
                 MediaPlayerController controller = mediaInterface.getPlayerController();
                 long duration = controller.getDuration();
                 long newPosition = (duration * progress) / PlaybackManager.ONE_SECOND;
                 controller.seekTo((int) newPosition);
+                newPosition = PlaybackManager.ONE_SECOND * newPosition / duration;
                 setPosition(mediaInterface, MediaInterface.ProgressHandler.MAX_PROGRESS, newPosition, -1);
             }
 
@@ -534,6 +535,7 @@ public class MediaPlayerControlsView extends FrameLayout {
         @Override
         public void setPosition(nuclei.media.MediaInterface mediaInterface, long max, long position, long secondaryPosition) {
             if (seekBar != null) {
+                seekBar.setMax((int) max);
                 seekBar.setProgress((int) position);
                 if (secondaryPosition != -1)
                     seekBar.setSecondaryProgress((int) secondaryPosition);

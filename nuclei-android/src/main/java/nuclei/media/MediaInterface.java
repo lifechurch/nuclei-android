@@ -250,10 +250,9 @@ public class MediaInterface {
             switch (msg.what) {
                 case SHOW_PROGRESS: {
                     MediaInterface mediaInterface = mMediaInterface.get();
-                    if (mediaInterface != null && mediaInterface.mCallbacks != null) {
-                        if (mediaInterface.mCallbacks.isPositionChanging(mediaInterface)) {
-                            return;
-                        }
+                    if (mediaInterface != null
+                            && mediaInterface.mCallbacks != null
+                            && !mediaInterface.mCallbacks.isPositionChanging(mediaInterface)) {
                         long position = mediaInterface.getPlayerController().getCurrentPosition();
                         long duration = mediaInterface.getPlayerController().getDuration();
                         long currentPos = 0;
@@ -271,7 +270,10 @@ public class MediaInterface {
                 case AUTO_HIDE: {
                     MediaInterface mediaInterface = mMediaInterface.get();
                     if (mediaInterface != null && mediaInterface.mCallbacks != null) {
-                        mediaInterface.mCallbacks.setVisible(mediaInterface, false);
+                        if (mediaInterface.mCallbacks.isPositionChanging(mediaInterface))
+                            sendEmptyMessageDelayed(AUTO_HIDE, 3000);
+                        else
+                            mediaInterface.mCallbacks.setVisible(mediaInterface, false);
                     }
                     break;
                 }
