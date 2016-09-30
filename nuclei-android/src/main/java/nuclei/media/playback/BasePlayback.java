@@ -18,6 +18,8 @@ public abstract class BasePlayback implements Playback {
             String id = metadata.getMediaId();
             MediaId currentId = getCurrentMediaId();
             setTiming(timing, currentId == null || !id.equals(currentId.toString()));
+        } else {
+            setTiming(null, false);
         }
         internalPlay(metadata);
     }
