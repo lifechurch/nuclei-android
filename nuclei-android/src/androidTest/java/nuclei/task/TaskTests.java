@@ -20,6 +20,7 @@ import android.content.Context;
 import android.os.Looper;
 import android.test.ApplicationTestCase;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TaskTests extends ApplicationTestCase<Application> {
@@ -34,7 +35,31 @@ public class TaskTests extends ApplicationTestCase<Application> {
     protected void setUp() throws Exception {
         createApplication();
         ContextHandle.initialize(getApplication());
+        Tasks.initialize(getApplication());
         super.setUp();
+    }
+
+    public void testChain() {
+        final AtomicInteger result = new AtomicInteger();
+        Tasks.execute(new TestChainTaskRoot())
+                .continueWith(new TestChainTask())
+                .continueWith(new TestChainTask())
+                .addCallback(new Result.CallbackAdapter<Integer>() {
+                    @Override
+                    public void onResult(Integer count) {
+                        assertTrue(Looper.getMainLooper() == Looper.myLooper());
+                        synchronized (result) {
+                            result.set(count);
+                            result.notify();
+                        }
+                    }
+                });
+        synchronized (result) {
+            try {
+                result.wait(30000);
+            } catch (InterruptedException ignore) {}
+        }
+        assertEquals(3, result.get());
     }
 
     public void testPool() {
@@ -46,6 +71,7 @@ public class TaskTests extends ApplicationTestCase<Application> {
         Result.Callback<String> callback = new Result.CallbackAdapter<String>() {
             @Override
             public void onResult(String type) {
+                assertTrue(Looper.getMainLooper() == Looper.myLooper());
                 tasks.decrementAndGet();
                 synchronized (count) {
                     count.notify();
@@ -75,6 +101,7 @@ public class TaskTests extends ApplicationTestCase<Application> {
 
         @Override
         public void run(Context context) {
+            assertTrue(Looper.getMainLooper() != Looper.myLooper());
             assertEquals(1, count.incrementAndGet());
             try {
                 synchronized (this) {
@@ -83,6 +110,37 @@ public class TaskTests extends ApplicationTestCase<Application> {
             } catch (Exception err) {}
             assertEquals(0, count.decrementAndGet());
             onComplete("done!");
+        }
+
+    }
+
+    class TestChainTaskRoot extends ChainedTask<Integer, Integer> {
+
+        @Override
+        public String getId() {
+            return "ChainedRootTaskId";
+        }
+
+        @Override
+        public void run(Context context, Result<Integer> previousResult) {
+            assertTrue(Looper.getMainLooper() != Looper.myLooper());
+            onComplete(1);
+        }
+
+    }
+
+    class TestChainTask extends ChainedTask<Integer, Integer> {
+
+        @Override
+        public String getId() {
+            return "ChainedTaskId";
+        }
+
+        @Override
+        public void run(Context context, Result<Integer> previousResult) {
+            assertTrue(Looper.getMainLooper() != Looper.myLooper());
+            Integer count = previousResult.get();
+            onComplete(count + 1);
         }
 
     }

@@ -80,6 +80,8 @@ public abstract class Task<T> implements Runnable {
                         throw new IllegalStateException("onComplete and onException not called, one is required");
                 } catch (Exception err) {
                     onException(err);
+                } catch (Throwable err) {
+                    onException(new Exception(err));
                 }
             } else {
                 LOG.i("Context Handle is released, not running task");
@@ -115,7 +117,7 @@ public abstract class Task<T> implements Runnable {
      *
      * @param context The context from the handle
      */
-    public abstract void run(Context context);
+    public abstract void run(Context context) throws Exception;
 
     public boolean isInterrupted() {
         return interrupted.get();
@@ -212,9 +214,12 @@ public abstract class Task<T> implements Runnable {
         } else {
             LOG.i("ContextHandle is released, there may not be any results to deliver");
         }
-        if (taskException != null)
-            result.onException(taskException);
-        else
+        if (taskException != null) {
+            if (taskResult != null)
+                result.onExceptionWithResult(taskException, taskResult, fromCache);
+            else
+                result.onException(taskException);
+        } else
             result.onResult(taskResult, fromCache);
         onDetach();
         onResultDelivered();
@@ -259,9 +264,15 @@ public abstract class Task<T> implements Runnable {
             handle = ContextHandle.getApplicationHandle();
         this.pool = pool;
         this.handle = handle;
-        this.result = new Result<>();
+        if (this.result == null)
+            this.result = new Result<>();
         if (handle != null)
             this.result.withHandle(handle);
+        return this.result;
+    }
+
+    final Result<T> deferredAttach() {
+        this.result = new Result<>();
         return this.result;
     }
 

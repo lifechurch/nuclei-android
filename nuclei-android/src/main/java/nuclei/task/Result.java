@@ -32,8 +32,10 @@ public class Result<T> {
     T mData;
     Exception mException;
     boolean mDataSet;
+    boolean mFromCache;
     Object mObjectHandle;
     ContextHandle mContextHandle;
+    Result<T> mForwardTo;
 
     public Result() {
     }
@@ -41,6 +43,29 @@ public class Result<T> {
     public Result(T data) {
         mData = data;
         mDataSet = true;
+    }
+
+    public Result<T> forward(Result<T> forwardTo) {
+        mForwardTo = forwardTo;
+        return this;
+    }
+
+    /**
+     * Returns true if the result is from a cache
+     *
+     * @return
+     */
+    public boolean isFromCache() {
+        return mFromCache;
+    }
+
+    /**
+     * Get the result, but ignore errors
+     *
+     * @return The result
+     */
+    public T uncheckedGet() {
+        return mData;
     }
 
     /**
@@ -68,6 +93,10 @@ public class Result<T> {
         return get();
     }
 
+    public Exception getException() {
+        return mException;
+    }
+
     /**
      * Return true if the result is complete
      *
@@ -75,6 +104,94 @@ public class Result<T> {
      */
     public boolean isComplete() {
         return mDataSet;
+    }
+
+    public boolean isSuccessful() {
+        return mDataSet && mException == null;
+    }
+
+    public <C> Result<C> continueWith(final ChainedTask<C, T> task) {
+        return continueWith(task, task, Tasks.get());
+    }
+
+    public <C> Result<C> continueWith(final ChainedTask<C, T> task, final ChainedTask<C, T> errorTask) {
+        return continueWith(task, errorTask, Tasks.get());
+    }
+
+    public <C> Result<C> continueWith(final ChainedTask<C, T> task, final TaskPool taskPool) {
+        return continueWith(task, task, taskPool);
+    }
+
+    public <C> Result<C> continueWith(final ChainedTask<C, T> task, final ChainedTask<C, T> errorTask, final TaskPool taskPool) {
+        final Result<C> nextResult = new Result<>();
+        addCallback(new CallbackAdapter<T>() {
+            @Override
+            public void onResult(T result) {
+                if (task != null) {
+                    task.chainedResult = Result.this;
+                    taskPool.execute(task).forward(nextResult);
+                } else {
+                    try {
+                        nextResult.onResult((C) result);
+                    } catch (ClassCastException err) {
+                        nextResult.onException(err);
+                    }
+                }
+            }
+
+            @Override
+            public void onException(Exception err) {
+                if (errorTask != null) {
+                    errorTask.chainedResult = Result.this;
+                    taskPool.execute(errorTask).forward(nextResult);
+                } else {
+                    nextResult.onException(err);
+                }
+            }
+        });
+        return nextResult;
+    }
+
+    public <C> Result<C> continueWith(final ContextHandle handle, final ChainedTask<C, T> task) {
+        return continueWith(handle, task, task, Tasks.get());
+    }
+
+    public <C> Result<C> continueWith(final ContextHandle handle, final ChainedTask<C, T> task, final ChainedTask<C, T> errorTask) {
+        return continueWith(handle, task, errorTask, Tasks.get());
+    }
+
+    public <C> Result<C> continueWith(final ContextHandle handle, final ChainedTask<C, T> task, final TaskPool taskPool) {
+        return continueWith(handle, task, task, taskPool);
+    }
+
+    public <C> Result<C> continueWith(final ContextHandle handle, final ChainedTask<C, T> task, final ChainedTask<C, T> errorTask, final TaskPool taskPool) {
+        final Result<C> nextResult = new Result<>();
+        addCallback(new CallbackAdapter<T>() {
+            @Override
+            public void onResult(T result) {
+                if (task != null) {
+                    task.chainedResult = Result.this;
+                    taskPool.execute(handle, task).forward(nextResult);
+                } else {
+                    try {
+                        nextResult.onResult((C) result);
+                    } catch (ClassCastException err) {
+                        nextResult.onException(err);
+                    }
+                }
+            }
+
+            @Override
+            public void onException(Exception err) {
+                if (errorTask != null) {
+                    errorTask.chainedResult = Result.this;
+                    taskPool.execute(handle, errorTask).forward(nextResult);
+                } else {
+                    nextResult.onException(err);
+                }
+            }
+        });
+        return nextResult;
     }
 
     /**
@@ -97,6 +214,7 @@ public class Result<T> {
     public Result<T> addCallback(Callback<T> callback, Object handle) {
         synchronized (this) {
             if (mDataSet) {
+                callback.setResult(this);
                 if (mException != null)
                     callback.onException(mException, handle);
                 else
@@ -131,8 +249,10 @@ public class Result<T> {
                 throw new IllegalStateException("Data already set");
             mData = data;
             mDataSet = true;
+            mFromCache = fromCache;
             boolean released = mContextHandle != null && mContextHandle.get() == null;
             for (Callback<T> callback : mCallbacks) {
+                callback.setResult(this);
                 if (released) {
                     callback.onContextReleased(data, mObjectHandle);
                 } else {
@@ -146,6 +266,8 @@ public class Result<T> {
             mCallbacks.clear();
             notifyAll();
         }
+        if (mForwardTo != null)
+            mForwardTo.onResult(data, fromCache);
     }
 
     /**
@@ -154,13 +276,20 @@ public class Result<T> {
      * @param err
      */
     public void onException(Exception err) {
+        onExceptionWithResult(err, null, false);
+    }
+
+    public void onExceptionWithResult(Exception err, T result, boolean fromCache) {
         synchronized (this) {
             if (mDataSet)
                 throw new IllegalStateException("Data already set");
+            mData = result;
+            mFromCache = fromCache;
             mDataSet = true;
             mException = err;
             boolean released = mContextHandle != null && mContextHandle.get() == null;
             for (Callback<T> callback : mCallbacks) {
+                callback.setResult(this);
                 if (released)
                     callback.onContextReleased(mException, mObjectHandle);
                 else
@@ -170,6 +299,8 @@ public class Result<T> {
             mCallbacks.clear();
             notifyAll();
         }
+        if (mForwardTo != null)
+            mForwardTo.onExceptionWithResult(err, result, fromCache);
     }
 
     /**
@@ -212,19 +343,23 @@ public class Result<T> {
      */
     public interface Callback<T> {
 
-        void onResult(T type);
+        Result<T> getResult();
 
-        void onResult(T type, Object handle);
+        void setResult(Result<T> result);
 
-        void onCacheResult(T type);
+        void onResult(T result);
 
-        void onCacheResult(T type, Object handle);
+        void onResult(T result, Object handle);
+
+        void onCacheResult(T result);
+
+        void onCacheResult(T result, Object handle);
 
         void onException(Exception err);
 
         void onException(Exception err, Object handle);
 
-        void onContextReleased(T type, Object handle);
+        void onContextReleased(T result, Object handle);
 
         void onContextReleased(Exception err, Object handle);
 
@@ -239,23 +374,35 @@ public class Result<T> {
 
         static final String TAG = CallbackAdapter.class.getSimpleName();
 
+        private Result<T> mResult;
+
         @Override
-        public void onCacheResult(T type) {
-            onResult(type);
+        public Result<T> getResult() {
+            return mResult;
         }
 
         @Override
-        public void onCacheResult(T type, Object handle) {
-            onCacheResult(type);
+        public void setResult(Result<T> result) {
+            mResult = result;
         }
 
         @Override
-        public void onResult(T type) {
+        public void onCacheResult(T result) {
+            onResult(result);
         }
 
         @Override
-        public void onResult(T type, Object handle) {
-            onResult(type);
+        public void onCacheResult(T result, Object handle) {
+            onCacheResult(result);
+        }
+
+        @Override
+        public void onResult(T result) {
+        }
+
+        @Override
+        public void onResult(T result, Object handle) {
+            onResult(result);
         }
 
         @Override
@@ -269,7 +416,7 @@ public class Result<T> {
         }
 
         @Override
-        public void onContextReleased(T type, Object handle) {
+        public void onContextReleased(T result, Object handle) {
         }
 
         @Override

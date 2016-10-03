@@ -19,6 +19,10 @@ public final class Tasks {
         sDefault = TaskPool.newBuilder(TaskPool.DEFAULT_POOL).build();
     }
 
+    public static TaskPool get() {
+        return sDefault;
+    }
+
     public static TaskPool get(String name) {
         return TaskPool.TASK_POOLS.get(name);
     }
