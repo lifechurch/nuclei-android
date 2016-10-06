@@ -147,9 +147,20 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
         return true;
     }
 
+    private boolean isMediaPlayerPlaying() {
+        return mMediaPlayer != null && mMediaPlayer.isPlaying();
+    }
+
     @Override
     public boolean isPlaying() {
-        return mPlayOnFocusGain || (mMediaPlayer != null && mMediaPlayer.isPlaying());
+        return mPlayOnFocusGain || isStatePlaying();
+    }
+
+    private boolean isStatePlaying() {
+        return (isMediaPlayerPlaying()
+                || mState == PlaybackStateCompat.STATE_PLAYING
+                || mState == PlaybackStateCompat.STATE_BUFFERING
+                || mState == PlaybackStateCompat.STATE_CONNECTING);
     }
 
     @Override

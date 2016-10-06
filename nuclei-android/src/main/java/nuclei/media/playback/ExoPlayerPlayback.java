@@ -207,10 +207,14 @@ public class ExoPlayerPlayback extends BasePlayback
 
     @Override
     public boolean isPlaying() {
-        return mPlayOnFocusGain || (isMediaPlayerPlaying()
+        return mPlayOnFocusGain || isStatePlaying();
+    }
+
+    private boolean isStatePlaying() {
+        return isMediaPlayerPlaying()
                 || mState == PlaybackStateCompat.STATE_PLAYING
                 || mState == PlaybackStateCompat.STATE_BUFFERING
-                || mState == PlaybackStateCompat.STATE_CONNECTING);
+                || mState == PlaybackStateCompat.STATE_CONNECTING;
     }
 
     @Override
@@ -304,7 +308,8 @@ public class ExoPlayerPlayback extends BasePlayback
     @Override
     public void pause() {
         LOG.d("pause");
-        if (mState == PlaybackStateCompat.STATE_PLAYING || mState == PlaybackStateCompat.STATE_BUFFERING) {
+        mPlayWhenReady = false;
+        if (isPlaying()) {
             // Pause media player and cancel the 'foreground service' state.
             if (isMediaPlayerPlaying()) {
                 mCurrentPosition = getCurrentStreamPosition();
@@ -413,7 +418,7 @@ public class ExoPlayerPlayback extends BasePlayback
             LOG.d("configMediaPlayerState. mAudioFocus=" + mAudioFocus);
         if (mAudioFocus == AUDIO_NO_FOCUS_NO_DUCK) {
             // If we don't have audio focus and can't duck, we have to pause,
-            if (mState == PlaybackStateCompat.STATE_PLAYING) {
+            if (isPlaying()) {
                 pause();
             }
         } else {  // we have audio focus:
@@ -427,7 +432,7 @@ public class ExoPlayerPlayback extends BasePlayback
                 } // else do something for remote client.
             }
             // If we were playing when we lost focus, we need to resume playing.
-            if (mPlayOnFocusGain) {
+            if (mPlayOnFocusGain && mPlayWhenReady) {
                 if (!isMediaPlayerPlaying()) {
                     if (LOG.isLoggable(Log.INFO))
                         LOG.d("configMediaPlayerState startMediaPlayer. seeking to " + mCurrentPosition);
