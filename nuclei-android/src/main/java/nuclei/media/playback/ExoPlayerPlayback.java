@@ -248,7 +248,11 @@ public class ExoPlayerPlayback extends BasePlayback
                 mWifiLock.acquire();
             configMediaPlayerState(false, true);
         } else {
-            mState = PlaybackStateCompat.STATE_STOPPED;
+            mState = mMediaPlayer != null
+                    ? mState == PlaybackStateCompat.STATE_STOPPED
+                        ? PlaybackStateCompat.STATE_STOPPED
+                        : PlaybackStateCompat.STATE_PAUSED
+                    : PlaybackStateCompat.STATE_STOPPED;
             relaxResources(false); // release everything except MediaPlayer
             setTrack(metadataCompat);
         }
@@ -283,7 +287,8 @@ public class ExoPlayerPlayback extends BasePlayback
             LOG.i("setTrack=" + source + ", type=" + type);
         createMediaPlayer(source, type);
 
-        mState = PlaybackStateCompat.STATE_BUFFERING;
+        if (mPlayWhenReady)
+            mState = PlaybackStateCompat.STATE_BUFFERING;
 
         // If we are streaming from the internet, we want to hold a
         // Wifi lock, which prevents the Wifi radio from going to

@@ -53,7 +53,6 @@ public class MediaPlayerController implements MediaController.MediaPlayerControl
         if (mMediaControls != null) {
             if (mCallbacks != null) {
                 mCallbacks.onLoading(this);
-                mCallbacks.onPlaying(this);
             }
             String currentMediaId = null;
             MediaMetadataCompat metadataCompat = mMediaControls.getMetadata();
