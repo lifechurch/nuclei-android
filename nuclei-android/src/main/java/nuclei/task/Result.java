@@ -46,7 +46,11 @@ public class Result<T> {
     }
 
     public Result<T> forward(Result<T> forwardTo) {
-        mForwardTo = forwardTo;
+        synchronized (this) {
+            mForwardTo = forwardTo;
+            if (mDataSet)
+                mForwardTo.onResult(mData, mFromCache);
+        }
         return this;
     }
 
@@ -266,8 +270,10 @@ public class Result<T> {
             mCallbacks.clear();
             notifyAll();
         }
-        if (mForwardTo != null)
-            mForwardTo.onResult(data, fromCache);
+        synchronized (this) {
+            if (mForwardTo != null)
+                mForwardTo.onResult(data, fromCache);
+        }
     }
 
     /**
@@ -299,8 +305,10 @@ public class Result<T> {
             mCallbacks.clear();
             notifyAll();
         }
-        if (mForwardTo != null)
-            mForwardTo.onExceptionWithResult(err, result, fromCache);
+        synchronized (this) {
+            if (mForwardTo != null)
+                mForwardTo.onExceptionWithResult(err, result, fromCache);
+        }
     }
 
     /**
