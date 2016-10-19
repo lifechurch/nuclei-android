@@ -263,7 +263,7 @@ public class ExoPlayerPlayback extends BasePlayback
         boolean mediaHasChanged = mCurrentMediaId == null
                 || !TextUtils.equals(metadataCompat.getDescription().getMediaId(), mCurrentMediaId.toString());
         if (mediaHasChanged) {
-            pause();
+            stop(true);
 
             mCurrentPosition = getStartStreamPosition();
             mMediaMetadata = metadataCompat;
@@ -274,8 +274,6 @@ public class ExoPlayerPlayback extends BasePlayback
                 mCallback.onMetadataChanged(mMediaMetadata);
 
             mPlayWhenReady = false;
-            mState = PlaybackStateCompat.STATE_PAUSED;
-            relaxResources(false); // release everything except MediaPlayer
             setTrack(metadataCompat);
         }
     }

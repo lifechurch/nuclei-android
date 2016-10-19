@@ -25,6 +25,7 @@ import java.net.URL;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import nuclei.logs.Logs;
 import nuclei.task.ContextHandle;
 import nuclei.task.Result;
 import nuclei.task.cache.SimpleCache;
@@ -39,11 +40,13 @@ import okhttp3.OkUrlFactory;
  */
 public final class Http {
 
-    static final long MAX_CACHE_SIZE = 10 * 1024 * 1024;
-    static OkHttpClient sClient;
+    private static final nuclei.logs.Log LOG = Logs.newLog(Http.class);
+
+    private static final long MAX_CACHE_SIZE = 10 * 1024 * 1024;
+    private static OkHttpClient sClient;
     static SimpleCache sCache;
-    static OkUrlFactory sUrlFactory;
-    static TaskPool sHttpPool;
+    private static OkUrlFactory sUrlFactory;
+    private static TaskPool sHttpPool;
 
     private Http() {
     }
@@ -67,8 +70,9 @@ public final class Http {
         OkUrlFactory factory = new OkUrlFactory(client);
         try {
             URL.setURLStreamHandlerFactory(factory);
-        } catch (Error err) {
-            Log.e("NeuronHttp", "Error setting stream handler", err);
+        } catch (Throwable err) {
+            if (!"factory already defined".equals(err.getMessage()))
+                LOG.i("Error setting stream handler", err);
         }
         SimpleCache cache = new SimpleCache(new File(application.getCacheDir(), "neuron-object"), MAX_CACHE_SIZE);
         initialize(application, client, cache, factory, builder);

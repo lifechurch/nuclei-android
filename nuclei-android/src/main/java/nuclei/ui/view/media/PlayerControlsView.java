@@ -13,17 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nuclei.ui.view;
+package nuclei.ui.view.media;
 
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.TypedArray;
-import android.graphics.PorterDuff;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
-import android.support.v4.media.MediaMetadataCompat;
-import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -32,24 +31,21 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.SeekBar;
 import android.widget.TextView;
 
 import java.util.Arrays;
-import java.util.Formatter;
-import java.util.Locale;
 
 import io.nuclei.R;
 import nuclei.media.MediaId;
 import nuclei.media.MediaInterface;
-import nuclei.media.MediaPlayerController;
 import nuclei.media.MediaProvider;
 import nuclei.media.MediaService;
 import nuclei.media.ResourceProvider;
 import nuclei.media.playback.PlaybackManager;
 import nuclei.ui.util.ViewUtil;
+import nuclei.ui.view.PopupMenu;
 
-public class MediaPlayerControlsView extends FrameLayout {
+public class PlayerControlsView extends FrameLayout {
 
     private static final int POS_OFF = 1;
     private static final int POS_FIVE_MIN = 2;
@@ -67,27 +63,27 @@ public class MediaPlayerControlsView extends FrameLayout {
     private static final int FIFTEEN = 15;
     private static final int THIRTY = 30;
 
-    private MediaInterface mMediaInterface;
-    private long mTimer;
-    private boolean mAutoHide;
+    MediaInterface mMediaInterface;
+    long mTimer;
+    boolean mAutoHide;
 
-    public MediaPlayerControlsView(Context context) {
+    public PlayerControlsView(Context context) {
         super(context);
         init(context, null, 0, 0);
     }
 
-    public MediaPlayerControlsView(Context context, AttributeSet attrs) {
+    public PlayerControlsView(Context context, AttributeSet attrs) {
         super(context, attrs);
         init(context, attrs, 0, 0);
     }
 
-    public MediaPlayerControlsView(Context context, AttributeSet attrs, int defStyleAttr) {
+    public PlayerControlsView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         init(context, attrs, defStyleAttr, 0);
     }
 
     @TargetApi(21)
-    public MediaPlayerControlsView(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+    public PlayerControlsView(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         init(context, attrs, defStyleAttr, defStyleRes);
     }
@@ -95,21 +91,21 @@ public class MediaPlayerControlsView extends FrameLayout {
     private void init(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         setClickable(true);
         final TypedArray a = context.obtainStyledAttributes(attrs,
-                R.styleable.MediaPlayerControlsView, defStyleAttr, defStyleRes);
+                R.styleable.PlayerControlsView, defStyleAttr, defStyleRes);
 
-        mAutoHide = a.getBoolean(R.styleable.MediaPlayerControlsView_auto_hide, false);
-        boolean bottom = a.getBoolean(R.styleable.MediaPlayerControlsView_bottom, false);
+        mAutoHide = a.getBoolean(R.styleable.PlayerControlsView_auto_hide, false);
+        boolean bottom = a.getBoolean(R.styleable.PlayerControlsView_bottom, false);
 
-        int layout = a.getResourceId(R.styleable.MediaPlayerControlsView_control_layout,
+        int layout = a.getResourceId(R.styleable.PlayerControlsView_control_layout,
                 bottom
                 ? R.layout.cyto_view_player_controls_bottom
                 : R.layout.cyto_view_player_controls);
 
-        boolean hasPrevious = a.getBoolean(R.styleable.MediaPlayerControlsView_has_previous, true);
-        boolean hasNext = a.getBoolean(R.styleable.MediaPlayerControlsView_has_next, true);
+        boolean hasPrevious = a.getBoolean(R.styleable.PlayerControlsView_has_previous, true);
+        boolean hasNext = a.getBoolean(R.styleable.PlayerControlsView_has_next, true);
 
-        boolean hasRewind = a.getBoolean(R.styleable.MediaPlayerControlsView_has_rewind, false);
-        boolean hasFastforward = a.getBoolean(R.styleable.MediaPlayerControlsView_has_fastforward, false);
+        boolean hasRewind = a.getBoolean(R.styleable.PlayerControlsView_has_rewind, false);
+        boolean hasFastforward = a.getBoolean(R.styleable.PlayerControlsView_has_fastforward, false);
 
         a.recycle();
 
@@ -169,10 +165,7 @@ public class MediaPlayerControlsView extends FrameLayout {
             fastforward.setVisibility(hasFastforward ? VISIBLE : GONE);
         }
 
-        onHandleState(next, previous,
-                mMediaInterface == null || mMediaInterface.getMediaController() == null
-                ? null
-                : mMediaInterface.getMediaController().getPlaybackState());
+        DefaultCallback.onHandleState(this, next, previous, null);
 
         TextView speed = ((TextView) view.findViewById(R.id.btn_speed));
         if (speed != null) {
@@ -313,7 +306,7 @@ public class MediaPlayerControlsView extends FrameLayout {
 
     public void show() {
         getChildAt(0).setVisibility(VISIBLE);
-        if (mMediaInterface != null)
+        if (mMediaInterface != null && mAutoHide)
             mMediaInterface.autoHide();
     }
 
@@ -321,269 +314,21 @@ public class MediaPlayerControlsView extends FrameLayout {
         getChildAt(0).setVisibility(GONE);
     }
 
-    public MediaInterface newMediaInterface(FragmentActivity appCompatActivity, MediaId id) {
-        mMediaInterface = new MediaInterface(appCompatActivity, id, newMediaInterfaceCallback(null));
+    public long getTimer() {
+        return mTimer;
+    }
+
+    public MediaInterface getMediaInterface() {
         return mMediaInterface;
-    }
-
-    public MediaInterface newMediaInterface(FragmentActivity appCompatActivity, OnConnectedListener listener) {
-        mMediaInterface = new MediaInterface(appCompatActivity, null, newMediaInterfaceCallback(listener));
-        return mMediaInterface;
-    }
-
-    public MediaInterface newMediaInterface(FragmentActivity appCompatActivity) {
-        mMediaInterface = new MediaInterface(appCompatActivity, null, newMediaInterfaceCallback(null));
-        return mMediaInterface;
-    }
-
-    public MediaInterface newMediaInterface(FragmentActivity appCompatActivity, MediaId id, MediaInterface.MediaInterfaceCallback callback) {
-        mMediaInterface = new MediaInterface(appCompatActivity, id, callback);
-        return mMediaInterface;
-    }
-
-    public MediaInterface newMediaInterface(FragmentActivity appCompatActivity, MediaInterface.MediaInterfaceCallback callback) {
-        mMediaInterface = new MediaInterface(appCompatActivity, null, callback);
-        return mMediaInterface;
-    }
-
-    private void onHandleState(ImageView next, ImageView previous, PlaybackStateCompat state) {
-        int enabled = ViewUtil.getThemeAttrColor(getContext(), android.R.attr.textColorPrimary);
-        int disabled = ViewUtil.getThemeAttrColor(getContext(), android.R.attr.textColorSecondary);
-        if (next != null)
-            next.setColorFilter(state != null && (state.getActions() & PlaybackStateCompat.ACTION_SKIP_TO_NEXT)
-                    == PlaybackStateCompat.ACTION_SKIP_TO_NEXT
-                                ? enabled
-                                : disabled, PorterDuff.Mode.SRC_ATOP);
-        if (previous != null)
-            previous.setColorFilter(state != null && (state.getActions() & PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS)
-                    == PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
-                                    ? enabled
-                                    : disabled, PorterDuff.Mode.SRC_ATOP);
-    }
-
-    public MediaInterface.MediaInterfaceCallback newMediaInterfaceCallback(final OnConnectedListener listener) {
-        return new DefaultCallback(this, listener, mAutoHide);
     }
 
     public void setMediaInterface(MediaInterface mediaInterface) {
         mMediaInterface = mediaInterface;
     }
 
-    public interface OnConnectedListener {
-        void onConnected(MediaPlayerControlsView view, MediaInterface mediaInterface);
-    }
-
-    public static class DefaultCallback implements MediaInterface.MediaInterfaceCallback {
-
-        private static final int ONE_MINUTE = 60;
-        private static final int ONE_HOUR = 3600;
-
-        private final StringBuilder mFormatBuilder = new StringBuilder();
-        private final Formatter mFormatter = new Formatter(mFormatBuilder, Locale.getDefault());
-
-        private final ImageView play;
-        private final View loading;
-        private final TextView timePlayed;
-        private final TextView timeTotal;
-        private final TextView speed;
-        private final TextView timer;
-        private final SeekBar seekBar;
-        private final ImageView next;
-        private final ImageView previous;
-
-        private MediaPlayerControlsView mView;
-        private OnConnectedListener mConnectedListener;
-        private boolean mAutoHide;
-
-        public DefaultCallback(MediaPlayerControlsView view, OnConnectedListener listener, boolean autoHide) {
-            mView = view;
-            mAutoHide = autoHide;
-            mConnectedListener = listener;
-            play = (ImageView) view.findViewById(R.id.btn_play);
-            loading = view.findViewById(R.id.media_loading);
-            timePlayed = (TextView) view.findViewById(R.id.time_played);
-            timeTotal = (TextView) view.findViewById(R.id.time_total);
-            speed = (TextView) view.findViewById(R.id.btn_speed);
-            timer = (TextView) view.findViewById(R.id.btn_timer);
-            seekBar = (SeekBar) view.findViewById(R.id.progress);
-            next = (ImageView) view.findViewById(R.id.btn_next);
-            previous = (ImageView) view.findViewById(R.id.btn_previous);
-            if (seekBar != null) {
-                seekBar.setOnSeekBarChangeListener(mSeekListener);
-                seekBar.setMax(MediaInterface.ProgressHandler.MAX_PROGRESS);
-            }
-        }
-
-        private MediaInterface.ProgressHandler mHandler;
-        private boolean mDragging;
-        private final SeekBar.OnSeekBarChangeListener mSeekListener = new SeekBar.OnSeekBarChangeListener() {
-
-            @Override
-            public void onStartTrackingTouch(SeekBar bar) {
-                mDragging = true;
-                mHandler.stop();
-            }
-
-            @Override
-            public void onProgressChanged(SeekBar bar, int progress, boolean fromuser) {
-                if (!fromuser) {
-                    return;
-                }
-                if (mView == null || mView.mMediaInterface == null)
-                    return;
-                MediaInterface mediaInterface = mView.mMediaInterface;
-                MediaPlayerController controller = mediaInterface.getPlayerController();
-                long duration = controller.getDuration();
-                long newPosition = (duration * progress) / PlaybackManager.ONE_SECOND;
-                controller.seekTo((int) newPosition);
-                newPosition = PlaybackManager.ONE_SECOND * newPosition / duration;
-                setPosition(mediaInterface, MediaInterface.ProgressHandler.MAX_PROGRESS, newPosition, -1);
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar bar) {
-                mDragging = false;
-                if (mHandler != null)
-                    mHandler.start();
-            }
-
-        };
-
-        @Override
-        public void onConnected(nuclei.media.MediaInterface mediaInterface) {
-            if (mConnectedListener != null) {
-                if (mView == null || mView.mMediaInterface == null)
-                    return;
-                mConnectedListener.onConnected(mView, mediaInterface);
-            }
-            if (mHandler == null)
-                mHandler = new MediaInterface.ProgressHandler(mediaInterface);
-            mHandler.start();
-        }
-
-        @Override
-        public void onLoading(MediaPlayerController controller) {
-            if (loading != null)
-                loading.setVisibility(View.VISIBLE);
-            if (mHandler != null)
-                mHandler.start();
-        }
-
-        @Override
-        public void onLoaded(MediaPlayerController controller) {
-            if (loading != null)
-                loading.setVisibility(View.GONE);
-        }
-
-        @Override
-        public void onPlaying(MediaPlayerController controller) {
-            play.setActivated(true);
-            if (mHandler != null)
-                mHandler.start();
-        }
-
-        @Override
-        public void onPaused(MediaPlayerController controller) {
-            onStopped(controller);
-        }
-
-        @Override
-        public void onStopped(MediaPlayerController controller) {
-            play.setActivated(false);
-            if (mHandler != null)
-                mHandler.stop();
-        }
-
-        @Override
-        public void onTimerChanged(nuclei.media.MediaInterface mediaInterface, long t) {
-            if (mView == null)
-                return;
-            mView.mTimer = t;
-            if (timer != null) {
-                if (t < 1)
-                    timer.setText(ResourceProvider.getInstance().getString(ResourceProvider.TIMER));
-                else
-                    timer.setText(stringForTime(t));
-            }
-        }
-
-        @Override
-        public void onSpeedChanged(nuclei.media.MediaInterface mediaInterface, float s) {
-            if (speed != null)
-                speed.setText(ResourceProvider.getInstance().getSelectedSpeed());
-        }
-
-        @Override
-        public void onStateChanged(nuclei.media.MediaInterface mediaInterface, PlaybackStateCompat state) {
-            if (mView == null)
-                return;
-            mView.onHandleState(next, previous, state);
-        }
-
-        @Override
-        public void setTimePlayed(nuclei.media.MediaInterface mediaInterface, long played) {
-            if (timePlayed != null)
-                timePlayed.setText(stringForTime(played));
-        }
-
-        @Override
-        public void setTimeTotal(nuclei.media.MediaInterface mediaInterface, long remaining) {
-            if (timeTotal != null)
-                timeTotal.setText(stringForTime(remaining));
-        }
-
-        @Override
-        public void setVisible(MediaInterface mediaInterface, boolean visible) {
-            if (mView != null) {
-                if (visible)
-                    mView.show();
-                else
-                    mView.hide();
-            }
-        }
-
-        @Override
-        public boolean isPositionChanging(MediaInterface mediaInterface) {
-            return mDragging;
-        }
-
-        @Override
-        public void setPosition(nuclei.media.MediaInterface mediaInterface, long max, long position, long secondaryPosition) {
-            if (seekBar != null) {
-                seekBar.setMax((int) max);
-                seekBar.setProgress((int) position);
-                if (secondaryPosition != -1)
-                    seekBar.setSecondaryProgress((int) secondaryPosition);
-            }
-        }
-
-        @Override
-        public void onMetadataChanged(MediaInterface mediaInterface, MediaMetadataCompat mediaMetadataCompat) {
-
-        }
-
-        @Override
-        public void onDestroy(MediaInterface mediaInterface) {
-            mView = null;
-            if (mHandler != null)
-                mHandler.stop();
-            mHandler = null;
-        }
-
-        private String stringForTime(long timeMs) {
-            long totalSeconds = timeMs / PlaybackManager.ONE_SECOND;
-
-            int seconds = (int) (totalSeconds % ONE_MINUTE);
-            int minutes = (int) ((totalSeconds / ONE_MINUTE) % ONE_MINUTE);
-            int hours = (int) (totalSeconds / ONE_HOUR);
-
-            mFormatBuilder.setLength(0);
-            if (hours > 0) {
-                return mFormatter.format("%d:%02d:%02d", hours, minutes, seconds).toString();
-            } else {
-                return mFormatter.format("%02d:%02d", minutes, seconds).toString();
-            }
-        }
+    public MediaInterface attachDefaultInterface(@NonNull FragmentActivity activity, @Nullable DefaultCallback.OnConnectedListener listener, @Nullable MediaId id) {
+        mMediaInterface = new MediaInterface(activity, id, new DefaultCallback(this, listener));
+        return mMediaInterface;
     }
 
 }

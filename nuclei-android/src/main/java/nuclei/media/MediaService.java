@@ -304,9 +304,6 @@ public class MediaService extends MediaBrowserServiceCompat implements
 
     @Override
     public void onPlaybackPrepare(final MediaId id) {
-        if (!mSession.isActive()) {
-            mSession.setActive(true);
-        }
     }
 
     @Override

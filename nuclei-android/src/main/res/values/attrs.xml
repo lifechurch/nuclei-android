@@ -20,7 +20,7 @@
         <attr name="preload" format="boolean" />
     </declare-styleable>
 
-    <declare-styleable name="MediaPlayerControlsView">
+    <declare-styleable name="PlayerControlsView">
         <attr name="control_layout" />
         <attr name="bottom" />
         <attr name="auto_hide" format="boolean" />

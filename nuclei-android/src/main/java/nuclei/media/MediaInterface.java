@@ -74,8 +74,10 @@ public class MediaInterface {
     }
 
     public void autoHide() {
-        mHandler.removeMessages(ProgressHandler.AUTO_HIDE);
-        mHandler.sendEmptyMessageDelayed(ProgressHandler.AUTO_HIDE, 3000);
+        if (mHandler != null) {
+            mHandler.removeMessages(ProgressHandler.AUTO_HIDE);
+            mHandler.sendEmptyMessageDelayed(ProgressHandler.AUTO_HIDE, 3000);
+        }
     }
 
     public void setSurface(Surface surface) {
