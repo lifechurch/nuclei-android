@@ -1,12 +1,12 @@
 /**
  * Copyright 2016 YouVersion
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,12 +20,14 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.database.DataSetObserver;
+import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.util.ArrayMap;
 import android.util.AttributeSet;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -46,6 +48,7 @@ public class ButtonBarView extends FrameLayout {
     private List<OnItemSelectedListener> mListeners = new ArrayList<>();
     private int mSelectedTint;
     private int mUnselectedTint;
+    private int mOrientation;
     private int mSelectedItem = -1;
     private LinearLayout mButtons;
     private AdapterObserver mObserver;
@@ -77,27 +80,46 @@ public class ButtonBarView extends FrameLayout {
         final TypedArray a = context.obtainStyledAttributes(attrs,
                 R.styleable.ButtonBarView, defStyleAttr, defStyleRes);
 
-        boolean bottom = a.getBoolean(R.styleable.ButtonBarView_bottom, false);
+        final boolean bottom = a.getBoolean(R.styleable.ButtonBarView_bottom, false);
 
-        int layout = a.getResourceId(R.styleable.ButtonBarView_control_layout,
+        final int layout = a.getResourceId(R.styleable.ButtonBarView_control_layout,
                 bottom
                 ? R.layout.cyto_view_button_bar_bottom
                 : R.layout.cyto_view_button_bar);
 
-        View view = LayoutInflater.from(context).inflate(layout, this, false);
+        final View view = LayoutInflater.from(context).inflate(layout, this, false);
         addView(view);
 
         mButtons = (LinearLayout) view.findViewById(R.id.buttons);
 
+        mOrientation = a.getInt(R.styleable.ButtonBarView_control_orientation, 1);
+        switch (mOrientation) {
+            case 1:
+                mButtons.setOrientation(LinearLayout.HORIZONTAL);
+                break;
+            case 2:
+                mButtons.setOrientation(LinearLayout.VERTICAL);
+                break;
+        }
+
         mSelectedTint = a.getColor(R.styleable.ButtonBarView_selected_color, ResourcesCompat.getColor(getResources(), R.color.black, context.getTheme()));
         mUnselectedTint = a.getColor(R.styleable.ButtonBarView_unselected_color, ResourcesCompat.getColor(getResources(), R.color.grey, context.getTheme()));
+
+        if (a.hasValue(R.styleable.ButtonBarView_buttons_background)) {
+            final int color = a.getColor(R.styleable.ButtonBarView_buttons_background, Color.WHITE);
+            View v = view.findViewById(R.id.buttons_container);
+            if (v != null)
+                v.setBackgroundColor(color);
+            else
+                mButtons.setBackgroundColor(color);
+        }
 
         a.recycle();
     }
 
     @Override
     protected Parcelable onSaveInstanceState() {
-        Parcelable superState = super.onSaveInstanceState();
+        final Parcelable superState = super.onSaveInstanceState();
         SavedState savedState = new SavedState(superState);
         savedState.selected = mSelectedItem;
         return savedState;
@@ -111,7 +133,7 @@ public class ButtonBarView extends FrameLayout {
             return;
         }
         mStateRestored = true;
-        SavedState savedState = (SavedState) state;
+        final SavedState savedState = (SavedState) state;
         setSelectedItemState(savedState.selected);
         onEnsurePosition();
     }
@@ -129,7 +151,7 @@ public class ButtonBarView extends FrameLayout {
         if (mAdapter != null) {
             mAdapter.setViewObserver(null);
 
-            if (mAdapter instanceof FragmentButtonAdapter)
+            if (mAdapter instanceof OnItemSelectedListener)
                 removeOnItemSelectedListener((OnItemSelectedListener) mAdapter);
         }
 
@@ -140,7 +162,7 @@ public class ButtonBarView extends FrameLayout {
                 mObserver = new AdapterObserver();
             }
             mAdapter.setViewObserver(mObserver);
-            if (mAdapter instanceof FragmentButtonAdapter)
+            if (mAdapter instanceof OnItemSelectedListener)
                 addOnItemSelectedListener((OnItemSelectedListener) mAdapter);
 
             dataSetChanged();
@@ -175,16 +197,18 @@ public class ButtonBarView extends FrameLayout {
     private void setSelectedItemState(int position) {
         int pos = 0;
         for (Item item : mItems) {
-            boolean selected = pos == position;
+            final boolean selected = pos == position;
             item.imageView.setSelected(selected);
             if (selected) {
                 mSelectedItem = pos;
                 item.imageView.setColorFilter(mSelectedTint, PorterDuff.Mode.SRC_ATOP);
-                item.textView.setTextColor(mSelectedTint);
+                if (item.textView != null)
+                    item.textView.setTextColor(mSelectedTint);
                 setSelected(item, true);
             } else {
                 item.imageView.setColorFilter(mUnselectedTint, PorterDuff.Mode.SRC_ATOP);
-                item.textView.setTextColor(mUnselectedTint);
+                if (item.textView != null)
+                    item.textView.setTextColor(mUnselectedTint);
                 setSelected(item, false);
             }
             pos++;
@@ -280,7 +304,7 @@ public class ButtonBarView extends FrameLayout {
             }
         };
 
-        LayoutInflater inflater = LayoutInflater.from(getContext());
+        final LayoutInflater inflater = LayoutInflater.from(getContext());
 
         if (mItems == null || mItems.length != count)
             mItems = new Item[count];
@@ -290,7 +314,10 @@ public class ButtonBarView extends FrameLayout {
             final int imageId = mAdapter.getDrawable(i);
             Item item = new Item(textId, imageId);
 
-            item.view = (ViewGroup) inflater.inflate(R.layout.cyto_view_button_bar_item, this, false);
+            item.view = (ViewGroup) inflater.inflate(
+                    mOrientation == 1
+                    ? R.layout.cyto_view_button_horizontal_bar_item
+                    : R.layout.cyto_view_button_vertical_bar_item, this, false);
             item.view.setOnClickListener(listener);
 
             item.imageView = (ImageView) item.view.findViewById(R.id.image);
@@ -298,13 +325,20 @@ public class ButtonBarView extends FrameLayout {
             item.imageView.setColorFilter(mUnselectedTint, PorterDuff.Mode.SRC_ATOP);
 
             item.textView = (TextView) item.view.findViewById(R.id.text);
-            item.textView.setText(item.textId);
+            if (item.textView != null) {
+                item.textView.setText(item.textId);
 
-            if (count > 4)
-                item.textView.setVisibility(GONE);
+                if (count > 4)
+                    item.textView.setVisibility(GONE);
+            }
 
             mItems[i] = item;
-            mButtons.addView(item.view, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+
+            LinearLayout.LayoutParams params = mOrientation == 1
+                                               ? new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1)
+                                               : new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            params.gravity = mOrientation == 1 ? Gravity.CENTER_VERTICAL : Gravity.CENTER_HORIZONTAL;
+            mButtons.addView(item.view, params);
         }
     }
 

@@ -5,6 +5,11 @@
     <attr name="control_layout" format="reference" />
     <attr name="bottom" format="boolean" />
 
+    <attr name="control_orientation" format="enum">
+        <enum name="horizontal" value="1" />
+        <enum name="vertical" value="2" />
+    </attr>
+
     <declare-styleable name="HeaderImageView">
         <attr name="url" />
     </declare-styleable>
@@ -32,7 +37,9 @@
 
     <declare-styleable name="ButtonBarView">
         <attr name="control_layout" />
+        <attr name="control_orientation" />
         <attr name="bottom" />
+        <attr name="buttons_background" format="color" />
         <attr name="selected_color" format="color" />
         <attr name="unselected_color" format="color" />
     </declare-styleable>
