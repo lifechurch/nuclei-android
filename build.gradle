@@ -5,7 +5,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.2.1'
+        classpath 'com.android.tools.build:gradle:2.2.2'
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.1'
         classpath 'com.github.dcendents:android-maven-gradle-plugin:1.5'
     }
@@ -22,17 +22,17 @@ task clean(type: Delete) {
 }
 
 ext {
-    compileSdkVersion = 24
-    targetSdkVersion = 24
+    compileSdkVersion = 25
+    targetSdkVersion = 25
     minSdkVersion = 15
-    buildToolsVersion = "24.0.2"
+    buildToolsVersion = "25.0.0"
 
     playServicesVersion = "9.4.0"
-    supportLibVersion = "24.2.1"
+    supportLibVersion = "25.0.0"
     glideVersion = "3.7.0"
     jsoupVersion = "1.8.3"
 
-    exoPlayerVersion = "r2.0.3"
+    exoPlayerVersion = "r2.0.4"
 
     okHttpVersion = "3.4.1"
 

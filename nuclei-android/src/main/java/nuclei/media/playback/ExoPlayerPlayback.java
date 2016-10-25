@@ -288,14 +288,6 @@ public class ExoPlayerPlayback extends BasePlayback
         if (mPlayWhenReady)
             mState = PlaybackStateCompat.STATE_BUFFERING;
 
-        // If we are streaming from the internet, we want to hold a
-        // Wifi lock, which prevents the Wifi radio from going to
-        // sleep while the song is playing.
-        if (!mWifiLock.isHeld())
-            mWifiLock.acquire();
-        if (!mWakeLock.isHeld())
-            mWakeLock.acquire();
-
         if (mCallback != null) {
             mCallback.onPlaybackStatusChanged(mState);
         }

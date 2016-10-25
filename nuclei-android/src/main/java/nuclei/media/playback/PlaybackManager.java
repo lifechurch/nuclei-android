@@ -117,6 +117,7 @@ public class PlaybackManager implements Playback.Callback {
                     mPlayback.setPlaybackParams(new PlaybackParams().allowDefaults());
             }
             mServiceCallback.onPlaybackStart(id);
+            mServiceCallback.onNotificationRequired();
             mPlayback.play(mMediaMetadata);
 
             if (mTimer > -1) {
@@ -193,8 +194,7 @@ public class PlaybackManager implements Playback.Callback {
 
         mServiceCallback.onPlaybackStateUpdated(stateBuilder.build());
 
-        if (state == PlaybackStateCompat.STATE_PLAYING
-                || state == PlaybackStateCompat.STATE_PAUSED) {
+        if (state == PlaybackStateCompat.STATE_PLAYING) {
             mServiceCallback.onNotificationRequired();
         }
     }
@@ -641,7 +641,5 @@ public class PlaybackManager implements Playback.Callback {
             }
         }
     }
-
-    ;
 
 }
