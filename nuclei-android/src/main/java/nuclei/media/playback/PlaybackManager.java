@@ -83,7 +83,7 @@ public class PlaybackManager implements Playback.Callback {
 
     public void handlePrepareRequest() {
         if (mMediaMetadata != null) {
-            MediaId id = MediaProvider.getInstance().getMediaId(mMediaMetadata.getDescription().getMediaId());
+            final MediaId id = MediaProvider.getInstance().getMediaId(mMediaMetadata.getDescription().getMediaId());
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 if (id.type == MediaId.TYPE_AUDIO)
                     mPlayback.setPlaybackParams(new PlaybackParams()
@@ -107,7 +107,7 @@ public class PlaybackManager implements Playback.Callback {
 
     public void handlePlayRequest() {
         if (mMediaMetadata != null) {
-            MediaId id = MediaProvider.getInstance().getMediaId(mMediaMetadata.getDescription().getMediaId());
+            final MediaId id = MediaProvider.getInstance().getMediaId(mMediaMetadata.getDescription().getMediaId());
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 if (id.type == MediaId.TYPE_AUDIO)
                     mPlayback.setPlaybackParams(new PlaybackParams()
@@ -140,14 +140,14 @@ public class PlaybackManager implements Playback.Callback {
     public void handlePauseRequest() {
         if (mPlayback.isPlaying()) {
             mPlayback.pause();
-            MediaId mediaId = mPlayback.getCurrentMediaId();
+            final MediaId mediaId = mPlayback.getCurrentMediaId();
             mServiceCallback.onPlaybackPause(mediaId);
         }
     }
 
     public void handleStopRequest(String withError) {
         mPlayback.stop(true);
-        MediaId mediaId = mPlayback.getCurrentMediaId();
+        final MediaId mediaId = mPlayback.getCurrentMediaId();
         mServiceCallback.onPlaybackStop(mediaId);
         updatePlaybackState(withError);
     }
@@ -164,7 +164,7 @@ public class PlaybackManager implements Playback.Callback {
         }
 
         //noinspection ResourceType
-        PlaybackStateCompat.Builder stateBuilder = new PlaybackStateCompat.Builder()
+        final PlaybackStateCompat.Builder stateBuilder = new PlaybackStateCompat.Builder()
                 .setActions(getAvailableActions());
 
         int state = mPlayback == null ? -1 : mPlayback.getState();
@@ -266,9 +266,9 @@ public class PlaybackManager implements Playback.Callback {
             throw new IllegalArgumentException("Playback cannot be null");
         }
         // suspend the current one.
-        int oldState = mPlayback.getState();
-        long pos = mPlayback.getCurrentStreamPosition();
-        MediaId currentMediaId = mPlayback.getCurrentMediaId();
+        final int oldState = mPlayback.getState();
+        final long pos = mPlayback.getCurrentStreamPosition();
+        final MediaId currentMediaId = mPlayback.getCurrentMediaId();
         mPlayback.stop(false);
         playback.setCallback(this);
         playback.setCurrentStreamPosition(pos < 0 ? 0 : pos);
@@ -307,7 +307,7 @@ public class PlaybackManager implements Playback.Callback {
 
         @Override
         public void onSeekTo(long position) {
-            long current = mPlayback.getCurrentStreamPosition();
+            final long current = mPlayback.getCurrentStreamPosition();
             mPlayback.seekTo((int) position);
             mServiceCallback.onPlaybackSeekTo(mPlayback.getCurrentMediaId(), current, position);
         }
@@ -439,7 +439,7 @@ public class PlaybackManager implements Playback.Callback {
                             if (mediaId == null)
                                 updatePlaybackState("Could not find music");
                             else {
-                                MediaId id = MediaProvider.getInstance().getMediaId(mediaId);
+                                final MediaId id = MediaProvider.getInstance().getMediaId(mediaId);
                                 MediaProvider.getInstance()
                                         .getMediaMetadata(id)
                                         .addCallback(new Result.CallbackAdapter<MediaMetadata>() {
@@ -471,16 +471,16 @@ public class PlaybackManager implements Playback.Callback {
 
         @Override
         public void onFastForward() {
-            long current = mPlayback.getCurrentStreamPosition();
-            long position = current + THIRY_SECOND;
+            final long current = mPlayback.getCurrentStreamPosition();
+            final long position = current + THIRY_SECOND;
             mPlayback.seekTo(position);
             mServiceCallback.onPlaybackSeekTo(mPlayback.getCurrentMediaId(), current, position);
         }
 
         @Override
         public void onRewind() {
-            long current = mPlayback.getCurrentStreamPosition();
-            long position = Math.max(0, current - THIRY_SECOND);
+            final long current = mPlayback.getCurrentStreamPosition();
+            final long position = Math.max(0, current - THIRY_SECOND);
             mPlayback.seekTo(position);
             mServiceCallback.onPlaybackSeekTo(mPlayback.getCurrentMediaId(), current, position);
         }
@@ -494,8 +494,9 @@ public class PlaybackManager implements Playback.Callback {
                     final String mediaId = item.getMediaId();
                     onPlayFromMediaId(mediaId, null);
                 } else {
-                    MediaId queueId = mQueue.getNextQueue();
-                    onPlayFromMediaId(queueId.toString(), null);
+                    final MediaId queueId = mQueue.getNextQueue();
+                    if (queueId != null)
+                        onPlayFromMediaId(queueId.toString(), null);
                 }
             }
         }
@@ -509,8 +510,9 @@ public class PlaybackManager implements Playback.Callback {
                     final String mediaId = item.getMediaId();
                     onPlayFromMediaId(mediaId, null);
                 } else {
-                    MediaId queueId = mQueue.getPreviousQueue();
-                    onPlayFromMediaId(queueId.toString(), null);
+                    final MediaId queueId = mQueue.getPreviousQueue();
+                    if (queueId != null)
+                        onPlayFromMediaId(queueId.toString(), null);
                 }
             }
         }
@@ -530,7 +532,7 @@ public class PlaybackManager implements Playback.Callback {
         public void onCustomAction(@NonNull String action, Bundle extras) {
             switch (action) {
                 case MediaService.ACTION_SET_SURFACE:
-                    long surfaceId = extras.getLong(MediaService.EXTRA_SURFACE_ID);
+                    final long surfaceId = extras.getLong(MediaService.EXTRA_SURFACE_ID);
                     if (!extras.containsKey(MediaService.EXTRA_SURFACE)) {
                         mPlayback.setSurface(surfaceId, null);
                     } else {
@@ -607,7 +609,7 @@ public class PlaybackManager implements Playback.Callback {
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case TIMER_COUNTDOWN: {
-                    PlaybackManager playback = mManager.get();
+                    final PlaybackManager playback = mManager.get();
                     if (playback != null && playback.mPlayback != null && playback.mPlayback.isPlaying()) {
                         if (playback.mTimer <= 0) {
                             playback.mHandler.removeMessages(TIMER_COUNTDOWN);
@@ -622,11 +624,11 @@ public class PlaybackManager implements Playback.Callback {
                     break;
                 }
                 case TIMER_TIMING: {
-                    PlaybackManager playback = mManager.get();
+                    final PlaybackManager playback = mManager.get();
                     if (playback != null && playback.mPlayback != null && playback.mPlayback.isPlaying()) {
-                        Timing timing = playback.mPlayback.getTiming();
+                        final Timing timing = playback.mPlayback.getTiming();
                         if (timing != null) {
-                            long pos = playback.mPlayback.getStartStreamPosition() + playback.mPlayback.getCurrentStreamPosition();
+                            final long pos = playback.mPlayback.getStartStreamPosition() + playback.mPlayback.getCurrentStreamPosition();
                             if (timing.end > pos) {
                                 sendEmptyMessageDelayed(TIMER_TIMING, ONE_SECOND);
                             } else {
