@@ -149,6 +149,9 @@ public class PlaybackManager implements Playback.Callback {
         mPlayback.stop(true);
         final MediaId mediaId = mPlayback.getCurrentMediaId();
         mServiceCallback.onPlaybackStop(mediaId);
+        final MediaMetadata metadata = mPlayback.getCurrentMetadata();
+        if (metadata != null)
+            metadata.setTimingSeeked(false);
         updatePlaybackState(withError);
     }
 
@@ -339,6 +342,10 @@ public class PlaybackManager implements Playback.Callback {
         @Override
         public void onPrepareFromMediaId(String mediaId, final Bundle extras) {
             final MediaId id = MediaProvider.getInstance().getMediaId(mediaId);
+            if (mMediaMetadata != null && mMediaMetadata.isEqual(id)) {
+                handlePrepareRequest();
+                return;
+            }
             if (id.queue) {
                 try {
                     onQueue(MediaProvider.getInstance().getCachedQueue(id), extras, false);
@@ -361,6 +368,7 @@ public class PlaybackManager implements Playback.Callback {
             } else {
                 try {
                     mMediaMetadata = MediaProvider.getInstance().getCachedMedia(id);
+                    mMediaMetadata.setTimingSeeked(false);
                     handlePrepareRequest();
                 } catch (NullPointerException err) {
                     MediaProvider.getInstance()
@@ -385,6 +393,10 @@ public class PlaybackManager implements Playback.Callback {
         @Override
         public void onPlayFromMediaId(final String mediaId, final Bundle extras) {
             final MediaId id = MediaProvider.getInstance().getMediaId(mediaId);
+            if (mMediaMetadata != null && mMediaMetadata.isEqual(id)) {
+                handlePlayRequest();
+                return;
+            }
             if (id.queue) {
                 try {
                     onQueue(MediaProvider.getInstance().getCachedQueue(id), extras, true);
@@ -407,6 +419,7 @@ public class PlaybackManager implements Playback.Callback {
             } else {
                 try {
                     mMediaMetadata = MediaProvider.getInstance().getCachedMedia(id);
+                    mMediaMetadata.setTimingSeeked(false);
                     handlePlayRequest();
                 } catch (NullPointerException err) {
                     MediaProvider.getInstance()
@@ -415,6 +428,7 @@ public class PlaybackManager implements Playback.Callback {
                                 @Override
                                 public void onResult(MediaMetadata mediaMetadata) {
                                     mMediaMetadata = mediaMetadata;
+                                    mMediaMetadata.setTimingSeeked(false);
                                     handlePlayRequest();
                                 }
 

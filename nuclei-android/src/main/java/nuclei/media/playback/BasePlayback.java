@@ -17,7 +17,6 @@ package nuclei.media.playback;
 
 import nuclei.logs.Log;
 import nuclei.logs.Logs;
-import nuclei.media.MediaId;
 import nuclei.media.MediaMetadata;
 
 public abstract class BasePlayback implements Playback {
@@ -30,9 +29,8 @@ public abstract class BasePlayback implements Playback {
     public final void play(MediaMetadata metadata) {
         Timing timing = metadata.getTiming();
         if (timing != null) {
-            String id = metadata.getMediaId();
-            MediaId currentId = getCurrentMediaId();
-            setTiming(timing, currentId == null || !id.equals(currentId.toString()));
+            setTiming(timing, !metadata.isTimingSeeked());
+            metadata.setTimingSeeked(true);
         } else {
             setTiming(null, false);
         }
@@ -40,6 +38,16 @@ public abstract class BasePlayback implements Playback {
     }
 
     protected abstract void internalPlay(MediaMetadata metadata);
+
+    @Override
+    public final void prepare(MediaMetadata metadata) {
+        pause();
+        Timing timing = metadata.getTiming();
+        setTiming(timing, false);
+        internalPrepare(metadata);
+    }
+
+    protected abstract void internalPrepare(MediaMetadata metadata);
 
     @Override
     public long getDuration() {
@@ -56,19 +64,15 @@ public abstract class BasePlayback implements Playback {
     }
 
     @Override
-    public void setTiming(Timing timing) {
+    public final void setTiming(Timing timing) {
         setTiming(timing, true);
     }
 
     @Override
-    public void setTiming(Timing timing, boolean seek) {
-        if (timing != null) {
-            mTiming = timing;
-            if (seek)
-                internalSeekTo(timing.start);
-        } else {
-            mTiming = null;
-        }
+    public final void setTiming(Timing timing, boolean seek) {
+        mTiming = timing;
+        if (timing != null && seek)
+            internalSeekTo(timing.start);
     }
 
     @Override

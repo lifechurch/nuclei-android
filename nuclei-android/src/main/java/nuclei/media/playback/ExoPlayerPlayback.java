@@ -150,6 +150,8 @@ public class ExoPlayerPlayback extends BasePlayback
     @Override
     public void stop(boolean notifyListeners) {
         LOG.d("stop");
+        if (mMediaMetadata != null)
+            mMediaMetadata.setTimingSeeked(false);
         mState = PlaybackStateCompat.STATE_STOPPED;
         if (notifyListeners && mCallback != null) {
             mCallback.onPlaybackStatusChanged(mState);
@@ -259,7 +261,7 @@ public class ExoPlayerPlayback extends BasePlayback
     }
 
     @Override
-    public void prepare(MediaMetadata metadataCompat) {
+    protected void internalPrepare(MediaMetadata metadataCompat) {
         boolean mediaHasChanged = mCurrentMediaId == null
                 || !TextUtils.equals(metadataCompat.getDescription().getMediaId(), mCurrentMediaId.toString());
         if (mediaHasChanged) {
@@ -279,6 +281,7 @@ public class ExoPlayerPlayback extends BasePlayback
     }
 
     void setTrack(MediaMetadata track) {
+        track.setTimingSeeked(false);
         @SuppressWarnings("ResourceType") String source = track.getString(MediaProvider.CUSTOM_METADATA_TRACK_SOURCE);
         @SuppressWarnings("ResourceType") int type = (int) track.getLong(MediaProvider.CUSTOM_METADATA_TRACK_TYPE);
         if (LOG.isLoggable(Log.INFO))
@@ -575,7 +578,7 @@ public class ExoPlayerPlayback extends BasePlayback
             mCurrentPosition = mMediaPlayer.getCurrentPosition();
 
         if (mMediaPlayer != null && mMediaMetadata != null) {
-            long duration = getDuration();
+            final long duration = getDuration();
             if (mMediaMetadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION) != duration)
                 mMediaMetadata.setDuration(duration);
         }

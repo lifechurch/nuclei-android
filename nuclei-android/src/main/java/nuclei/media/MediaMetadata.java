@@ -30,9 +30,14 @@ public final class MediaMetadata {
     private MediaMetadataCompat mMetadata;
     private WeakReference<Playback.Callback> mCallback;
     private Timing mTiming;
+    private boolean mTimingSeeked;
 
     public MediaMetadata(MediaMetadataCompat metadata) {
         mMetadata = metadata;
+    }
+
+    public boolean isEqual(MediaId id) {
+        return mMetadata.getDescription().getMediaId().equals(id.toString());
     }
 
     public String getMediaId() {
@@ -60,6 +65,14 @@ public final class MediaMetadata {
         return mMetadata.getString(key);
     }
 
+    public boolean isTimingSeeked() {
+        return mTimingSeeked;
+    }
+
+    public void setTimingSeeked(boolean timingSeeked) {
+        mTimingSeeked = timingSeeked;
+    }
+
     public Timing getTiming() {
         if (mTiming == null) {
             //noinspection ResourceType
@@ -69,12 +82,14 @@ public final class MediaMetadata {
             //noinspection ResourceType
             long start = mMetadata.getLong(MediaProvider.CUSTOM_METADATA_TIMING_START);
             mTiming = new Timing(start, end);
+            mTimingSeeked = false;
         }
         return mTiming;
     }
 
     public void setTiming(Timing timing) {
         mTiming = timing;
+        mTimingSeeked = false;
         //noinspection ResourceType
         mMetadata = new MediaMetadataCompat.Builder(mMetadata)
                 .putLong(MediaProvider.CUSTOM_METADATA_TIMING_START, timing.start)

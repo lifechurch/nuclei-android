@@ -406,6 +406,9 @@ public class MediaService extends MediaBrowserServiceCompat implements
         if (playback != null) {
             MediaId id = playback.getCurrentMediaId();
             MediaProvider.getInstance().onPlaybackCompletion(playback, id);
+            MediaMetadata metadata = playback.getCurrentMetadata();
+            if (metadata != null)
+                metadata.setTimingSeeked(false);
         }
     }
 

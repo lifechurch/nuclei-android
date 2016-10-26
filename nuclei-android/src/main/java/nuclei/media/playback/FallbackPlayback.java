@@ -109,6 +109,8 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
 
     @Override
     public void stop(boolean notifyListeners) {
+        if (mMetadata != null)
+            mMetadata.setTimingSeeked(false);
         mState = PlaybackStateCompat.STATE_STOPPED;
         if (notifyListeners && mCallback != null) {
             mCallback.onPlaybackStatusChanged(mState);
@@ -123,6 +125,8 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
 
     @Override
     public void temporaryStop() {
+        if (mMetadata != null)
+            mMetadata.setTimingSeeked(false);
         mState = PlaybackStateCompat.STATE_STOPPED;
         if (mCallback != null) {
             mCallback.onPlaybackStatusChanged(mState);
@@ -232,9 +236,7 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
     }
 
     @Override
-    public void prepare(MediaMetadata metadataCompat) {
-        pause();
-
+    protected void internalPrepare(MediaMetadata metadataCompat) {
         boolean mediaHasChanged = mCurrentMediaId == null
                 || !TextUtils.equals(metadataCompat.getDescription().getMediaId(), mCurrentMediaId.toString());
         if (mediaHasChanged) {

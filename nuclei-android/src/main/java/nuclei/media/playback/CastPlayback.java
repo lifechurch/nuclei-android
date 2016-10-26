@@ -128,6 +128,8 @@ public class CastPlayback extends BasePlayback implements Playback {
 
     @Override
     public void stop(boolean notifyListeners) {
+        if (mMediaMetadata != null)
+            mMediaMetadata.setTimingSeeked(false);
         VideoCastManager.getInstance().removeVideoCastConsumer(mCastConsumer);
         mState = PlaybackStateCompat.STATE_STOPPED;
         if (notifyListeners && mCallback != null) {
@@ -142,7 +144,7 @@ public class CastPlayback extends BasePlayback implements Playback {
 
     @Override
     public void setState(int state) {
-        this.mState = state;
+        mState = state;
     }
 
     @Override
@@ -200,9 +202,7 @@ public class CastPlayback extends BasePlayback implements Playback {
     }
 
     @Override
-    public void prepare(MediaMetadata metadataCompat) {
-        pause();
-
+    protected void internalPrepare(MediaMetadata metadataCompat) {
         boolean mediaHasChanged = mCurrentMediaId == null
                 || !TextUtils.equals(metadataCompat.getDescription().getMediaId(), mCurrentMediaId.toString());
         if (mediaHasChanged) {
@@ -210,12 +210,10 @@ public class CastPlayback extends BasePlayback implements Playback {
             mMediaMetadata = metadataCompat;
             mMediaMetadata.setCallback(mCallback);
             mCurrentMediaId = MediaProvider.getInstance().getMediaId(metadataCompat.getDescription().getMediaId());
-            if (mCallback != null)
+            if (mCallback != null) {
                 mCallback.onMetadataChanged(mMediaMetadata);
-        }
-
-        if (mCallback != null) {
-            mCallback.onPlaybackStatusChanged(mState);
+                mCallback.onPlaybackStatusChanged(mState);
+            }
         }
     }
 
@@ -365,15 +363,16 @@ public class CastPlayback extends BasePlayback implements Playback {
                 return;
             }
             JSONObject customData = mediaInfo.getCustomData();
-
             if (customData != null && customData.has(ITEM_ID)) {
                 String remoteMediaId = customData.getString(ITEM_ID);
-                if (mCurrentMediaId == null || !TextUtils.equals(mCurrentMediaId.toString(), remoteMediaId)) {
-                    mCurrentMediaId = MediaProvider.getInstance().getMediaId(remoteMediaId);
-                    if (mCallback != null && mMediaMetadata != null) {
-                        mMediaMetadata.setDuration(getDuration());
+                if (remoteMediaId != null) {
+                    if (mCurrentMediaId == null || !TextUtils.equals(mCurrentMediaId.toString(), remoteMediaId)) {
+                        mCurrentMediaId = MediaProvider.getInstance().getMediaId(remoteMediaId);
+                        if (mCallback != null && mMediaMetadata != null) {
+                            mMediaMetadata.setDuration(getDuration());
+                        }
+                        updateLastKnownStreamPosition();
                     }
-                    updateLastKnownStreamPosition();
                 }
             }
         } catch (TransientNetworkDisconnectionException | NoConnectionException | JSONException e) {
@@ -381,7 +380,6 @@ public class CastPlayback extends BasePlayback implements Playback {
                 mCallback.onError(e.getMessage());
             }
         }
-
     }
 
     private void updatePlaybackState() {
@@ -434,6 +432,6 @@ public class CastPlayback extends BasePlayback implements Playback {
 
     @Override
     public void setPlaybackParams(PlaybackParams playbackParams) {
-
     }
+
 }
