@@ -190,7 +190,7 @@ public class PlaybackManager implements Playback.Callback {
             MediaProvider.getInstance().onError(error);
         }
         //noinspection ResourceType
-        stateBuilder.setState(state, position, 1.0f, SystemClock.elapsedRealtime());
+        stateBuilder.setState(state, position, mServiceCallback.getAudioSpeed(), SystemClock.elapsedRealtime());
 
         mServiceCallback.onPlaybackStateUpdated(stateBuilder.build());
 
