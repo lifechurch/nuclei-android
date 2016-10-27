@@ -133,7 +133,13 @@ public class CastPlayback extends BasePlayback implements Playback {
     public void stop(boolean notifyListeners) {
         if (mMediaMetadata != null)
             mMediaMetadata.setTimingSeeked(false);
-        VideoCastManager.getInstance().removeVideoCastConsumer(mCastConsumer);
+        try {
+            VideoCastManager.getInstance().stop();
+        } catch (IllegalStateException | CastException | TransientNetworkDisconnectionException | NoConnectionException e) {
+            LOG.e("Error stopping", e);
+        }
+        if (notifyListeners)
+            VideoCastManager.getInstance().removeVideoCastConsumer(mCastConsumer);
         mState = PlaybackStateCompat.STATE_STOPPED;
         if (notifyListeners && mCallback != null) {
             mCallback.onPlaybackStatusChanged(mState);
@@ -142,7 +148,17 @@ public class CastPlayback extends BasePlayback implements Playback {
 
     @Override
     public void temporaryStop() {
-        stop(true);
+        if (mMediaMetadata != null)
+            mMediaMetadata.setTimingSeeked(false);
+        try {
+            VideoCastManager.getInstance().pause();
+        } catch (IllegalStateException | CastException | TransientNetworkDisconnectionException | NoConnectionException e) {
+            LOG.e("Error pausing", e);
+        }
+        mState = PlaybackStateCompat.STATE_STOPPED;
+        if (mCallback != null) {
+            mCallback.onPlaybackStatusChanged(mState);
+        }
     }
 
     @Override
@@ -189,15 +205,16 @@ public class CastPlayback extends BasePlayback implements Playback {
     @Override
     protected void internalPlay(MediaMetadata metadataCompat, Timing timing, boolean seek) {
         try {
+            mCurrentMediaId = MediaProvider.getInstance().getMediaId(metadataCompat.getDescription().getMediaId());
             mMediaMetadata = metadataCompat;
             mMediaMetadata.setCallback(mCallback);
+            if (timing != null && seek)
+                mCurrentPosition = timing.start;
             loadMedia(metadataCompat, true);
             mState = PlaybackStateCompat.STATE_BUFFERING;
             if (mCallback != null) {
                 mCallback.onPlaybackStatusChanged(mState);
             }
-            if (timing != null && seek)
-                internalSeekTo(timing.start);
         } catch (TransientNetworkDisconnectionException | NoConnectionException
                 | JSONException | IllegalArgumentException e) {
             if (mCallback != null) {
@@ -232,14 +249,9 @@ public class CastPlayback extends BasePlayback implements Playback {
                 manager.pause();
                 mCurrentPosition = (int) manager.getCurrentMediaPosition();
             } else {
-                try {
-                    manager.stop();
-                } catch (Exception err) {
-                    LOG.e("Error stopping", err);
-                }
-                setMetadataFromRemote();
+                loadMedia(mMediaMetadata, false);
             }
-        } catch (CastException | TransientNetworkDisconnectionException | NoConnectionException | IllegalArgumentException e) {
+        } catch (JSONException | CastException | TransientNetworkDisconnectionException | NoConnectionException | IllegalArgumentException e) {
             if (mCallback != null) {
                 mCallback.onError(e.getMessage());
             }
@@ -270,7 +282,7 @@ public class CastPlayback extends BasePlayback implements Playback {
     }
 
     @Override
-    public void setCurrentMediaMetadata(MediaId mediaId, MediaMetadata metadata) {
+    protected void internalSetCurrentMediaMetadata(MediaId mediaId, MediaMetadata metadata) {
         mCurrentMediaId = mediaId;
         mMediaMetadata = metadata;
     }
@@ -398,22 +410,24 @@ public class CastPlayback extends BasePlayback implements Playback {
     }
 
     private void updatePlaybackState() {
-        int status = VideoCastManager.getInstance().getPlaybackStatus();
-        int idleReason = VideoCastManager.getInstance().getIdleReason();
+        final int status = VideoCastManager.getInstance().getPlaybackStatus();
 
         // Convert the remote playback states to media playback states.
         switch (status) {
             case MediaStatus.PLAYER_STATE_IDLE:
+                final int idleReason = VideoCastManager.getInstance().getIdleReason();
                 switch (idleReason) {
                     case MediaStatus.IDLE_REASON_ERROR:
                         if (mCallback != null)
-                            mCallback.onError("error");
+                            mCallback.onError("Error: " + idleReason);
                         break;
                     case MediaStatus.IDLE_REASON_INTERRUPTED:
-                        if (mCallback != null)
-                            mCallback.onError(PlaybackManager.INTERRUPTED);
-                        break;
                     case MediaStatus.IDLE_REASON_CANCELED:
+                        // TODO: What should happen here?
+                        mState = PlaybackStateCompat.STATE_NONE;
+                        if (mCallback != null)
+                            mCallback.onPlaybackStatusChanged(mState);
+                        break;
                     case MediaStatus.IDLE_REASON_FINISHED:
                         if (mCallback != null)
                             mCallback.onCompletion();

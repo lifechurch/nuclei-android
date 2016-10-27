@@ -160,6 +160,16 @@ public class DefaultCallback implements MediaInterface.MediaInterfaceCallback {
     }
 
     @Override
+    public void onCasting(MediaInterface mediaInterface, String deviceName) {
+        if (speed != null) {
+            if (deviceName == null)
+                speed.setVisibility(View.VISIBLE);
+            else
+                speed.setVisibility(View.GONE);
+        }
+    }
+
+    @Override
     public void onStateChanged(nuclei.media.MediaInterface mediaInterface, PlaybackStateCompat state) {
         if (mView == null)
             return;

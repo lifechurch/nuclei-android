@@ -21,9 +21,14 @@ import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.widget.MediaController;
 
+import nuclei.logs.Log;
+import nuclei.logs.Logs;
+
 public class MediaPlayerController implements MediaController.MediaPlayerControl {
 
-    private MediaId mMediaId;
+    private static final Log LOG = Logs.newLog(MediaPlayerController.class);
+
+    MediaId mMediaId;
     private MediaInterface.MediaInterfaceCallback mCallbacks;
     private MediaControllerCompat mMediaControls;
     private boolean mStartWhenReady;
@@ -165,18 +170,14 @@ public class MediaPlayerController implements MediaController.MediaPlayerControl
     }
 
     public static boolean isEquals(MediaControllerCompat mediaControllerCompat, MediaId mediaId) {
-        if (mediaControllerCompat != null && mediaId != null) {
-            MediaMetadataCompat metadataCompat = mediaControllerCompat.getMetadata();
-            if (metadataCompat != null) {
-                MediaDescriptionCompat descriptionCompat = metadataCompat.getDescription();
-                if (descriptionCompat != null) {
-                    String currentId = descriptionCompat.getMediaId();
-                    if (currentId != null) {
-                        MediaId id = MediaProvider.getInstance().getMediaId(currentId);
-                        return mediaId.equals(id);
-                    }
-                }
-            }
+        String currentId = getMediaId(mediaControllerCompat);
+        if (currentId != null) {
+            MediaId id = MediaProvider.getInstance().getMediaId(currentId);
+            if (mediaId.equals(id))
+                return true;
+            LOG.i("ID (" + id + ") != (" + mediaId + ")");
+        } else {
+            LOG.i("Media ID not set on controller");
         }
         return false;
     }
@@ -185,12 +186,16 @@ public class MediaPlayerController implements MediaController.MediaPlayerControl
         if (mediaControllerCompat != null) {
             MediaMetadataCompat metadataCompat = mediaControllerCompat.getMetadata();
             if (metadataCompat != null) {
-                MediaDescriptionCompat descriptionCompat = metadataCompat.getDescription();
-                if (descriptionCompat != null) {
-                    return descriptionCompat.getMediaId();
-                }
+                return getMediaId(metadataCompat);
             }
         }
+        return null;
+    }
+
+    public static String getMediaId(MediaMetadataCompat metadataCompat) {
+        MediaDescriptionCompat descriptionCompat = metadataCompat.getDescription();
+        if (descriptionCompat != null)
+            return descriptionCompat.getMediaId();
         return null;
     }
 
@@ -201,8 +206,7 @@ public class MediaPlayerController implements MediaController.MediaPlayerControl
             int state = -1;
             if (playbackStateCompat != null)
                 state = playbackStateCompat.getState();
-            return isEquals(mediaControllerCompat, mediaId)
-                    && (state == PlaybackStateCompat.STATE_BUFFERING || state == PlaybackStateCompat.STATE_PLAYING);
+            return state == PlaybackStateCompat.STATE_BUFFERING || state == PlaybackStateCompat.STATE_PLAYING;
         }
         return false;
     }

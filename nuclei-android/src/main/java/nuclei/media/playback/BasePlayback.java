@@ -17,6 +17,7 @@ package nuclei.media.playback;
 
 import nuclei.logs.Log;
 import nuclei.logs.Logs;
+import nuclei.media.MediaId;
 import nuclei.media.MediaMetadata;
 
 public abstract class BasePlayback implements Playback {
@@ -24,6 +25,17 @@ public abstract class BasePlayback implements Playback {
     private static final Log LOG = Logs.newLog(BasePlayback.class);
 
     private Timing mTiming;
+
+    @Override
+    public final void setCurrentMediaMetadata(MediaId mediaId, MediaMetadata metadata) {
+        if (metadata != null)
+            mTiming = metadata.getTiming();
+        else
+            mTiming = null;
+        internalSetCurrentMediaMetadata(mediaId, metadata);
+    }
+
+    protected abstract void internalSetCurrentMediaMetadata(MediaId mediaId, MediaMetadata metadata);
 
     @Override
     public final void play(MediaMetadata metadata) {

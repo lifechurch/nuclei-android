@@ -45,6 +45,7 @@ public class PlaybackManager implements Playback.Callback {
     private static final Log LOG = Logs.newLog(PlaybackManager.class);
 
     public static final String INTERRUPTED = "interrupted";
+    public static final String CANCELED = "canceled";
 
     public static final int ONE_SECOND = 1000;
     public static final int THIRY_SECOND = 30000;
@@ -173,7 +174,7 @@ public class PlaybackManager implements Playback.Callback {
         final PlaybackStateCompat.Builder stateBuilder = new PlaybackStateCompat.Builder()
                 .setActions(getAvailableActions());
 
-        int state = mPlayback == null ? -1 : mPlayback.getState();
+        int state = mPlayback == null ? PlaybackStateCompat.STATE_NONE : mPlayback.getState();
 
         // If there is an error message, send it to the playback state:
         if (error != null) {
@@ -194,11 +195,18 @@ public class PlaybackManager implements Playback.Callback {
                     mPlayback.pause();
                 }
             }
-            if (!INTERRUPTED.equals(error))
+            if (!INTERRUPTED.equals(error) && !CANCELED.equals(error))
                 MediaProvider.getInstance().onError(error);
         }
+
+        float audioSpeed;
+        if (mPlayback instanceof CastPlayback)
+            audioSpeed = 1;
+        else
+            audioSpeed = mServiceCallback.getAudioSpeed();
+
         //noinspection ResourceType
-        stateBuilder.setState(state, position, mServiceCallback.getAudioSpeed(), SystemClock.elapsedRealtime());
+        stateBuilder.setState(state, position, audioSpeed, SystemClock.elapsedRealtime());
 
         mServiceCallback.onPlaybackStateUpdated(stateBuilder.build());
 
@@ -283,10 +291,12 @@ public class PlaybackManager implements Playback.Callback {
         playback.setSurface(mPlayback.getSurfaceId(), mPlayback.getSurface());
         // suspend the current one.
         final int oldState = mPlayback.getState();
-        final long pos = mPlayback.getCurrentStreamPosition();
+        long pos = mPlayback.getCurrentStreamPosition();
+        if (pos < 0)
+            pos = mPlayback.getStartStreamPosition();
         mPlayback.stop(false);
         playback.setCallback(this);
-        playback.setCurrentStreamPosition(pos < 0 ? 0 : pos);
+        playback.setCurrentStreamPosition(pos);
         playback.setCurrentMediaMetadata(mPlayback.getCurrentMediaId(), mPlayback.getCurrentMetadata());
         playback.start();
         // finally swap the instance
@@ -327,9 +337,10 @@ public class PlaybackManager implements Playback.Callback {
             mServiceCallback.onPlaybackSeekTo(mPlayback.getCurrentMediaId(), current, position);
         }
 
-        private void onQueue(Queue queue, final Bundle extras, boolean play) {
+        private void onQueue(MediaId mediaId, Queue queue, final Bundle extras, boolean play) {
             mQueue = queue;
             if (mQueue != null && !mQueue.empty()) {
+                mQueue.moveToId(mediaId);
                 mServiceCallback.onQueue(mQueue);
                 if (play)
                     onPlayFromMediaId(mQueue.getCurrentId(), extras);
@@ -361,14 +372,14 @@ public class PlaybackManager implements Playback.Callback {
             }
             if (id.queue) {
                 try {
-                    onQueue(MediaProvider.getInstance().getCachedQueue(id), extras, false);
+                    onQueue(id, MediaProvider.getInstance().getCachedQueue(id), extras, false);
                 } catch (NullPointerException err) {
                     MediaProvider.getInstance()
                             .getQueue(id)
                             .addCallback(new Result.CallbackAdapter<Queue>() {
                                 @Override
                                 public void onResult(Queue queue) {
-                                    onQueue(queue, extras, false);
+                                    onQueue(id, queue, extras, false);
                                 }
 
                                 @Override
@@ -414,14 +425,14 @@ public class PlaybackManager implements Playback.Callback {
             }
             if (id.queue) {
                 try {
-                    onQueue(MediaProvider.getInstance().getCachedQueue(id), extras, true);
+                    onQueue(id, MediaProvider.getInstance().getCachedQueue(id), extras, true);
                 } catch (NullPointerException err) {
                     MediaProvider.getInstance()
                             .getQueue(id)
                             .addCallback(new Result.CallbackAdapter<Queue>() {
                                 @Override
                                 public void onResult(Queue queue) {
-                                    onQueue(queue, extras, true);
+                                    onQueue(id, queue, extras, true);
                                 }
 
                                 @Override

@@ -365,7 +365,7 @@ public class ExoPlayerPlayback extends BasePlayback
     }
 
     @Override
-    public void setCurrentMediaMetadata(MediaId mediaId, MediaMetadata metadata) {
+    protected void internalSetCurrentMediaMetadata(MediaId mediaId, MediaMetadata metadata) {
         mCurrentMediaId = mediaId;
         mMediaMetadata = metadata;
     }

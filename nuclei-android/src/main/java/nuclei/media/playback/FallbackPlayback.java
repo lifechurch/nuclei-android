@@ -302,7 +302,7 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
     }
 
     @Override
-    public void setCurrentMediaMetadata(MediaId mediaId, MediaMetadata metadata) {
+    protected void internalSetCurrentMediaMetadata(MediaId mediaId, MediaMetadata metadata) {
         mCurrentMediaId = mediaId;
         mMetadata = metadata;
     }

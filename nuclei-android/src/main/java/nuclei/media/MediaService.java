@@ -58,6 +58,7 @@ public class MediaService extends MediaBrowserServiceCompat implements
 
     public static final String EVENT_TIMER = "nuclei.TIMER_CHANGE.";
     public static final String EVENT_SPEED = "nuclei.SPEED_CHANGE.";
+    public static final String EVENT_CAST = "nuclei.CAST.";
 
     public static final String ERROR_INITIALIZATION = "Error Initialization";
     public static final String ERROR_LOAD = "Error Loading";
@@ -116,12 +117,14 @@ public class MediaService extends MediaBrowserServiceCompat implements
                                            boolean wasLaunched) {
             if (mSession != null && mPlaybackManager != null) {
                 // In case we are casting, send the device name as an extra on MediaSession metadata.
-                mSessionExtras.putString(EXTRA_CONNECTED_CAST, VideoCastManager.getInstance().getDeviceName());
+                final String deviceName = VideoCastManager.getInstance().getDeviceName();
+                mSessionExtras.putString(EXTRA_CONNECTED_CAST, deviceName);
                 mSession.setExtras(mSessionExtras);
                 // Now we can switch to CastPlayback
                 Playback playback = new CastPlayback();
                 mMediaRouter.setMediaSessionCompat(mSession);
                 mPlaybackManager.switchToPlayback(playback, true);
+                mSession.sendSessionEvent(createCastEvent(deviceName), Bundle.EMPTY);
             }
         }
 
@@ -147,6 +150,7 @@ public class MediaService extends MediaBrowserServiceCompat implements
                           : new FallbackPlayback(MediaService.this);
                 mMediaRouter.setMediaSessionCompat(null);
                 mPlaybackManager.switchToPlayback(playback, false);
+                mSession.sendSessionEvent(createCastEvent(""), Bundle.EMPTY);
             }
         }
     };
@@ -460,6 +464,17 @@ public class MediaService extends MediaBrowserServiceCompat implements
 
     public static float getSpeedFromEvent(String eventName) {
         return Float.valueOf(eventName.substring(EVENT_SPEED.length()));
+    }
+
+    public static String createCastEvent(String deviceName) {
+        return EVENT_CAST + deviceName;
+    }
+
+    public static String getCastFromEvent(String eventName) {
+        String name = eventName.substring(EVENT_CAST.length());
+        if (name.length() == 0)
+            return null;
+        return name;
     }
 
 }

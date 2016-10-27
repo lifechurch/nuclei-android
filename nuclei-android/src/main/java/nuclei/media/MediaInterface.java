@@ -82,7 +82,7 @@ public class MediaInterface {
 
     public void setSurface(Surface surface) {
         if (mMediaControls != null) {
-            Bundle args = new Bundle();
+            final Bundle args = new Bundle();
             args.putParcelable(MediaService.EXTRA_SURFACE, surface);
             mMediaControls.getTransportControls().sendCustomAction(MediaService.ACTION_SET_SURFACE, args);
             mSurface = null;
@@ -140,10 +140,10 @@ public class MediaInterface {
             if (mMediaControls.getPlaybackState() != null)
                 onPlaybackStateChanged(mMediaControls.getPlaybackState());
 
-            Intent intent = mActivity.getIntent();
+            final Intent intent = mActivity.getIntent();
             if (MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH.equals(intent.getAction())) {
-                Bundle params = intent.getExtras();
-                String query = params.getString(SearchManager.QUERY);
+                final Bundle params = intent.getExtras();
+                final String query = params.getString(SearchManager.QUERY);
                 LOG.i("Starting from voice search query=" + query);
                 mMediaControls.getTransportControls()
                         .playFromSearch(query, params);
@@ -152,10 +152,15 @@ public class MediaInterface {
                 mCallbacks.onConnected(this);
                 MediaMetadataCompat metadataCompat = mMediaControls.getMetadata();
                 if (metadataCompat != null) {
-                    long duration = metadataCompat.getLong(MediaMetadataCompat.METADATA_KEY_DURATION);
+                    final long duration = metadataCompat.getLong(MediaMetadataCompat.METADATA_KEY_DURATION);
                     if (duration > 0)
                         mCallbacks.setTimeTotal(this, duration);
                 }
+            }
+
+            Bundle extras = mMediaControls.getExtras();
+            if (extras != null && extras.containsKey(MediaService.EXTRA_CONNECTED_CAST)) {
+                mCallbacks.onCasting(this, extras.getString(MediaService.EXTRA_CONNECTED_CAST));
             }
 
             if (mPlayerControls != null && mPlayerControls.isPlaying())
@@ -203,12 +208,22 @@ public class MediaInterface {
                 mCallbacks.onTimerChanged(this, MediaService.getTimerFromEvent(event));
             } else if (event.startsWith(MediaService.EVENT_SPEED)) {
                 mCallbacks.onSpeedChanged(this, MediaService.getSpeedFromEvent(event));
+            } else if (event.startsWith(MediaService.EVENT_CAST)) {
+                mCallbacks.onCasting(this, MediaService.getCastFromEvent(event));
             }
         }
     }
 
     private void onMetadataChanged(MediaMetadataCompat metadata) {
         if (mCallbacks != null) {
+            if (mPlayerControls != null) {
+                final String mediaId = MediaPlayerController.getMediaId(metadata);
+                if (mediaId != null && (mPlayerControls.mMediaId == null || !mediaId.equals(mPlayerControls.mMediaId.toString()))) {
+                    LOG.i("Media ID Changed");
+                    mPlayerControls.mMediaId = MediaProvider.getInstance().getMediaId(mediaId);
+                    onPlaybackStateChanged(mMediaControls.getPlaybackState());
+                }
+            }
             mCallbacks.onMetadataChanged(this, metadata);
             final long duration = metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION);
             if (duration > 0)
@@ -235,6 +250,8 @@ public class MediaInterface {
         void onSpeedChanged(MediaInterface mediaInterface, float speed);
 
         void onStateChanged(MediaInterface mediaInterface, PlaybackStateCompat state);
+
+        void onCasting(MediaInterface mediaInterface, String deviceName);
 
         void setTimePlayed(MediaInterface mediaInterface, long played);
 

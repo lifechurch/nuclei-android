@@ -193,7 +193,7 @@ public class PlayerControlsView extends FrameLayout {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 String text = (String) parent.getAdapter().getItem(position);
                 if (text != null) {
-                    float speed = ResourceProvider.getInstance().getSpeed(text);
+                    final float speed = ResourceProvider.getInstance().getSpeed(text);
                     MediaProvider.getInstance().setAudioSpeed(speed);
                     if (mMediaInterface != null) {
                         Bundle args = new Bundle();

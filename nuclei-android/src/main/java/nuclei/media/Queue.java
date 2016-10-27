@@ -92,6 +92,21 @@ public class Queue {
         return mItems.get(mItemPosition);
     }
 
+    public QueueItem moveToId(MediaId id) {
+        int i = 0;
+        for (QueueItem item : mItems) {
+            MediaId itemId = MediaProvider.getInstance().getMediaId(item.getMediaId());
+            if (itemId.equals(id)) {
+                mItemPosition = i;
+                break;
+            }
+            i++;
+        }
+        if (i == mItems.size())
+            return null;
+        return mItems.get(mItemPosition);
+    }
+
     public QueueItem moveToId(long id) {
         int i = 0;
         for (QueueItem item : mItems) {
