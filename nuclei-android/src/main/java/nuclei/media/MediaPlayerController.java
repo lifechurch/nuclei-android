@@ -170,7 +170,11 @@ public class MediaPlayerController implements MediaController.MediaPlayerControl
             if (metadataCompat != null) {
                 MediaDescriptionCompat descriptionCompat = metadataCompat.getDescription();
                 if (descriptionCompat != null) {
-                    return mediaId.toString().equals(descriptionCompat.getMediaId());
+                    String currentId = descriptionCompat.getMediaId();
+                    if (currentId != null) {
+                        MediaId id = MediaProvider.getInstance().getMediaId(currentId);
+                        return mediaId.equals(id);
+                    }
                 }
             }
         }
@@ -189,8 +193,6 @@ public class MediaPlayerController implements MediaController.MediaPlayerControl
         }
         return null;
     }
-
-
 
     public static boolean isPlaying(MediaControllerCompat mediaControllerCompat, PlaybackStateCompat playbackStateCompat, MediaId mediaId) {
         if (isEquals(mediaControllerCompat, mediaId)) {

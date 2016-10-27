@@ -186,6 +186,8 @@ public class MediaInterface {
                     mCallbacks.onPaused(mPlayerControls);
                 mHandler.stop();
             }
+        } else {
+            mHandler.stop();
         }
         if (state.getState() == PlaybackStateCompat.STATE_PLAYING) {
             if (mPlayerControls != null
@@ -208,7 +210,7 @@ public class MediaInterface {
     private void onMetadataChanged(MediaMetadataCompat metadata) {
         if (mCallbacks != null) {
             mCallbacks.onMetadataChanged(this, metadata);
-            long duration = metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION);
+            final long duration = metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION);
             if (duration > 0)
                 mCallbacks.setTimeTotal(this, duration);
         }
@@ -266,26 +268,26 @@ public class MediaInterface {
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case SHOW_PROGRESS: {
-                    MediaInterface mediaInterface = mMediaInterface.get();
+                    final MediaInterface mediaInterface = mMediaInterface.get();
                     if (mediaInterface != null
                             && mediaInterface.mCallbacks != null
                             && !mediaInterface.mCallbacks.isPositionChanging(mediaInterface)) {
-                        long position = mediaInterface.getPlayerController().getCurrentPosition();
-                        long duration = mediaInterface.getPlayerController().getDuration();
+                        final MediaPlayerController controller = mediaInterface.getPlayerController();
+                        final long position = controller.getCurrentPosition();
+                        final long duration = controller.getDuration();
                         long currentPos = 0;
                         if (duration > 0) {
                             currentPos = PlaybackManager.ONE_SECOND * position / duration;
                         }
-                        int percent = mediaInterface.getPlayerController().getBufferPercentage();
+                        final int percent = mediaInterface.getPlayerController().getBufferPercentage();
                         mediaInterface.mCallbacks.setPosition(mediaInterface, MAX_PROGRESS, currentPos, percent * 10);
                         mediaInterface.mCallbacks.setTimePlayed(mediaInterface, position);
-                        if (mediaInterface.getPlayerController().isPlaying())
-                            sendEmptyMessageDelayed(SHOW_PROGRESS, PlaybackManager.ONE_SECOND - (position % PlaybackManager.ONE_SECOND));
+                        sendEmptyMessageDelayed(SHOW_PROGRESS, PlaybackManager.ONE_SECOND - (position % PlaybackManager.ONE_SECOND));
                     }
                     break;
                 }
                 case AUTO_HIDE: {
-                    MediaInterface mediaInterface = mMediaInterface.get();
+                    final MediaInterface mediaInterface = mMediaInterface.get();
                     if (mediaInterface != null && mediaInterface.mCallbacks != null) {
                         if (mediaInterface.mCallbacks.isPositionChanging(mediaInterface))
                             sendEmptyMessageDelayed(AUTO_HIDE, 3000);

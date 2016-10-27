@@ -228,7 +228,7 @@ public class ExoPlayerPlayback extends BasePlayback
     }
 
     @Override
-    protected void internalPlay(MediaMetadata metadataCompat) {
+    protected void internalPlay(MediaMetadata metadataCompat, Timing timing, boolean seek) {
         mPlayOnFocusGain = true;
         tryToGetAudioFocus();
         registerAudioNoisyReceiver();
@@ -258,10 +258,13 @@ public class ExoPlayerPlayback extends BasePlayback
             relaxResources(false); // release everything except MediaPlayer
             setTrack(metadataCompat);
         }
+
+        if (timing != null && seek)
+            internalSeekTo(timing.start);
     }
 
     @Override
-    protected void internalPrepare(MediaMetadata metadataCompat) {
+    protected void internalPrepare(MediaMetadata metadataCompat, Timing timing) {
         boolean mediaHasChanged = mCurrentMediaId == null
                 || !TextUtils.equals(metadataCompat.getDescription().getMediaId(), mCurrentMediaId.toString());
         if (mediaHasChanged) {
@@ -277,10 +280,12 @@ public class ExoPlayerPlayback extends BasePlayback
 
             mPlayWhenReady = false;
             setTrack(metadataCompat);
+            if (timing != null)
+                internalSeekTo(timing.start);
         }
     }
 
-    void setTrack(MediaMetadata track) {
+    private void setTrack(MediaMetadata track) {
         track.setTimingSeeked(false);
         @SuppressWarnings("ResourceType") String source = track.getString(MediaProvider.CUSTOM_METADATA_TRACK_SOURCE);
         @SuppressWarnings("ResourceType") int type = (int) track.getLong(MediaProvider.CUSTOM_METADATA_TRACK_TYPE);
@@ -291,9 +296,8 @@ public class ExoPlayerPlayback extends BasePlayback
         if (mPlayWhenReady)
             mState = PlaybackStateCompat.STATE_BUFFERING;
 
-        if (mCallback != null) {
+        if (mCallback != null)
             mCallback.onPlaybackStatusChanged(mState);
-        }
     }
 
     private boolean isMediaPlayerPlaying() {
@@ -361,8 +365,9 @@ public class ExoPlayerPlayback extends BasePlayback
     }
 
     @Override
-    public void setCurrentMediaId(MediaId mediaId) {
-        this.mCurrentMediaId = mediaId;
+    public void setCurrentMediaMetadata(MediaId mediaId, MediaMetadata metadata) {
+        mCurrentMediaId = mediaId;
+        mMediaMetadata = metadata;
     }
 
     @Override

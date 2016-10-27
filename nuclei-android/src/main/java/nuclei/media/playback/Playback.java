@@ -39,10 +39,6 @@ public interface Playback {
 
     Timing getTiming();
 
-    void setTiming(Timing timing);
-
-    void setTiming(Timing timing, boolean seek);
-
     long getStartStreamPosition();
 
     long getCurrentStreamPosition();
@@ -61,7 +57,7 @@ public interface Playback {
 
     void seekTo(long position);
 
-    void setCurrentMediaId(MediaId mediaId);
+    void setCurrentMediaMetadata(MediaId mediaId, MediaMetadata metadata);
 
     MediaId getCurrentMediaId();
 

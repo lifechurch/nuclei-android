@@ -119,11 +119,7 @@ public class MediaService extends MediaBrowserServiceCompat implements
                 mSessionExtras.putString(EXTRA_CONNECTED_CAST, VideoCastManager.getInstance().getDeviceName());
                 mSession.setExtras(mSessionExtras);
                 // Now we can switch to CastPlayback
-                Playback oldPlayback = mPlaybackManager.getPlayback();
                 Playback playback = new CastPlayback();
-                if (oldPlayback != null) {
-                    playback.setSurface(oldPlayback.getSurfaceId(), oldPlayback.getSurface());
-                }
                 mMediaRouter.setMediaSessionCompat(mSession);
                 mPlaybackManager.switchToPlayback(playback, true);
             }
@@ -149,10 +145,6 @@ public class MediaService extends MediaBrowserServiceCompat implements
                         = Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN
                           ? new ExoPlayerPlayback(MediaService.this)
                           : new FallbackPlayback(MediaService.this);
-                Playback oldPlayback = mPlaybackManager.getPlayback();
-                if (oldPlayback != null) {
-                    playback.setSurface(oldPlayback.getSurfaceId(), oldPlayback.getSurface());
-                }
                 mMediaRouter.setMediaSessionCompat(null);
                 mPlaybackManager.switchToPlayback(playback, false);
             }

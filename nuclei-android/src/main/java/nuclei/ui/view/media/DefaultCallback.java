@@ -168,6 +168,8 @@ public class DefaultCallback implements MediaInterface.MediaInterfaceCallback {
 
     @Override
     public void setTimePlayed(nuclei.media.MediaInterface mediaInterface, long played) {
+        if (played < 0)
+            played = 0;
         if (timePlayed != null)
             timePlayed.setText(stringForTime(played));
     }

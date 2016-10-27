@@ -27,27 +27,21 @@ public abstract class BasePlayback implements Playback {
 
     @Override
     public final void play(MediaMetadata metadata) {
-        Timing timing = metadata.getTiming();
-        if (timing != null) {
-            setTiming(timing, !metadata.isTimingSeeked());
-            metadata.setTimingSeeked(true);
-        } else {
-            setTiming(null, false);
-        }
-        internalPlay(metadata);
+        mTiming = metadata.getTiming();
+        internalPlay(metadata, mTiming, !metadata.isTimingSeeked());
+        metadata.setTimingSeeked(true);
     }
 
-    protected abstract void internalPlay(MediaMetadata metadata);
+    protected abstract void internalPlay(MediaMetadata metadata, Timing timing, boolean seek);
 
     @Override
     public final void prepare(MediaMetadata metadata) {
         pause();
-        Timing timing = metadata.getTiming();
-        setTiming(timing, false);
-        internalPrepare(metadata);
+        mTiming = metadata.getTiming();
+        internalPrepare(metadata, mTiming);
     }
 
-    protected abstract void internalPrepare(MediaMetadata metadata);
+    protected abstract void internalPrepare(MediaMetadata metadata, Timing timing);
 
     @Override
     public long getDuration() {
@@ -61,18 +55,6 @@ public abstract class BasePlayback implements Playback {
     @Override
     public Timing getTiming() {
         return mTiming;
-    }
-
-    @Override
-    public final void setTiming(Timing timing) {
-        setTiming(timing, true);
-    }
-
-    @Override
-    public final void setTiming(Timing timing, boolean seek) {
-        mTiming = timing;
-        if (timing != null && seek)
-            internalSeekTo(timing.start);
     }
 
     @Override

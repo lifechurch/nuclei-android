@@ -98,6 +98,10 @@ public final class MediaMetadata {
         onMetadataChanged();
     }
 
+    public long getDuration() {
+        return mMetadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION);
+    }
+
     public void setDuration(long duration) {
         mMetadata = new MediaMetadataCompat.Builder(mMetadata)
                 .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, duration)

@@ -35,6 +35,8 @@ import com.google.android.libraries.cast.companionlibrary.cast.exceptions.Transi
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import nuclei.logs.Log;
+import nuclei.logs.Logs;
 import nuclei.media.MediaId;
 import nuclei.media.MediaMetadata;
 import nuclei.media.MediaProvider;
@@ -47,6 +49,8 @@ public class CastPlayback extends BasePlayback implements Playback {
     private static final String MIME_TYPE_AUDIO_MPEG = "audio/mpeg";
     private static final String MIME_TYPE_VIDEO_MPEG = "video/mpeg";
     private static final String ITEM_ID = "itemId";
+
+    private static final Log LOG = Logs.newLog(CastPlayback.class);
 
     private final VideoCastConsumerImpl mCastConsumer = new VideoCastConsumerImpl() {
 
@@ -115,14 +119,13 @@ public class CastPlayback extends BasePlayback implements Playback {
 
     @Override
     public void setSurface(long surfaceId, Surface surface) {
-        if (surface == null && mSurfaceId != surfaceId)
-            return;
         mSurfaceId = surfaceId;
         mSurface = surface;
     }
 
     @Override
     public void start() {
+        VideoCastManager.getInstance().removeVideoCastConsumer(mCastConsumer);
         VideoCastManager.getInstance().addVideoCastConsumer(mCastConsumer);
     }
 
@@ -184,7 +187,7 @@ public class CastPlayback extends BasePlayback implements Playback {
     }
 
     @Override
-    protected void internalPlay(MediaMetadata metadataCompat) {
+    protected void internalPlay(MediaMetadata metadataCompat, Timing timing, boolean seek) {
         try {
             mMediaMetadata = metadataCompat;
             mMediaMetadata.setCallback(mCallback);
@@ -193,6 +196,8 @@ public class CastPlayback extends BasePlayback implements Playback {
             if (mCallback != null) {
                 mCallback.onPlaybackStatusChanged(mState);
             }
+            if (timing != null && seek)
+                internalSeekTo(timing.start);
         } catch (TransientNetworkDisconnectionException | NoConnectionException
                 | JSONException | IllegalArgumentException e) {
             if (mCallback != null) {
@@ -202,7 +207,7 @@ public class CastPlayback extends BasePlayback implements Playback {
     }
 
     @Override
-    protected void internalPrepare(MediaMetadata metadataCompat) {
+    protected void internalPrepare(MediaMetadata metadataCompat, Timing timing) {
         boolean mediaHasChanged = mCurrentMediaId == null
                 || !TextUtils.equals(metadataCompat.getDescription().getMediaId(), mCurrentMediaId.toString());
         if (mediaHasChanged) {
@@ -214,6 +219,8 @@ public class CastPlayback extends BasePlayback implements Playback {
                 mCallback.onMetadataChanged(mMediaMetadata);
                 mCallback.onPlaybackStatusChanged(mState);
             }
+            if (timing != null)
+                internalSeekTo(timing.start);
         }
     }
 
@@ -225,10 +232,14 @@ public class CastPlayback extends BasePlayback implements Playback {
                 manager.pause();
                 mCurrentPosition = (int) manager.getCurrentMediaPosition();
             } else {
-                loadMedia(mMediaMetadata, false);
+                try {
+                    manager.stop();
+                } catch (Exception err) {
+                    LOG.e("Error stopping", err);
+                }
+                setMetadataFromRemote();
             }
-        } catch (JSONException | CastException | TransientNetworkDisconnectionException
-                | NoConnectionException | IllegalArgumentException e) {
+        } catch (CastException | TransientNetworkDisconnectionException | NoConnectionException | IllegalArgumentException e) {
             if (mCallback != null) {
                 mCallback.onError(e.getMessage());
             }
@@ -259,8 +270,9 @@ public class CastPlayback extends BasePlayback implements Playback {
     }
 
     @Override
-    public void setCurrentMediaId(MediaId mediaId) {
-        this.mCurrentMediaId = mediaId;
+    public void setCurrentMediaMetadata(MediaId mediaId, MediaMetadata metadata) {
+        mCurrentMediaId = mediaId;
+        mMediaMetadata = metadata;
     }
 
     @Override
@@ -303,6 +315,7 @@ public class CastPlayback extends BasePlayback implements Playback {
             TransientNetworkDisconnectionException, NoConnectionException, JSONException {
         if (metadataCompat == null || metadataCompat.getDescription() == null)
             return;
+        updatePlaybackState();
         if (mCurrentMediaId == null || !TextUtils.equals(metadataCompat.getDescription().getMediaId(), mCurrentMediaId.toString())) {
             mCurrentMediaId = MediaProvider.getInstance().getMediaId(metadataCompat.getDescription().getMediaId());
             mCurrentPosition = getStartStreamPosition();
@@ -366,7 +379,9 @@ public class CastPlayback extends BasePlayback implements Playback {
             if (customData != null && customData.has(ITEM_ID)) {
                 String remoteMediaId = customData.getString(ITEM_ID);
                 if (remoteMediaId != null) {
-                    if (mCurrentMediaId == null || !TextUtils.equals(mCurrentMediaId.toString(), remoteMediaId)) {
+                    if (mCurrentMediaId == null
+                            || !TextUtils.equals(mCurrentMediaId.toString(), remoteMediaId)
+                            || (mMediaMetadata != null && mMediaMetadata.getDuration() != getDuration())) {
                         mCurrentMediaId = MediaProvider.getInstance().getMediaId(remoteMediaId);
                         if (mCallback != null && mMediaMetadata != null) {
                             mMediaMetadata.setDuration(getDuration());
@@ -391,41 +406,47 @@ public class CastPlayback extends BasePlayback implements Playback {
             case MediaStatus.PLAYER_STATE_IDLE:
                 switch (idleReason) {
                     case MediaStatus.IDLE_REASON_ERROR:
-                    case MediaStatus.IDLE_REASON_INTERRUPTED:
                         if (mCallback != null)
                             mCallback.onError("error");
                         break;
+                    case MediaStatus.IDLE_REASON_INTERRUPTED:
+                        if (mCallback != null)
+                            mCallback.onError(PlaybackManager.INTERRUPTED);
+                        break;
                     case MediaStatus.IDLE_REASON_CANCELED:
                     case MediaStatus.IDLE_REASON_FINISHED:
-                        if (mCallback != null) {
+                        if (mCallback != null)
                             mCallback.onCompletion();
-                        }
                         break;
                     default:
+                        setMetadataFromRemote();
+                        if (mCallback != null)
+                            mCallback.onPlaybackStatusChanged(mState);
                         break;
                 }
                 break;
             case MediaStatus.PLAYER_STATE_BUFFERING:
                 mState = PlaybackStateCompat.STATE_BUFFERING;
-                if (mCallback != null) {
+                setMetadataFromRemote();
+                if (mCallback != null)
                     mCallback.onPlaybackStatusChanged(mState);
-                }
                 break;
             case MediaStatus.PLAYER_STATE_PLAYING:
                 mState = PlaybackStateCompat.STATE_PLAYING;
                 setMetadataFromRemote();
-                if (mCallback != null) {
+                if (mCallback != null)
                     mCallback.onPlaybackStatusChanged(mState);
-                }
                 break;
             case MediaStatus.PLAYER_STATE_PAUSED:
                 mState = PlaybackStateCompat.STATE_PAUSED;
                 setMetadataFromRemote();
-                if (mCallback != null) {
+                if (mCallback != null)
                     mCallback.onPlaybackStatusChanged(mState);
-                }
                 break;
             default: // case unknown
+                setMetadataFromRemote();
+                if (mCallback != null)
+                    mCallback.onPlaybackStatusChanged(mState);
                 break;
         }
     }

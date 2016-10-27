@@ -183,7 +183,7 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
     }
 
     @Override
-    protected void internalPlay(MediaMetadata metadataCompat) {
+    protected void internalPlay(MediaMetadata metadataCompat, Timing timing, boolean seek) {
         mPlayOnFocusGain = true;
         tryToGetAudioFocus();
         registerAudioNoisyReceiver();
@@ -233,10 +233,13 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
                 }
             }
         }
+
+        if (timing != null && seek)
+            internalSeekTo(timing.start);
     }
 
     @Override
-    protected void internalPrepare(MediaMetadata metadataCompat) {
+    protected void internalPrepare(MediaMetadata metadataCompat, Timing timing) {
         boolean mediaHasChanged = mCurrentMediaId == null
                 || !TextUtils.equals(metadataCompat.getDescription().getMediaId(), mCurrentMediaId.toString());
         if (mediaHasChanged) {
@@ -244,12 +247,12 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
             mMetadata = metadataCompat;
             mMetadata.setCallback(mCallback);
             mCurrentMediaId = MediaProvider.getInstance().getMediaId(metadataCompat.getDescription().getMediaId());
-            if (mCallback != null)
+            if (mCallback != null) {
                 mCallback.onMetadataChanged(mMetadata);
-        }
-
-        if (mCallback != null) {
-            mCallback.onPlaybackStatusChanged(mState);
+                mCallback.onPlaybackStatusChanged(mState);
+            }
+            if (timing != null)
+                internalSeekTo(timing.start);
         }
     }
 
@@ -299,8 +302,9 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
     }
 
     @Override
-    public void setCurrentMediaId(MediaId mediaId) {
-        this.mCurrentMediaId = mediaId;
+    public void setCurrentMediaMetadata(MediaId mediaId, MediaMetadata metadata) {
+        mCurrentMediaId = mediaId;
+        mMetadata = metadata;
     }
 
     @Override

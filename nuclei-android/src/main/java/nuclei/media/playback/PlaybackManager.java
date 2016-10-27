@@ -44,6 +44,8 @@ public class PlaybackManager implements Playback.Callback {
 
     private static final Log LOG = Logs.newLog(PlaybackManager.class);
 
+    public static final String INTERRUPTED = "interrupted";
+
     public static final int ONE_SECOND = 1000;
     public static final int THIRY_SECOND = 30000;
 
@@ -118,6 +120,7 @@ public class PlaybackManager implements Playback.Callback {
             }
             mServiceCallback.onPlaybackStart(id);
             mServiceCallback.onNotificationRequired();
+            mPlayback.start();
             mPlayback.play(mMediaMetadata);
 
             if (mTimer > -1) {
@@ -174,6 +177,9 @@ public class PlaybackManager implements Playback.Callback {
 
         // If there is an error message, send it to the playback state:
         if (error != null) {
+            mHandler.removeMessages(TIMER_COUNTDOWN);
+            mHandler.removeMessages(TIMER_TIMING);
+
             // Error states are really only supposed to be used for errors that cause playback to
             // stop unexpectedly and persist until the user takes action to fix it.
             stateBuilder.setErrorMessage(error);
@@ -188,14 +194,20 @@ public class PlaybackManager implements Playback.Callback {
                     mPlayback.pause();
                 }
             }
-            mHandler.removeMessages(TIMER_COUNTDOWN);
-            mHandler.removeMessages(TIMER_TIMING);
-            MediaProvider.getInstance().onError(error);
+            if (!INTERRUPTED.equals(error))
+                MediaProvider.getInstance().onError(error);
         }
         //noinspection ResourceType
         stateBuilder.setState(state, position, mServiceCallback.getAudioSpeed(), SystemClock.elapsedRealtime());
 
         mServiceCallback.onPlaybackStateUpdated(stateBuilder.build());
+
+        if (state == PlaybackStateCompat.STATE_PLAYING) {
+            if (mTimer > -1 && !mHandler.hasMessages(TIMER_COUNTDOWN))
+                mHandler.sendEmptyMessageDelayed(TIMER_COUNTDOWN, ONE_SECOND);
+            if (mPlayback.getTiming() != null && !mHandler.hasMessages(TIMER_TIMING))
+                mHandler.sendEmptyMessageDelayed(TIMER_TIMING, ONE_SECOND);
+        }
 
         if (state == PlaybackStateCompat.STATE_PLAYING) {
             mServiceCallback.onNotificationRequired();
@@ -268,14 +280,14 @@ public class PlaybackManager implements Playback.Callback {
         if (playback == null) {
             throw new IllegalArgumentException("Playback cannot be null");
         }
+        playback.setSurface(mPlayback.getSurfaceId(), mPlayback.getSurface());
         // suspend the current one.
         final int oldState = mPlayback.getState();
         final long pos = mPlayback.getCurrentStreamPosition();
-        final MediaId currentMediaId = mPlayback.getCurrentMediaId();
         mPlayback.stop(false);
         playback.setCallback(this);
         playback.setCurrentStreamPosition(pos < 0 ? 0 : pos);
-        playback.setCurrentMediaId(currentMediaId);
+        playback.setCurrentMediaMetadata(mPlayback.getCurrentMediaId(), mPlayback.getCurrentMetadata());
         playback.start();
         // finally swap the instance
         mPlayback = playback;
@@ -343,6 +355,7 @@ public class PlaybackManager implements Playback.Callback {
         public void onPrepareFromMediaId(String mediaId, final Bundle extras) {
             final MediaId id = MediaProvider.getInstance().getMediaId(mediaId);
             if (mMediaMetadata != null && mMediaMetadata.isEqual(id)) {
+                mMediaMetadata.setTimingSeeked(false);
                 handlePrepareRequest();
                 return;
             }
@@ -377,6 +390,7 @@ public class PlaybackManager implements Playback.Callback {
                                 @Override
                                 public void onResult(MediaMetadata mediaMetadata) {
                                     mMediaMetadata = mediaMetadata;
+                                    mMediaMetadata.setTimingSeeked(false);
                                     handlePrepareRequest();
                                 }
 
@@ -394,6 +408,7 @@ public class PlaybackManager implements Playback.Callback {
         public void onPlayFromMediaId(final String mediaId, final Bundle extras) {
             final MediaId id = MediaProvider.getInstance().getMediaId(mediaId);
             if (mMediaMetadata != null && mMediaMetadata.isEqual(id)) {
+                mMediaMetadata.setTimingSeeked(false);
                 handlePlayRequest();
                 return;
             }
@@ -460,6 +475,7 @@ public class PlaybackManager implements Playback.Callback {
                                             @Override
                                             public void onResult(MediaMetadata mediaMetadata) {
                                                 mMediaMetadata = mediaMetadata;
+                                                mMediaMetadata.setTimingSeeked(false);
                                                 handlePlayRequest();
                                             }
                                         });
