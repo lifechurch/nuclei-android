@@ -36,6 +36,7 @@ import nuclei.media.MediaProvider;
 import nuclei.media.MediaService;
 import nuclei.media.Queue;
 import nuclei.media.QueueItem;
+import nuclei.media.ResourceProvider;
 import nuclei.task.Result;
 import nuclei.logs.Log;
 import nuclei.logs.Logs;
@@ -149,7 +150,7 @@ public class PlaybackManager implements Playback.Callback {
         }
     }
 
-    public void handleStopRequest(String withError) {
+    public void handleStopRequest(Exception withError) {
         mPlayback.stop(true);
         final MediaId mediaId = mPlayback.getCurrentMediaId();
         mServiceCallback.onPlaybackStop(mediaId);
@@ -164,7 +165,7 @@ public class PlaybackManager implements Playback.Callback {
      *
      * @param error if not null, error message to present to the user.
      */
-    public void updatePlaybackState(String error) {
+    public void updatePlaybackState(Exception error) {
         long position = PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN;
         if (mPlayback != null && mPlayback.isConnected()) {
             position = mPlayback.getCurrentStreamPosition();
@@ -180,10 +181,12 @@ public class PlaybackManager implements Playback.Callback {
         if (error != null) {
             mHandler.removeMessages(TIMER_COUNTDOWN);
             mHandler.removeMessages(TIMER_TIMING);
-
+            String message = ResourceProvider.getInstance().getExceptionMessage(error);
+            if (message == null)
+                message = error.getMessage();
             // Error states are really only supposed to be used for errors that cause playback to
             // stop unexpectedly and persist until the user takes action to fix it.
-            stateBuilder.setErrorMessage(error);
+            stateBuilder.setErrorMessage(message);
             state = PlaybackStateCompat.STATE_ERROR;
             if (mPlayback != null) {
                 int lastState = state;
@@ -270,7 +273,7 @@ public class PlaybackManager implements Playback.Callback {
     }
 
     @Override
-    public void onError(String error) {
+    public void onError(Exception error) {
         updatePlaybackState(error);
     }
 
@@ -385,7 +388,7 @@ public class PlaybackManager implements Playback.Callback {
                                 @Override
                                 public void onException(Exception err) {
                                     LOG.e("Error getting metadata", err);
-                                    onError(err.getMessage());
+                                    handleStopRequest(err);
                                 }
                             });
                 }
@@ -408,7 +411,7 @@ public class PlaybackManager implements Playback.Callback {
                                 @Override
                                 public void onException(Exception err) {
                                     LOG.e("Error getting metadata", err);
-                                    onError(err.getMessage());
+                                    handleStopRequest(err);
                                 }
                             });
                 }
@@ -438,7 +441,7 @@ public class PlaybackManager implements Playback.Callback {
                                 @Override
                                 public void onException(Exception err) {
                                     LOG.e("Error getting metadata", err);
-                                    onError(err.getMessage());
+                                    handleStopRequest(err);
                                 }
                             });
                 }
@@ -461,7 +464,7 @@ public class PlaybackManager implements Playback.Callback {
                                 @Override
                                 public void onException(Exception err) {
                                     LOG.e("Error getting metadata", err);
-                                    onError(err.getMessage());
+                                    handleStopRequest(err);
                                 }
                             });
                 }
@@ -477,7 +480,7 @@ public class PlaybackManager implements Playback.Callback {
                         @Override
                         public void onResult(final String mediaId) {
                             if (mediaId == null)
-                                updatePlaybackState("Could not find music");
+                                updatePlaybackState(new Exception("Could not find music"));
                             else {
                                 final MediaId id = MediaProvider.getInstance().getMediaId(mediaId);
                                 MediaProvider.getInstance()
@@ -495,7 +498,7 @@ public class PlaybackManager implements Playback.Callback {
 
                         @Override
                         public void onException(Exception err) {
-                            updatePlaybackState(err.getMessage());
+                            handleStopRequest(err);
                         }
                     });
         }

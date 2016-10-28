@@ -87,7 +87,7 @@ public interface Playback {
         /**
          * @param error to be added to the PlaybackState
          */
-        void onError(String error);
+        void onError(Exception error);
 
         void onMetadataChanged(MediaMetadata metadata);
     }

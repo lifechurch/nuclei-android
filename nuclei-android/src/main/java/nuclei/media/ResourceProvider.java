@@ -61,6 +61,8 @@ public abstract class ResourceProvider {
     public abstract CharSequence getQuantityString(int id, int quantity);
     public abstract int getDrawable(int id);
 
+    public abstract String getExceptionMessage(Exception err);
+
     public List<String> getSpeeds() {
         return Arrays.asList("0.75x", "1x", "1.25x", "1.5x", "2x");
     }

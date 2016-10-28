@@ -89,7 +89,7 @@ public abstract class MediaProvider {
                 .appendQueryParameter("_type", Integer.toString(type));
     }
 
-    public abstract void onError(String message);
+    public abstract void onError(Exception message);
 
     public MediaBrowserServiceCompat.BrowserRoot getBrowserRoot(@NonNull String clientPackageName,
                                                                          int clientUid,

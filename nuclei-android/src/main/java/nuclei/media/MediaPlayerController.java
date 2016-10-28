@@ -173,7 +173,7 @@ public class MediaPlayerController implements MediaController.MediaPlayerControl
         String currentId = getMediaId(mediaControllerCompat);
         if (currentId != null) {
             MediaId id = MediaProvider.getInstance().getMediaId(currentId);
-            if (mediaId.equals(id))
+            if (mediaId != null && mediaId.equals(id))
                 return true;
             LOG.i("ID (" + id + ") != (" + mediaId + ")");
         } else {

@@ -701,7 +701,7 @@ public class ExoPlayerPlayback extends BasePlayback
         do {
             if (err instanceof IOException) {
                 if (mCallback != null) {
-                    mCallback.onError(MediaService.ERROR_NETWORK);
+                    mCallback.onError(e);
                     long pos = getCurrentStreamPosition();
                     stop(true);
                     mCurrentPosition = pos;
@@ -713,11 +713,7 @@ public class ExoPlayerPlayback extends BasePlayback
 
         if (mCallback != null) {
             stop(true);
-            int type = ErrorUtil.getErrorType(e);
-            if (type == ErrorUtil.NO_CONNECTION || type == ErrorUtil.GENERIC_IO || type == ErrorUtil.TIMEOUT)
-                mCallback.onError(MediaService.ERROR_NETWORK);
-            else
-                mCallback.onError(e.getMessage());
+            mCallback.onError(e);
         }
     }
 

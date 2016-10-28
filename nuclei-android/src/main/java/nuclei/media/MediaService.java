@@ -60,10 +60,6 @@ public class MediaService extends MediaBrowserServiceCompat implements
     public static final String EVENT_SPEED = "nuclei.SPEED_CHANGE.";
     public static final String EVENT_CAST = "nuclei.CAST.";
 
-    public static final String ERROR_INITIALIZATION = "Error Initialization";
-    public static final String ERROR_LOAD = "Error Loading";
-    public static final String ERROR_NETWORK = "Error Network";
-
     // Extra on MediaSession that contains the Cast device name currently connected to
     public static final String EXTRA_CONNECTED_CAST = "nuclei.CAST_NAME";
 
