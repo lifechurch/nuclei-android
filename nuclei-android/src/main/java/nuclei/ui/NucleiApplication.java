@@ -31,13 +31,13 @@ import nuclei.task.Tasks;
 /**
  * Base Application which preconfigures things like Http Pools and Task Pools and Context Handles
  */
-public class CytoApp extends Application {
+public class NucleiApplication extends Application {
 
     protected void initializeHttp() {
         try {
             Http.initialize(this);
         } catch (Throwable err) {
-            Logs.newLog(CytoApp.class).w("Error initializing HTTP: " + err.getMessage());
+            Logs.newLog(NucleiApplication.class).w("Error initializing HTTP: " + err.getMessage());
         }
     }
 
@@ -48,7 +48,6 @@ public class CytoApp extends Application {
         ContextHandle.initialize(this);
         Tasks.initialize(this);
         initializeHttp();
-
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
             onInitializeL();

@@ -15,6 +15,7 @@
  */
 package nuclei.ui;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -32,11 +33,12 @@ import nuclei.logs.Trace;
 /**
  * Base Fragment with easy hooks for managing PersistenceLists and ContextHandles
  */
-public abstract class CytoSupportFragment extends Fragment implements NucleiContext {
+public abstract class NucleiSupportFragment extends Fragment implements NucleiContext {
 
-    static final Log LOG = Logs.newLog(CytoSupportFragment.class);
+    static final Log LOG = Logs.newLog(NucleiSupportFragment.class);
 
     private ContextHandle mHandle;
+    private ContextHandle mViewHandle;
     private Trace mTrace;
     private SupportPersistenceLoader mLoader;
 
@@ -136,10 +138,48 @@ public abstract class CytoSupportFragment extends Fragment implements NucleiCont
     }
 
     @Override
+    public ContextHandle getViewContextHandle() {
+        if (getView() == null)
+            return null;
+        if (mViewHandle == null)
+            mViewHandle = ContextHandle.obtain(getContext());
+        return mViewHandle;
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (mViewHandle != null)
+            mViewHandle.release();
+        mViewHandle = null;
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        if (mHandle != null)
+            mHandle.attach(context);
+        if (mViewHandle != null)
+            mViewHandle.attach(context);
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        if (mHandle != null)
+            mHandle.release();
+        if (mViewHandle != null)
+            mViewHandle.release();
+    }
+
+    @Override
     public void onDestroy() {
         if (mHandle != null)
             mHandle.release();
         mHandle = null;
+        if (mViewHandle != null)
+            mViewHandle.release();
+        mViewHandle = null;
         if (mTrace != null)
             mTrace.onDestroy(getClass());
         mTrace = null;

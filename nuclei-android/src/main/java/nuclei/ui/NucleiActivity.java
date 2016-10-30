@@ -16,36 +16,40 @@
 package nuclei.ui;
 
 import android.annotation.TargetApi;
-import android.app.Fragment;
+import android.app.Activity;
+import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityOptionsCompat;
 
 import nuclei.persistence.PersistenceList;
 import nuclei.persistence.PersistenceLoader;
 import nuclei.persistence.Query;
 import nuclei.persistence.adapter.PersistenceAdapterListener;
 import nuclei.persistence.adapter.PersistenceListAdapter;
+import nuclei.intent.IntentBuilderActivity;
 import nuclei.task.ContextHandle;
 import nuclei.logs.Log;
 import nuclei.logs.Logs;
 import nuclei.logs.Trace;
 
 /**
- * Base Fragment with easy hooks for managing PersistenceLists and ContextHandles
+ * Base Activity with easy hooks for managing PersistenceLists and ContextHandles
  */
 @TargetApi(15)
-public abstract class CytoFragment extends Fragment implements NucleiContext {
+public abstract class NucleiActivity extends Activity implements IntentBuilderActivity, NucleiContext {
 
-    static final Log LOG = Logs.newLog(CytoFragment.class);
+    static final Log LOG = Logs.newLog(NucleiActivity.class);
 
     private ContextHandle mHandle;
     private Trace mTrace;
     private PersistenceLoader mLoader;
+    private ActivityOptionsCompat mOptions;
 
     public <T> int executeQueryWithOrder(Query<T> query, PersistenceList.Listener<T> listener, String orderBy, String...selectionArgs) {
         try {
             if (mLoader == null)
-                mLoader = PersistenceLoader.newLoaderManager(getActivity(), getLoaderManager());
+                mLoader = PersistenceLoader.newLoaderManager(this, getLoaderManager());
             return mLoader.executeWithOrder(query, listener, orderBy, selectionArgs);
         } catch (IllegalStateException err) {
             LOG.wtf("Error executing query", err);
@@ -60,7 +64,7 @@ public abstract class CytoFragment extends Fragment implements NucleiContext {
     public <T> int executeQuery(Query<T> query, PersistenceList.Listener<T> listener, String...selectionArgs) {
         try {
             if (mLoader == null)
-                mLoader = PersistenceLoader.newLoaderManager(getActivity(), getLoaderManager());
+                mLoader = PersistenceLoader.newLoaderManager(this, getLoaderManager());
             return mLoader.execute(query, listener, selectionArgs);
         } catch (IllegalStateException err) {
             LOG.wtf("Error executing query", err);
@@ -83,8 +87,33 @@ public abstract class CytoFragment extends Fragment implements NucleiContext {
         }
     }
 
+    public void destroyQuery(int id) {
+        if (mLoader != null)
+            mLoader.destroyQuery(id);
+    }
+
     @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
+    public void setDefaultActivityOptions(ActivityOptionsCompat options) {
+        mOptions = options;
+    }
+
+    @Override
+    public void startActivityForResult(Intent intent, int requestCode, Bundle options) {
+        if (options != null || mOptions == null) {
+            if (Build.VERSION.SDK_INT >= 16)
+                super.startActivityForResult(intent, requestCode, options);
+            else
+                super.startActivityForResult(intent, requestCode);
+        } else if (Build.VERSION.SDK_INT >= 16)
+            super.startActivityForResult(intent, requestCode, mOptions.toBundle());
+        else
+            super.startActivityForResult(intent, requestCode);
+        mOptions = null;
+    }
+
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (Logs.TRACE) {
             mTrace = new Trace();
@@ -98,21 +127,21 @@ public abstract class CytoFragment extends Fragment implements NucleiContext {
     }
 
     @Override
-    public void onPause() {
+    protected void onPause() {
         super.onPause();
         if (mTrace != null)
             mTrace.onPause(getClass());
     }
 
     @Override
-    public void onResume() {
+    protected void onResume() {
         super.onResume();
         if (mTrace != null)
             mTrace.onResume(getClass());
     }
 
     @Override
-    public void onStop() {
+    protected void onStop() {
         super.onStop();
         if (mTrace != null)
             mTrace.onStop(getClass());
@@ -128,12 +157,17 @@ public abstract class CytoFragment extends Fragment implements NucleiContext {
     @Override
     public ContextHandle getContextHandle() {
         if (mHandle == null)
-            mHandle = ContextHandle.obtain(getActivity());
+            mHandle = ContextHandle.obtain(this);
         return mHandle;
     }
 
     @Override
-    public void onDestroy() {
+    public ContextHandle getViewContextHandle() {
+        return getContextHandle();
+    }
+
+    @Override
+    protected void onDestroy() {
         if (mHandle != null)
             mHandle.release();
         mHandle = null;

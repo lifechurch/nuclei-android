@@ -15,16 +15,16 @@
  */
 package nuclei.ui;
 
-import android.annotation.TargetApi;
-import android.app.Activity;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityOptionsCompat;
+import android.support.v7.app.AppCompatActivity;
 
 import nuclei.persistence.PersistenceList;
-import nuclei.persistence.PersistenceLoader;
 import nuclei.persistence.Query;
+import nuclei.persistence.SupportPersistenceLoader;
 import nuclei.persistence.adapter.PersistenceAdapterListener;
 import nuclei.persistence.adapter.PersistenceListAdapter;
 import nuclei.intent.IntentBuilderActivity;
@@ -34,22 +34,19 @@ import nuclei.logs.Logs;
 import nuclei.logs.Trace;
 
 /**
- * Base Activity with easy hooks for managing PersistenceLists and ContextHandles
+ * Base Compat Activity with easy hooks for managing PersistenceLists and ContextHandles
  */
-@TargetApi(15)
-public abstract class CytoActivity extends Activity implements IntentBuilderActivity, NucleiContext {
+public abstract class NucleiCompatActivity extends AppCompatActivity implements IntentBuilderActivity, NucleiContext {
 
-    static final Log LOG = Logs.newLog(CytoActivity.class);
+    static final Log LOG = Logs.newLog(NucleiCompatActivity.class);
 
-    private ContextHandle mHandle;
-    private Trace mTrace;
-    private PersistenceLoader mLoader;
+    private SupportPersistenceLoader mLoader;
     private ActivityOptionsCompat mOptions;
 
     public <T> int executeQueryWithOrder(Query<T> query, PersistenceList.Listener<T> listener, String orderBy, String...selectionArgs) {
         try {
             if (mLoader == null)
-                mLoader = PersistenceLoader.newLoaderManager(this, getLoaderManager());
+                mLoader = SupportPersistenceLoader.newLoaderManager(this, getSupportLoaderManager());
             return mLoader.executeWithOrder(query, listener, orderBy, selectionArgs);
         } catch (IllegalStateException err) {
             LOG.wtf("Error executing query", err);
@@ -64,7 +61,7 @@ public abstract class CytoActivity extends Activity implements IntentBuilderActi
     public <T> int executeQuery(Query<T> query, PersistenceList.Listener<T> listener, String...selectionArgs) {
         try {
             if (mLoader == null)
-                mLoader = PersistenceLoader.newLoaderManager(this, getLoaderManager());
+                mLoader = SupportPersistenceLoader.newLoaderManager(this, getSupportLoaderManager());
             return mLoader.execute(query, listener, selectionArgs);
         } catch (IllegalStateException err) {
             LOG.wtf("Error executing query", err);
@@ -111,9 +108,11 @@ public abstract class CytoActivity extends Activity implements IntentBuilderActi
         mOptions = null;
     }
 
+    private ContextHandle mHandle;
+    private Trace mTrace;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (Logs.TRACE) {
             mTrace = new Trace();
@@ -159,6 +158,11 @@ public abstract class CytoActivity extends Activity implements IntentBuilderActi
         if (mHandle == null)
             mHandle = ContextHandle.obtain(this);
         return mHandle;
+    }
+
+    @Override
+    public ContextHandle getViewContextHandle() {
+        return getContextHandle();
     }
 
     @Override

@@ -63,6 +63,12 @@ public final class ContextHandle {
         return mContext.get();
     }
 
+    public void attach(Context context) {
+        if (applicationHandle == this)
+            throw new RuntimeException("You cannot attach the application handle.");
+        mContext = new WeakReference<>(context);
+    }
+
     public void release() {
         if (applicationHandle == this)
             throw new RuntimeException("You cannot release the application handle.");

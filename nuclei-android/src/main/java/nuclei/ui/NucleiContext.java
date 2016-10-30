@@ -28,4 +28,6 @@ public interface NucleiContext {
      */
     ContextHandle getContextHandle();
 
+    ContextHandle getViewContextHandle();
+
 }

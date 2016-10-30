@@ -15,38 +15,39 @@
  */
 package nuclei.ui;
 
-import android.content.Intent;
-import android.os.Build;
+import android.annotation.TargetApi;
+import android.app.Fragment;
+import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.support.v4.app.ActivityOptionsCompat;
-import android.support.v7.app.AppCompatActivity;
 
 import nuclei.persistence.PersistenceList;
+import nuclei.persistence.PersistenceLoader;
 import nuclei.persistence.Query;
-import nuclei.persistence.SupportPersistenceLoader;
 import nuclei.persistence.adapter.PersistenceAdapterListener;
 import nuclei.persistence.adapter.PersistenceListAdapter;
-import nuclei.intent.IntentBuilderActivity;
 import nuclei.task.ContextHandle;
 import nuclei.logs.Log;
 import nuclei.logs.Logs;
 import nuclei.logs.Trace;
 
 /**
- * Base Compat Activity with easy hooks for managing PersistenceLists and ContextHandles
+ * Base Fragment with easy hooks for managing PersistenceLists and ContextHandles
  */
-public abstract class CytoCompatActivity extends AppCompatActivity implements IntentBuilderActivity, NucleiContext {
+@TargetApi(15)
+public abstract class NucleiFragment extends Fragment implements NucleiContext {
 
-    static final Log LOG = Logs.newLog(CytoCompatActivity.class);
+    static final Log LOG = Logs.newLog(NucleiSupportFragment.class);
 
-    private SupportPersistenceLoader mLoader;
-    private ActivityOptionsCompat mOptions;
+    private ContextHandle mHandle;
+    private ContextHandle mViewHandle;
+    private Trace mTrace;
+    private PersistenceLoader mLoader;
 
     public <T> int executeQueryWithOrder(Query<T> query, PersistenceList.Listener<T> listener, String orderBy, String...selectionArgs) {
         try {
             if (mLoader == null)
-                mLoader = SupportPersistenceLoader.newLoaderManager(this, getSupportLoaderManager());
+                mLoader = PersistenceLoader.newLoaderManager(getActivity(), getLoaderManager());
             return mLoader.executeWithOrder(query, listener, orderBy, selectionArgs);
         } catch (IllegalStateException err) {
             LOG.wtf("Error executing query", err);
@@ -61,7 +62,7 @@ public abstract class CytoCompatActivity extends AppCompatActivity implements In
     public <T> int executeQuery(Query<T> query, PersistenceList.Listener<T> listener, String...selectionArgs) {
         try {
             if (mLoader == null)
-                mLoader = SupportPersistenceLoader.newLoaderManager(this, getSupportLoaderManager());
+                mLoader = PersistenceLoader.newLoaderManager(getActivity(), getLoaderManager());
             return mLoader.execute(query, listener, selectionArgs);
         } catch (IllegalStateException err) {
             LOG.wtf("Error executing query", err);
@@ -90,29 +91,7 @@ public abstract class CytoCompatActivity extends AppCompatActivity implements In
     }
 
     @Override
-    public void setDefaultActivityOptions(ActivityOptionsCompat options) {
-        mOptions = options;
-    }
-
-    @Override
-    public void startActivityForResult(Intent intent, int requestCode, Bundle options) {
-        if (options != null || mOptions == null) {
-            if (Build.VERSION.SDK_INT >= 16)
-                super.startActivityForResult(intent, requestCode, options);
-            else
-                super.startActivityForResult(intent, requestCode);
-        } else if (Build.VERSION.SDK_INT >= 16)
-            super.startActivityForResult(intent, requestCode, mOptions.toBundle());
-        else
-            super.startActivityForResult(intent, requestCode);
-        mOptions = null;
-    }
-
-    private ContextHandle mHandle;
-    private Trace mTrace;
-
-    @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
+    public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (Logs.TRACE) {
             mTrace = new Trace();
@@ -126,21 +105,21 @@ public abstract class CytoCompatActivity extends AppCompatActivity implements In
     }
 
     @Override
-    protected void onPause() {
+    public void onPause() {
         super.onPause();
         if (mTrace != null)
             mTrace.onPause(getClass());
     }
 
     @Override
-    protected void onResume() {
+    public void onResume() {
         super.onResume();
         if (mTrace != null)
             mTrace.onResume(getClass());
     }
 
     @Override
-    protected void onStop() {
+    public void onStop() {
         super.onStop();
         if (mTrace != null)
             mTrace.onStop(getClass());
@@ -156,15 +135,53 @@ public abstract class CytoCompatActivity extends AppCompatActivity implements In
     @Override
     public ContextHandle getContextHandle() {
         if (mHandle == null)
-            mHandle = ContextHandle.obtain(this);
+            mHandle = ContextHandle.obtain(getActivity());
         return mHandle;
     }
 
     @Override
-    protected void onDestroy() {
+    public ContextHandle getViewContextHandle() {
+        if (getView() == null)
+            return null;
+        if (mViewHandle == null)
+            mViewHandle = ContextHandle.obtain(getActivity());
+        return mViewHandle;
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (mViewHandle != null)
+            mViewHandle.release();
+        mViewHandle = null;
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        if (mHandle != null)
+            mHandle.attach(context);
+        if (mViewHandle != null)
+            mViewHandle.attach(context);
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        if (mHandle != null)
+            mHandle.release();
+        if (mViewHandle != null)
+            mViewHandle.release();
+    }
+
+    @Override
+    public void onDestroy() {
         if (mHandle != null)
             mHandle.release();
         mHandle = null;
+        if (mViewHandle != null)
+            mViewHandle.release();
+        mViewHandle = null;
         if (mTrace != null)
             mTrace.onDestroy(getClass());
         mTrace = null;
