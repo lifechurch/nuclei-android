@@ -65,6 +65,7 @@ public abstract class PackageTargetManager implements Parcelable {
     public static final String INSTAGRAM = "com.instagram.android";
     public static final String LINE = "jp.naver.line.android";
     public static final String TELEGRAM = "org.telegram.messenger";
+    public static final String WHATSAP = "com.whatsapp";
 
     private static final int TWITTER_MAX_LEN = 140;
     private static final String DEFAULT_SHARE_WEIGHTS = "nuclei_share_weights";
@@ -220,6 +221,7 @@ public abstract class PackageTargetManager implements Parcelable {
             case WECHAT:
             case LINE:
             case TELEGRAM:
+            case WHATSAP:
                 intent = onExternalStorage(activity, info.activityInfo.packageName, authority, intent, permissionRequestCode);
                 break;
             case INSTAGRAM:
