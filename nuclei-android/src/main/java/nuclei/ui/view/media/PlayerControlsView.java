@@ -300,18 +300,23 @@ public class PlayerControlsView extends FrameLayout {
         menu.show();
     }
 
+    @Override
     public boolean isShown() {
-        return getChildAt(0).getVisibility() == VISIBLE;
+        if (getChildCount() > 0)
+            return getChildAt(0).getVisibility() == VISIBLE;
+        return super.isShown();
     }
 
     public void show() {
-        getChildAt(0).setVisibility(VISIBLE);
+        if (getChildCount() > 0)
+            getChildAt(0).setVisibility(VISIBLE);
         if (mMediaInterface != null && mAutoHide)
             mMediaInterface.autoHide();
     }
 
     public void hide() {
-        getChildAt(0).setVisibility(GONE);
+        if (getChildCount() > 0)
+            getChildAt(0).setVisibility(GONE);
     }
 
     public long getTimer() {
