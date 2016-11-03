@@ -172,13 +172,12 @@ public abstract class PackageTargetManager implements Parcelable {
     public List<ResolveInfo> queryIntentActivities(Context context, Intent shareIntent) {
         List<ResolveInfo> resolveInfos = context.getApplicationContext().getPackageManager()
                 .queryIntentActivities(shareIntent, 0);
-        int ix = 0;
-        for (ResolveInfo resolveInfo : resolveInfos) {
+        for (int i = 0, len = resolveInfos.size(); i < len; i++) {
+            ResolveInfo resolveInfo = resolveInfos.get(i);
             if ("com.android.fallback.Fallback".equals(resolveInfo.activityInfo.name)) {
-                resolveInfos.remove(ix);
+                resolveInfos.remove(i);
                 break;
             }
-            ix++;
         }
         return resolveInfos;
     }
@@ -219,14 +218,16 @@ public abstract class PackageTargetManager implements Parcelable {
                 intent = onFacebook(activity, intent);
                 break;
             case WECHAT:
+                intent = onExternalStorage(activity, info.activityInfo.packageName, authority, intent, permissionRequestCode, true);
+                break;
             case LINE:
             case TELEGRAM:
             case WHATSAP:
-                intent = onExternalStorage(activity, info.activityInfo.packageName, authority, intent, permissionRequestCode);
+                intent = onExternalStorage(activity, info.activityInfo.packageName, authority, intent, permissionRequestCode, false);
                 break;
             case INSTAGRAM:
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M)
-                    intent = onExternalStorage(activity, info.activityInfo.packageName, authority, intent, permissionRequestCode);
+                    intent = onExternalStorage(activity, info.activityInfo.packageName, authority, intent, permissionRequestCode, false);
                 break;
         }
 
@@ -243,7 +244,7 @@ public abstract class PackageTargetManager implements Parcelable {
      * WeChat and on some android versions Instagram doesn't seem to handle file providers very well, so instead of those we move the
      * file to external storage and startActivityForResult with the actual file.
      */
-    protected Intent onExternalStorage(Activity activity, String packageName, String authority, Intent intent, int permissionRequestCode) {
+    protected Intent onExternalStorage(Activity activity, String packageName, String authority, Intent intent, int permissionRequestCode, boolean stripText) {
         if (mFile != null) {
             if (ContextCompat.checkSelfPermission(activity, android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
                     == PackageManager.PERMISSION_GRANTED) {
@@ -273,7 +274,7 @@ public abstract class PackageTargetManager implements Parcelable {
                         new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE}, permissionRequestCode);
                 return null;
             }
-            if (intent.hasExtra(Intent.EXTRA_STREAM) && intent.hasExtra(Intent.EXTRA_TEXT))
+            if (stripText && intent.hasExtra(Intent.EXTRA_STREAM) && intent.hasExtra(Intent.EXTRA_TEXT))
                 intent.removeExtra(Intent.EXTRA_TEXT);
         }
         return intent;
