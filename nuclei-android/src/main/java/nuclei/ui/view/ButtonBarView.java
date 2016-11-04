@@ -216,12 +216,14 @@ public class ButtonBarView extends FrameLayout {
     }
 
     public void setSelectedItem(int position) {
+        boolean changed = false;
         if (position > -1 && position != mSelectedItem && mItems != null) {
             setSelectedItemState(position);
-            final int size = mListeners.size();
-            for (int i = 0; i < size; i++)
-                mListeners.get(i).onSelected(mSelectedItem);
+            changed = true;
         }
+        final int size = mListeners.size();
+        for (int i = 0; i < size; i++)
+            mListeners.get(i).onSelected(mSelectedItem, changed);
     }
 
     private void setSelected(final Item item, boolean selected) {
@@ -374,7 +376,7 @@ public class ButtonBarView extends FrameLayout {
 
     public interface OnItemSelectedListener {
 
-        void onSelected(int position);
+        void onSelected(int position, boolean changed);
 
     }
 

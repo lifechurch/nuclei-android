@@ -32,8 +32,9 @@ public abstract class FragmentButtonAdapter extends ButtonAdapter implements But
     public abstract Fragment getFragment(int position);
 
     @Override
-    public void onSelected(int position) {
-        mFragmentManager.beginTransaction()
+    public void onSelected(int position, boolean changed) {
+        if (changed)
+            mFragmentManager.beginTransaction()
                 .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
                 .replace(mContainerViewId, getFragment(position))
                 .commitNow();
