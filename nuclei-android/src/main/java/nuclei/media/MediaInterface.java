@@ -23,6 +23,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.RemoteException;
 import android.provider.MediaStore;
+import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaMetadataCompat;
@@ -214,7 +215,7 @@ public class MediaInterface {
         }
     }
 
-    private void onMetadataChanged(MediaMetadataCompat metadata) {
+    private void onMetadataChanged(@Nullable MediaMetadataCompat metadata) {
         if (mCallbacks != null) {
             if (mPlayerControls != null) {
                 final String mediaId = MediaPlayerController.getMediaId(metadata);
@@ -225,7 +226,7 @@ public class MediaInterface {
                 }
             }
             mCallbacks.onMetadataChanged(this, metadata);
-            final long duration = metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION);
+            final long duration = metadata == null ? 0 : metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION);
             if (duration > 0)
                 mCallbacks.setTimeTotal(this, duration);
         }

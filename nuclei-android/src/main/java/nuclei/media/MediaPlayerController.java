@@ -15,6 +15,7 @@
  */
 package nuclei.media;
 
+import android.support.annotation.Nullable;
 import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
@@ -165,6 +166,7 @@ public class MediaPlayerController implements MediaController.MediaPlayerControl
         return 0;
     }
 
+    @Nullable
     public MediaId getMediaId() {
         return mMediaId;
     }
@@ -182,6 +184,7 @@ public class MediaPlayerController implements MediaController.MediaPlayerControl
         return false;
     }
 
+    @Nullable
     public static String getMediaId(MediaControllerCompat mediaControllerCompat) {
         if (mediaControllerCompat != null) {
             MediaMetadataCompat metadataCompat = mediaControllerCompat.getMetadata();
@@ -192,8 +195,9 @@ public class MediaPlayerController implements MediaController.MediaPlayerControl
         return null;
     }
 
+    @Nullable
     public static String getMediaId(MediaMetadataCompat metadataCompat) {
-        MediaDescriptionCompat descriptionCompat = metadataCompat.getDescription();
+        MediaDescriptionCompat descriptionCompat = metadataCompat == null ? null : metadataCompat.getDescription();
         if (descriptionCompat != null)
             return descriptionCompat.getMediaId();
         return null;
