@@ -198,8 +198,7 @@ public class PlaybackManager implements Playback.Callback {
                     mPlayback.pause();
                 }
             }
-            if (!INTERRUPTED.equals(error) && !CANCELED.equals(error))
-                MediaProvider.getInstance().onError(error);
+            MediaProvider.getInstance().onError(error);
         }
 
         float audioSpeed;
@@ -404,8 +403,12 @@ public class PlaybackManager implements Playback.Callback {
                                 @Override
                                 public void onResult(MediaMetadata mediaMetadata) {
                                     mMediaMetadata = mediaMetadata;
-                                    mMediaMetadata.setTimingSeeked(false);
-                                    handlePrepareRequest();
+                                    if (mMediaMetadata != null) {
+                                        mMediaMetadata.setTimingSeeked(false);
+                                        handlePrepareRequest();
+                                    } else {
+                                        onMetadataChanged(null);
+                                    }
                                 }
 
                                 @Override
@@ -457,8 +460,12 @@ public class PlaybackManager implements Playback.Callback {
                                 @Override
                                 public void onResult(MediaMetadata mediaMetadata) {
                                     mMediaMetadata = mediaMetadata;
-                                    mMediaMetadata.setTimingSeeked(false);
-                                    handlePlayRequest();
+                                    if (mMediaMetadata != null) {
+                                        mMediaMetadata.setTimingSeeked(false);
+                                        handlePlayRequest();
+                                    } else {
+                                        onMetadataChanged(null);
+                                    }
                                 }
 
                                 @Override
@@ -489,8 +496,12 @@ public class PlaybackManager implements Playback.Callback {
                                             @Override
                                             public void onResult(MediaMetadata mediaMetadata) {
                                                 mMediaMetadata = mediaMetadata;
-                                                mMediaMetadata.setTimingSeeked(false);
-                                                handlePlayRequest();
+                                                if (mMediaMetadata != null) {
+                                                    mMediaMetadata.setTimingSeeked(false);
+                                                    handlePlayRequest();
+                                                } else {
+                                                    onMetadataChanged(null);
+                                                }
                                             }
                                         });
                             }

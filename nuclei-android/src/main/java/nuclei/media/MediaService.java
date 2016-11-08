@@ -367,19 +367,23 @@ public class MediaService extends MediaBrowserServiceCompat implements
     @Override
     public void onMetadataUpdated(MediaMetadata mediaMetadataCompat) {
         try {
-            mediaMetadataCompat.setSession(mSession);
-            Context context = getApplicationContext();
-            MediaId id = MediaProvider.getInstance().getMediaId(mediaMetadataCompat.getDescription().getMediaId());
-            Intent intent = new Intent(context, id.type == MediaId.TYPE_AUDIO
-                                                ? Configuration.AUDIO_ACTIVITY
-                                                : Configuration.VIDEO_ACTIVITY);
-            intent.putExtra(MEDIA_ID, id.toString());
-            PendingIntent pi = PendingIntent.getActivity(context, REQUEST_CODE, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-            mSession.setSessionActivity(pi);
+            if (mediaMetadataCompat != null) {
+                mediaMetadataCompat.setSession(mSession);
+                Context context = getApplicationContext();
+                MediaId id = MediaProvider.getInstance().getMediaId(mediaMetadataCompat.getDescription().getMediaId());
+                Intent intent = new Intent(context, id.type == MediaId.TYPE_AUDIO
+                                                    ? Configuration.AUDIO_ACTIVITY
+                                                    : Configuration.VIDEO_ACTIVITY);
+                intent.putExtra(MEDIA_ID, id.toString());
+                PendingIntent pi = PendingIntent.getActivity(context, REQUEST_CODE, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+                mSession.setSessionActivity(pi);
+            } else {
+                mSession.setMetadata(null);
+                mSession.setSessionActivity(null);
+            }
         } catch (Exception err) {
             LOG.e("Error initializing session activity", err);
         }
-
     }
 
     @Override

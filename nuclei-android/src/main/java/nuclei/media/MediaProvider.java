@@ -115,20 +115,22 @@ public abstract class MediaProvider {
         .addCallback(new Result.CallbackAdapter<MediaMetadata>() {
             @Override
             public void onResult(final MediaMetadata mediaMetadata) {
-                mMetadataCache.put(id.toString(), mediaMetadata);
+                if (mediaMetadata != null) {
+                    mMetadataCache.put(id.toString(), mediaMetadata);
 
-                final String url = mediaMetadata.getString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI);
-                AlbumArtCache.getInstance().fetch(CONTEXT, url, new AlbumArtCache.FetchListener() {
-                    @Override
-                    public void onFetchedImage(String artUrl, Bitmap image) {
-                        mediaMetadata.setAlbumArt(image);
-                    }
+                    final String url = mediaMetadata.getString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI);
+                    AlbumArtCache.getInstance().fetch(CONTEXT, url, new AlbumArtCache.FetchListener() {
+                        @Override
+                        public void onFetchedImage(String artUrl, Bitmap image) {
+                            mediaMetadata.setAlbumArt(image);
+                        }
 
-                    @Override
-                    public void onFetchedIcon(String artUrl, Bitmap icon) {
-                        mediaMetadata.setDisplayIcon(icon);
-                    }
-                });
+                        @Override
+                        public void onFetchedIcon(String artUrl, Bitmap icon) {
+                            mediaMetadata.setDisplayIcon(icon);
+                        }
+                    });
+                }
             }
         });
     }
