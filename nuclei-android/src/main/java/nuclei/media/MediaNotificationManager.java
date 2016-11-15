@@ -22,6 +22,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
+import android.os.Build;
 import android.os.RemoteException;
 import android.support.annotation.NonNull;
 import android.support.v4.app.NotificationManagerCompat;
@@ -292,15 +293,18 @@ public class MediaNotificationManager extends BroadcastReceiver {
             bitmap = mMetadata.getBitmap(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON);
         }
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+            notificationBuilder.setStyle(new NotificationCompat.MediaStyle()
+                    .setShowActionsInCompactView(playPauseButtonPosition)  // show only play/pause in compact view
+                    .setShowCancelButton(true)
+                    .setMediaSession(mSessionToken))
+                    .setContentIntent(createContentIntent(description));
+        }
+
         notificationBuilder
-                .setStyle(new NotificationCompat.MediaStyle()
-                        .setShowActionsInCompactView(playPauseButtonPosition)  // show only play/pause in compact view
-                        .setShowCancelButton(true)
-                        .setMediaSession(mSessionToken))
                 .setColor(mNotificationColor)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setUsesChronometer(true)
-                .setContentIntent(createContentIntent(description))
                 .setContentTitle(description.getTitle())
                 .setContentText(description.getSubtitle())
                 .setSmallIcon(ResourceProvider.getInstance().getDrawable(ResourceProvider.ICON_SMALL))
@@ -317,6 +321,9 @@ public class MediaNotificationManager extends BroadcastReceiver {
         }
 
         setNotificationPlaybackState(notificationBuilder);
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN)
+            notificationBuilder.mActions.clear();
 
         return notificationBuilder.build();
     }
