@@ -20,6 +20,7 @@ import android.app.Fragment;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.view.View;
 
 import nuclei.persistence.PersistenceList;
 import nuclei.persistence.PersistenceLoader;
@@ -43,6 +44,16 @@ public abstract class NucleiFragment extends Fragment implements NucleiContext {
     private ContextHandle mViewHandle;
     private Trace mTrace;
     private PersistenceLoader mLoader;
+    private LifecycleManager mLifecycleManager;
+
+    @LifecycleManager.ManagedLifecycle
+    private int mLifecycleStage;
+
+    protected void manage(Destroyable destroyable) {
+        if (mLifecycleManager == null)
+            mLifecycleManager = new LifecycleManager(LifecycleManager.FRAGMENT);
+        mLifecycleManager.manage(mLifecycleStage, destroyable);
+    }
 
     public <T> int executeQueryWithOrder(Query<T> query, PersistenceList.Listener<T> listener, String orderBy, String...selectionArgs) {
         try {
@@ -90,13 +101,24 @@ public abstract class NucleiFragment extends Fragment implements NucleiContext {
             mLoader.destroyQuery(id);
     }
 
+    protected int getLifecycleStage() {
+        return mLifecycleStage;
+    }
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
+        mLifecycleStage = LifecycleManager.FRAGMENT;
         super.onCreate(savedInstanceState);
         if (Logs.TRACE) {
             mTrace = new Trace();
             mTrace.onCreate(getClass());
         }
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        mLifecycleStage = LifecycleManager.VIEW;
+        super.onViewCreated(view, savedInstanceState);
     }
 
     protected void trace(String message) {
@@ -151,6 +173,9 @@ public abstract class NucleiFragment extends Fragment implements NucleiContext {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        if (mLifecycleManager != null)
+            mLifecycleManager.onDestroy(mLifecycleStage);
+        mLifecycleStage = LifecycleManager.FRAGMENT;
         if (mViewHandle != null)
             mViewHandle.release();
         mViewHandle = null;
@@ -176,6 +201,9 @@ public abstract class NucleiFragment extends Fragment implements NucleiContext {
 
     @Override
     public void onDestroy() {
+        if (mLifecycleManager != null)
+            mLifecycleManager.onDestroy(mLifecycleStage);
+        mLifecycleManager = null;
         if (mHandle != null)
             mHandle.release();
         mHandle = null;
