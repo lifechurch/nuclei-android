@@ -117,6 +117,7 @@ public class Binary {
                 return null;
             if (reader.nextInt() != ${model.version})
                 throw new IllegalStateException("Invalid Version");
+            reader.isNull();
             int len = reader.nextInt();
             List<${model.fullName}> objects = new ArrayList<>(len);
             for (int i = 0; i < len; i++) {
@@ -142,8 +143,8 @@ public class Binary {
             <#list model.properties as property>
             <#if property.isArray()>
             if (!reader.isNull()) {
-                object.${property.alias} = new ArrayList<>();
                 int len = reader.nextInt();
+                object.${property.alias} = new ArrayList<>(len);
                 for (int i = 0; i < len; i++) {
                     <#if property.getCustomDeserializer()??>
                     object.${property.alias}.add(${property.customDeserializer}(context, reader));
