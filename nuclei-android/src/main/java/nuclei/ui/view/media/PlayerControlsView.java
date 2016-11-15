@@ -1,12 +1,12 @@
 /**
  * Copyright 2016 YouVersion
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,6 +23,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.media.session.MediaControllerCompat;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -117,23 +118,30 @@ public class PlayerControlsView extends FrameLayout {
             public void onClick(View v) {
                 if (mMediaInterface != null) {
                     if (v.getId() == R.id.btn_play) {
-                        v.setActivated(!v.isActivated());
-                        if (v.isActivated())
-                            mMediaInterface.getPlayerController().start();
-                        else
-                            mMediaInterface.getPlayerController().pause();
-                    } else if (v.getId() == R.id.btn_previous)
-                        mMediaInterface.getMediaController().getTransportControls().skipToPrevious();
-                    else if (v.getId() == R.id.btn_next)
-                        mMediaInterface.getMediaController().getTransportControls().skipToNext();
-                    else if (v.getId() == R.id.btn_rewind)
-                        mMediaInterface.getMediaController().getTransportControls().rewind();
-                    else if (v.getId() == R.id.btn_fastforward)
-                        mMediaInterface.getMediaController().getTransportControls().fastForward();
-                    else if (v.getId() == R.id.btn_speed)
+                        if (mMediaInterface.getPlayerController() != null) {
+                            v.setActivated(!v.isActivated());
+                            if (v.isActivated())
+                                mMediaInterface.getPlayerController().start();
+                            else
+                                mMediaInterface.getPlayerController().pause();
+                        }
+                    } else if (v.getId() == R.id.btn_speed) {
                         onSpeedSelected(v);
-                    else if (v.getId() == R.id.btn_timer)
+                    } else if (v.getId() == R.id.btn_timer) {
                         onTimerSelected(v);
+                    } else if (mMediaInterface.getMediaController() != null) {
+                        MediaControllerCompat.TransportControls controls = mMediaInterface.getMediaController().getTransportControls();
+                        if (controls != null) {
+                            if (v.getId() == R.id.btn_previous)
+                                controls.skipToPrevious();
+                            else if (v.getId() == R.id.btn_next)
+                                controls.skipToNext();
+                            else if (v.getId() == R.id.btn_rewind)
+                                controls.rewind();
+                            else if (v.getId() == R.id.btn_fastforward)
+                                controls.fastForward();
+                        }
+                    }
                 }
             }
         };
