@@ -15,9 +15,14 @@
  */
 package nuclei.media;
 
+import android.annotation.TargetApi;
+import android.app.Activity;
 import android.app.SearchManager;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.media.session.MediaController;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -25,6 +30,7 @@ import android.os.RemoteException;
 import android.provider.MediaStore;
 import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
@@ -41,7 +47,10 @@ public class MediaInterface {
 
     private static final Log LOG = Logs.newLog(MediaInterface.class);
 
-    private FragmentActivity mActivity;
+    public static final String ACTION_CONNECTED = "nuclei.media.interface.CONNECTED";
+
+    private Activity mLActivity;
+    private FragmentActivity mFragmentActivity;
     private MediaInterfaceCallback mCallbacks;
     private MediaBrowserCompat mMediaBrowser;
     private MediaControllerCompat mMediaControls;
@@ -51,7 +60,24 @@ public class MediaInterface {
     private Surface mSurface;
 
     public MediaInterface(FragmentActivity activity, MediaId mediaId, MediaInterfaceCallback callback) {
-        mActivity = activity;
+        mFragmentActivity = activity;
+        mCallbacks = callback;
+        mPlayerControls = new MediaPlayerController(mediaId);
+        mPlayerControls.setMediaControls(mCallbacks, null);
+        mMediaBrowser = new MediaBrowserCompat(activity.getApplicationContext(),
+                new ComponentName(activity, MediaService.class),
+                new MediaBrowserCompat.ConnectionCallback() {
+                    @Override
+                    public void onConnected() {
+                        MediaInterface.this.onConnected();
+                    }
+                }, null);
+        mMediaBrowser.connect();
+    }
+
+    @TargetApi(21)
+    public MediaInterface(Activity activity, MediaId mediaId, MediaInterfaceCallback callback) {
+        mLActivity = activity;
         mCallbacks = callback;
         mPlayerControls = new MediaPlayerController(mediaId);
         mPlayerControls.setMediaControls(mCallbacks, null);
@@ -107,15 +133,23 @@ public class MediaInterface {
         mPlayerControls = null;
         mMediaBrowser = null;
         mCallbacks = null;
-        mActivity = null;
+        mFragmentActivity = null;
+        mLActivity = null;
         mHandler = null;
+    }
+
+    @TargetApi(21)
+    private void setMediaControllerL() {
+        if (mLActivity != null)
+            mLActivity.setMediaController((MediaController) mMediaControls.getMediaController());
     }
 
     private void onConnected() {
         try {
-            if (mActivity == null)
+            Context context = mFragmentActivity == null ? mLActivity : mFragmentActivity;
+            if (context == null)
                 return;
-            mMediaControls = new MediaControllerCompat(mActivity, mMediaBrowser.getSessionToken());
+            mMediaControls = new MediaControllerCompat(context, mMediaBrowser.getSessionToken());
             mMediaCallback = new MediaControllerCompat.Callback() {
                 @Override
                 public void onPlaybackStateChanged(PlaybackStateCompat state) {
@@ -133,7 +167,11 @@ public class MediaInterface {
                 }
             };
             mMediaControls.registerCallback(mMediaCallback);
-            mActivity.setSupportMediaController(mMediaControls);
+
+            if (mFragmentActivity != null)
+                mFragmentActivity.setSupportMediaController(mMediaControls);
+            else if (mLActivity != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+                setMediaControllerL();
 
             if (mPlayerControls != null)
                 mPlayerControls.setMediaControls(mCallbacks, mMediaControls);
@@ -141,7 +179,7 @@ public class MediaInterface {
             if (mMediaControls.getPlaybackState() != null)
                 onPlaybackStateChanged(mMediaControls.getPlaybackState());
 
-            final Intent intent = mActivity.getIntent();
+            final Intent intent = mFragmentActivity == null ? mLActivity.getIntent() : mFragmentActivity.getIntent();
             if (MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH.equals(intent.getAction())) {
                 final Bundle params = intent.getExtras();
                 final String query = params.getString(SearchManager.QUERY);
@@ -169,33 +207,40 @@ public class MediaInterface {
 
             if (mSurface != null)
                 setSurface(mSurface);
+
+            LocalBroadcastManager.getInstance(context).sendBroadcast(new Intent(ACTION_CONNECTED));
         } catch (RemoteException err) {
             LOG.e("Error in onConnected", err);
         }
     }
 
     private void onPlaybackStateChanged(PlaybackStateCompat state) {
-        if (state.getState() != PlaybackStateCompat.STATE_BUFFERING) {
-            mCallbacks.onLoaded(mPlayerControls);
-        } else if (state.getState() == PlaybackStateCompat.STATE_BUFFERING) {
-            mCallbacks.onLoading(mPlayerControls);
+        if (mCallbacks != null) {
+            if (state.getState() != PlaybackStateCompat.STATE_BUFFERING) {
+                mCallbacks.onLoaded(mPlayerControls);
+            } else if (state.getState() == PlaybackStateCompat.STATE_BUFFERING) {
+                mCallbacks.onLoading(mPlayerControls);
+            }
+            mCallbacks.onStateChanged(this, state);
         }
-        mCallbacks.onStateChanged(this, state);
         if (mPlayerControls != null) {
             if (MediaPlayerController.isPlaying(mMediaControls, state, mPlayerControls.getMediaId())) {
-                mCallbacks.onPlaying(mPlayerControls);
+                if (mCallbacks != null)
+                    mCallbacks.onPlaying(mPlayerControls);
                 mHandler.start();
             } else {
-                if (state.getState() == PlaybackStateCompat.STATE_STOPPED)
-                    mCallbacks.onStopped(mPlayerControls);
-                else
-                    mCallbacks.onPaused(mPlayerControls);
+                if (mCallbacks != null) {
+                    if (state.getState() == PlaybackStateCompat.STATE_STOPPED)
+                        mCallbacks.onStopped(mPlayerControls);
+                    else
+                        mCallbacks.onPaused(mPlayerControls);
+                }
                 mHandler.stop();
             }
         } else {
             mHandler.stop();
         }
-        if (state.getState() == PlaybackStateCompat.STATE_PLAYING) {
+        if (state.getState() == PlaybackStateCompat.STATE_PLAYING && mCallbacks != null) {
             if (mPlayerControls != null
                     && (!mPlayerControls.isMediaControlsSet() || !MediaPlayerController.isEquals(mMediaControls, mPlayerControls.getMediaId()))) {
                 mPlayerControls.setMediaControls(mCallbacks, mMediaControls);
