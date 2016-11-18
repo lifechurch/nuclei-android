@@ -21,6 +21,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
+import java.util.Arrays;
 import java.util.List;
 
 import nuclei.ui.Destroyable;
@@ -61,8 +62,13 @@ public abstract class OffsetListAdapter<T, VH extends RecyclerView.ViewHolder> e
     private void buildOffsets() {
         mOffset = new RangeOffset();
         RangeOffset offset = mOffset;
+        int[] positions = new int[mItems.size()];
         for (int i = 0, len = mItems.size(); i < len; i++) {
-            offset = offset.expand(mItems.keyAt(i));
+            positions[i] = mItems.keyAt(i);
+        }
+        Arrays.sort(positions); // positions must be sorted
+        for (int i = 0, len = positions.length; i < len; i++) {
+            offset = offset.expand(positions[i]);
         }
         offset.end = Integer.MAX_VALUE;
     }
