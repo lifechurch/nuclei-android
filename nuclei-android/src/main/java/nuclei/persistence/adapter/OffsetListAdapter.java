@@ -119,7 +119,7 @@ public abstract class OffsetListAdapter<T, VH extends RecyclerView.ViewHolder> e
 
     @Override
     public void setHasStableIds(boolean hasStableIds) {
-        super.setHasStableIds(true);
+        super.setHasStableIds(hasStableIds);
         mOriginalAdapter.setHasStableIds(hasStableIds);
     }
 
