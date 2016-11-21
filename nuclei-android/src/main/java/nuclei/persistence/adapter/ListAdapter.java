@@ -23,6 +23,8 @@ import android.view.ViewGroup;
 
 import java.util.List;
 
+import nuclei.ui.Destroyable;
+
 /**
  * Base List Adapter
  *
@@ -31,7 +33,7 @@ import java.util.List;
  * @param <VH> The type of ViewHolder
  */
 public abstract class ListAdapter<T, L extends List<T>, VH extends ListAdapter.ViewHolder<T>>
-        extends RecyclerView.Adapter<VH> {
+        extends RecyclerView.Adapter<VH> implements Destroyable {
 
     Context mContext;
     LayoutInflater mInflater;
@@ -79,6 +81,7 @@ public abstract class ListAdapter<T, L extends List<T>, VH extends ListAdapter.V
         return mList == null ? 0 : mList.size();
     }
 
+    @Override
     public void onDestroy() {
         mList = null;
         mContext = null;

@@ -45,6 +45,18 @@ public abstract class NucleiActivity extends Activity implements IntentBuilderAc
     private Trace mTrace;
     private PersistenceLoader mLoader;
     private ActivityOptionsCompat mOptions;
+    private LifecycleManager mLifecycleManager;
+
+    protected void manage(Destroyable destroyable) {
+        if (mLifecycleManager == null)
+            mLifecycleManager = new LifecycleManager(LifecycleManager.ACTIVITY);
+        mLifecycleManager.manage(LifecycleManager.ACTIVITY, destroyable);
+    }
+
+    protected void destroy(Destroyable destroyable) {
+        if (mLifecycleManager != null)
+            mLifecycleManager.destroy(destroyable);
+    }
 
     public <T> int executeQueryWithOrder(Query<T> query, PersistenceList.Listener<T> listener, String orderBy, String...selectionArgs) {
         try {
@@ -168,6 +180,8 @@ public abstract class NucleiActivity extends Activity implements IntentBuilderAc
 
     @Override
     protected void onDestroy() {
+        if (mLifecycleManager != null)
+            mLifecycleManager.onDestroy(LifecycleManager.ACTIVITY);
         if (mHandle != null)
             mHandle.release();
         mHandle = null;
