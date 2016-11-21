@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="io.nuclei">
 
-    <application android:theme="@style/Theme.AppCompat.Light">
+    <application android:theme="@style/Theme.AppCompat.Light" android:name="nuclei.TestApp">
 
         <meta-data android:name="io.nuclei.sharing.authority" android:value="na" />
 
@@ -16,6 +16,8 @@
         <activity
             android:name="nuclei.ui.TestShareActivity"
             android:label="@string/share_via" />
+
+        <activity android:name="nuclei.ui.OffsetTestActivity" />
 
     </application>
 

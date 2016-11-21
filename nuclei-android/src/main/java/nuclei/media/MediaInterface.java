@@ -36,8 +36,9 @@ import java.lang.ref.WeakReference;
 import nuclei.logs.Log;
 import nuclei.logs.Logs;
 import nuclei.media.playback.PlaybackManager;
+import nuclei.ui.Destroyable;
 
-public class MediaInterface {
+public class MediaInterface implements Destroyable {
 
     private static final Log LOG = Logs.newLog(MediaInterface.class);
 
@@ -92,6 +93,7 @@ public class MediaInterface {
         }
     }
 
+    @Override
     public void onDestroy() {
         if (mCallbacks != null)
             mCallbacks.onDestroy(this);

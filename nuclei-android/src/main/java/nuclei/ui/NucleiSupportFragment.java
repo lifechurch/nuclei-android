@@ -53,6 +53,13 @@ public abstract class NucleiSupportFragment extends Fragment implements NucleiCo
         mLifecycleManager.manage(mLifecycleStage, destroyable);
     }
 
+    protected void destroy(Destroyable destroyable) {
+        if (mLifecycleManager != null)
+            mLifecycleManager.destroy(destroyable);
+        else
+            destroyable.onDestroy();
+    }
+
     public <T> int executeQueryWithOrder(Query<T> query, PersistenceList.Listener<T> listener, String orderBy, String...selectionArgs) {
         try {
             if (mLoader == null)

@@ -34,7 +34,7 @@ import nuclei.ui.Destroyable;
  * @param <T>
  * @param <VH>
  */
-public abstract class OffsetListAdapter<T, VH extends RecyclerView.ViewHolder> extends RecyclerView.Adapter<VH> implements Destroyable {
+public abstract class OffsetListAdapter<T, VH extends ListAdapter.ViewHolder<T>> extends RecyclerView.Adapter<VH> implements Destroyable {
 
     private RecyclerView.Adapter<VH> mOriginalAdapter;
     private SparseArrayCompat<T> mItems;
@@ -196,7 +196,14 @@ public abstract class OffsetListAdapter<T, VH extends RecyclerView.ViewHolder> e
             onOffsetBindViewHolder(holder, position);
     }
 
-    protected abstract void onOffsetBindViewHolder(VH holder, int position);
+    protected T getItems(int position) {
+        return mItems.get(position);
+    }
+
+    protected void onOffsetBindViewHolder(VH holder, int position) {
+        holder.item = getItems(position);
+        holder.onBind();
+    }
 
     @Override
     public void onBindViewHolder(VH holder, int position, List<Object> payloads) {

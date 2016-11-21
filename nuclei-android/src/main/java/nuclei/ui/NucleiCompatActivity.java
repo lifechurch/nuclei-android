@@ -50,6 +50,13 @@ public abstract class NucleiCompatActivity extends AppCompatActivity implements 
         mLifecycleManager.manage(LifecycleManager.ACTIVITY, destroyable);
     }
 
+    protected void destroy(Destroyable destroyable) {
+        if (mLifecycleManager != null)
+            mLifecycleManager.destroy(destroyable);
+        else
+            destroyable.onDestroy();
+    }
+
     public <T> int executeQueryWithOrder(Query<T> query, PersistenceList.Listener<T> listener, String orderBy, String...selectionArgs) {
         try {
             if (mLoader == null)

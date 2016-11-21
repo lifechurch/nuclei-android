@@ -62,6 +62,15 @@ public class LifecycleManager {
         }
     }
 
+    public void destroy(Destroyable destroyable) {
+        if (mViewDestroyables.remove(destroyable))
+            destroyable.onDestroy();
+        else if (mContainerDestroyables.remove(destroyable))
+            destroyable.onDestroy();
+        else
+            throw new IllegalStateException("Destroyable isn't managed");
+    }
+
     public void onDestroy(@ManagedLifecycle int lifecycle) {
         if (lifecycle == VIEW) {
             if (mViewDestroyables != null) {

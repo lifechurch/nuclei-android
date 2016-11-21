@@ -53,6 +53,11 @@ public abstract class NucleiActivity extends Activity implements IntentBuilderAc
         mLifecycleManager.manage(LifecycleManager.ACTIVITY, destroyable);
     }
 
+    protected void destroy(Destroyable destroyable) {
+        if (mLifecycleManager != null)
+            mLifecycleManager.destroy(destroyable);
+    }
+
     public <T> int executeQueryWithOrder(Query<T> query, PersistenceList.Listener<T> listener, String orderBy, String...selectionArgs) {
         try {
             if (mLoader == null)
