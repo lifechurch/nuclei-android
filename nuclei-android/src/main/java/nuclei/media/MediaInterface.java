@@ -229,7 +229,8 @@ public class MediaInterface implements Destroyable {
             if (MediaPlayerController.isPlaying(mMediaControls, state, mPlayerControls.getMediaId())) {
                 if (mCallbacks != null)
                     mCallbacks.onPlaying(mPlayerControls);
-                mHandler.start();
+                if (mHandler != null)
+                    mHandler.start();
             } else {
                 if (mCallbacks != null) {
                     if (state.getState() == PlaybackStateCompat.STATE_STOPPED)
@@ -237,9 +238,10 @@ public class MediaInterface implements Destroyable {
                     else
                         mCallbacks.onPaused(mPlayerControls);
                 }
-                mHandler.stop();
+                if (mHandler != null)
+                    mHandler.stop();
             }
-        } else {
+        } else if (mHandler != null) {
             mHandler.stop();
         }
         if (state.getState() == PlaybackStateCompat.STATE_PLAYING && mCallbacks != null) {

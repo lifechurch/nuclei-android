@@ -55,6 +55,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
     public static final String ACTION_PREV = "nuclei.PREV";
     public static final String ACTION_NEXT = "nuclei.NEXT";
     public static final String ACTION_STOP_CASTING = "nuclei.STOP_CAST";
+    public static final String ACTION_CANCEL = "nuclei.CANCEL";
 
     private final MediaService mService;
     private MediaSessionCompat.Token mSessionToken;
@@ -70,6 +71,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
     private final PendingIntent mPlayIntent;
     private final PendingIntent mPreviousIntent;
     private final PendingIntent mNextIntent;
+    private final PendingIntent mCancelIntent;
 
     private final PendingIntent mStopCastIntent;
 
@@ -97,6 +99,9 @@ public class MediaNotificationManager extends BroadcastReceiver {
         mStopCastIntent = PendingIntent.getBroadcast(mService, REQUEST_CODE,
                 new Intent(ACTION_STOP_CASTING).setPackage(pkg),
                 PendingIntent.FLAG_CANCEL_CURRENT);
+        mCancelIntent = PendingIntent.getBroadcast(mService, REQUEST_CODE,
+                new Intent(ACTION_CANCEL).setPackage(pkg),
+                PendingIntent.FLAG_CANCEL_CURRENT);
 
         // Cancel all notifications to handle the case where the Service was killed and
         // restarted by the system.
@@ -123,6 +128,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
                 filter.addAction(ACTION_PLAY);
                 filter.addAction(ACTION_PREV);
                 filter.addAction(ACTION_STOP_CASTING);
+                filter.addAction(ACTION_CANCEL);
                 mService.registerReceiver(this, filter);
 
                 mService.startForeground(NOTIFICATION_ID, notification);
@@ -171,6 +177,9 @@ public class MediaNotificationManager extends BroadcastReceiver {
                 i.setAction(MediaService.ACTION_CMD);
                 i.putExtra(MediaService.CMD_NAME, MediaService.CMD_STOP_CASTING);
                 mService.startService(i);
+                break;
+            case ACTION_CANCEL:
+                mTransportControls.stop();
                 break;
             default:
                 if (LOG.isLoggable(Log.WARN))
@@ -297,6 +306,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
             notificationBuilder.setStyle(new NotificationCompat.MediaStyle()
                     .setShowActionsInCompactView(playPauseButtonPosition)  // show only play/pause in compact view
                     .setShowCancelButton(true)
+                    .setCancelButtonIntent(mCancelIntent)
                     .setMediaSession(mSessionToken))
                     .setContentIntent(createContentIntent(description));
         }

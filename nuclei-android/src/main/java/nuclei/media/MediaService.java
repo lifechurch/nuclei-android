@@ -173,7 +173,9 @@ public class MediaService extends MediaBrowserServiceCompat implements
         Playback playback;
 
         // Start a new MediaSession
-        mSession = new MediaSessionCompat(this, "NucleiMediaService");
+        mSession = new MediaSessionCompat(this, "NucleiMediaService",
+                new ComponentName(getApplicationContext(), MediaButtonReceiver.class),
+                null);
         mSession.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS
                 | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
 
