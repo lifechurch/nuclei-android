@@ -65,9 +65,9 @@ public class GlideImageView extends AppCompatImageView {
         sDefaultDownloadState = downloadState;
     }
 
-    private boolean mCircle = false;
+    boolean mCircle = false;
     private int mDownloadState;
-    private float mRadius;
+    float mRadius;
     private float mRatio;
     private int mPlaceholderId;
     private Uri mUri;

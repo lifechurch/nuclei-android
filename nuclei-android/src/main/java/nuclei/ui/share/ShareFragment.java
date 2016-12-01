@@ -197,8 +197,8 @@ public class ShareFragment extends BottomSheetDialogFragment {
 
     class TargetViewHolder extends RecyclerView.ViewHolder {
 
-        ImageView icon;
-        TextView label;
+        final ImageView icon;
+        final TextView label;
         ResolveInfo info;
 
         public TargetViewHolder(View itemView) {

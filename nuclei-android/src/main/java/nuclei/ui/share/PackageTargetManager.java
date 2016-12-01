@@ -78,7 +78,7 @@ public abstract class PackageTargetManager implements Parcelable {
     protected File mFile;
     protected Uri mUri;
 
-    private SharedPreferences mWeights;
+    SharedPreferences mWeights;
 
     public PackageTargetManager() {
     }

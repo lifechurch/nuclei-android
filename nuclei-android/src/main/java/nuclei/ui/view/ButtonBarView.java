@@ -44,15 +44,15 @@ import io.nuclei.R;
 public class ButtonBarView extends FrameLayout {
 
     private ButtonAdapter mAdapter;
-    private Item[] mItems;
-    private List<OnItemSelectedListener> mListeners = new ArrayList<>();
+    Item[] mItems;
+    private final List<OnItemSelectedListener> mListeners = new ArrayList<>();
     private int mSelectedTint;
     private int mUnselectedTint;
     private int mOrientation;
     private int mSelectedItem = -1;
     private LinearLayout mButtons;
     private AdapterObserver mObserver;
-    private ArrayMap<Item, ValueAnimator> mLabelAnimators = new ArrayMap<>();
+    private final ArrayMap<Item, ValueAnimator> mLabelAnimators = new ArrayMap<>();
     private boolean mStateRestored;
 
     public ButtonBarView(Context context) {
@@ -405,7 +405,7 @@ public class ButtonBarView extends FrameLayout {
             }
         };
 
-        private SavedState(Parcel in) {
+        SavedState(Parcel in) {
             super(in);
             selected = in.readInt();
         }

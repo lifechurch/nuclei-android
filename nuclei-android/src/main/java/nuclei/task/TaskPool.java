@@ -56,21 +56,21 @@ public final class TaskPool implements Handler.Callback {
 
     private static final int CPU_COUNT = Runtime.getRuntime().availableProcessors();
     private static final int CORE_POOL_SIZE = CPU_COUNT + 1;
-    private static final int DEFAULT_POOL_SIZE = CPU_COUNT * 2 + 1;
+    static final int DEFAULT_POOL_SIZE = CPU_COUNT * 2 + 1;
 
     static final Log LOG = Logs.newLog(TaskPool.class);
 
     static final Map<String, TaskPool> TASK_POOLS = new ConcurrentHashMap<>();
 
-    private Pools.SimplePool<TaskRunnable> taskRunnablePool;
-    private Pools.SimplePool<Queue<TaskRunnable>> taskQueues;
-    private Handler handler;
-    private ThreadPoolExecutor poolExecutor;
+    private final Pools.SimplePool<TaskRunnable> taskRunnablePool;
+    final Pools.SimplePool<Queue<TaskRunnable>> taskQueues;
+    final Handler handler;
+    private final ThreadPoolExecutor poolExecutor;
 
-    private String name;
-    private List<TaskInterceptor> interceptors;
+    private final String name;
+    final List<TaskInterceptor> interceptors;
 
-    private TaskPool(Looper mainLooper, final String name, int maxThreads, List<TaskInterceptor> interceptors) {
+    TaskPool(Looper mainLooper, final String name, int maxThreads, List<TaskInterceptor> interceptors) {
         this.name = name;
         TASK_POOLS.put(name, this);
         this.interceptors = interceptors;
@@ -248,12 +248,12 @@ public final class TaskPool implements Handler.Callback {
 
     public static final class Builder {
 
-        private String name;
+        private final String name;
         private int maxThreads = DEFAULT_POOL_SIZE;
         private Looper mainLooper = Looper.getMainLooper();
         private List<TaskInterceptor> interceptors;
 
-        private Builder(String name) {
+        Builder(String name) {
             this.name = name;
         }
 
@@ -311,8 +311,8 @@ public final class TaskPool implements Handler.Callback {
 
     }
 
-    private final ArrayMap<String, Task<?>> runningIds = new ArrayMap<>();
-    private final ArrayMap<String, Queue<TaskRunnable>> pendingTasks = new ArrayMap<>();
+    final ArrayMap<String, Task<?>> runningIds = new ArrayMap<>();
+    final ArrayMap<String, Queue<TaskRunnable>> pendingTasks = new ArrayMap<>();
 
     public static boolean isRunning(TaskPool pool, Task task) {
         if (pool == null || task == null)
@@ -327,7 +327,8 @@ public final class TaskPool implements Handler.Callback {
             return false;
         for (TaskPool pool : TASK_POOLS.values()) {
             synchronized (pool.runningIds) {
-                return pool.runningIds.containsKey(task.getId());
+                if (pool.runningIds.containsKey(task.getId()))
+                    return true;
             }
         }
         return false;
@@ -338,7 +339,7 @@ public final class TaskPool implements Handler.Callback {
         Task task;
         long start;
 
-        private TaskRunnable() {
+        TaskRunnable() {
         }
 
         @Override

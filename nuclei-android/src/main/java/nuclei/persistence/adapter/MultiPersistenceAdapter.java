@@ -32,7 +32,7 @@ public abstract class MultiPersistenceAdapter<T, VH extends MultiPersistenceAdap
         extends ListAdapter<T, PersistenceList<T>, VH>
         implements PersistenceListAdapter<T> {
 
-    MultiPersistenceListImpl<T> mMultiList;
+    final MultiPersistenceListImpl<T> mMultiList;
 
     public MultiPersistenceAdapter(Context context, Query<T>...queries) {
         super(context);

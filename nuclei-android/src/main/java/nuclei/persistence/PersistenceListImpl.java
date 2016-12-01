@@ -25,9 +25,9 @@ public class PersistenceListImpl<T> extends AbstractList<T> implements Persisten
 
     Query<T> mQuery;
     Cursor mCursor;
-    Class<T> mType;
-    Queue<T> mObjectQueue;
-    CursorObjectMapper<T> mObjectMapper;
+    final Class<T> mType;
+    final Queue<T> mObjectQueue;
+    final CursorObjectMapper<T> mObjectMapper;
 
     public PersistenceListImpl(Query<T> query, Cursor cursor) {
         mQuery = query;

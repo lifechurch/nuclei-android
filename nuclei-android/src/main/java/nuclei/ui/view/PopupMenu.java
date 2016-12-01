@@ -28,8 +28,8 @@ import io.nuclei.R;
 
 public class PopupMenu extends ListPopupWindow {
 
-    private CharSequence mHeaderText;
-    private int mPopupMaxWidth;
+    private final CharSequence mHeaderText;
+    private final int mPopupMaxWidth;
     private FrameLayout mMeasureParent;
     private ListAdapter mAdapter;
     private boolean mContentMeasured;

@@ -42,16 +42,16 @@ public final class ShareIntent {
     static final String TAG = "ShareIntent";
     static final String MISSING_CONFIG = "Missing meta data key " + SHARING_AUTHORITY + " in AndroidManifest.xml, file sharing won't work properly";
 
-    String mText;
-    String mUrl;
-    String mEmail;
-    String mSubject;
-    File mFile;
-    Uri mUri;
-    ArrayMap<String, PackageTargetManager> mTargetListeners;
-    PackageTargetManager mDefaultTargetManager;
+    final String mText;
+    final String mUrl;
+    final String mEmail;
+    final String mSubject;
+    final File mFile;
+    final Uri mUri;
+    final ArrayMap<String, PackageTargetManager> mTargetListeners;
+    final PackageTargetManager mDefaultTargetManager;
 
-    private ShareIntent(Builder builder) {
+    ShareIntent(Builder builder) {
         mText = builder.mText;
         mUri = builder.mUri;
         mEmail = builder.mEmail;
@@ -210,10 +210,10 @@ public final class ShareIntent {
         ArrayMap<String, PackageTargetManager> mTargetListeners;
         PackageTargetManager mDefaultTargetManager;
 
-        private Builder() {
+        Builder() {
         }
 
-        private Builder(Parcel in) {
+        Builder(Parcel in) {
             mText = in.readString();
             mUrl = in.readString();
             mEmail = in.readString();

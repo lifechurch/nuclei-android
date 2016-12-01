@@ -1,3 +1,18 @@
+/**
+ * Copyright 2016 YouVersion
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package nuclei.ui;
 
 import android.app.Activity;
@@ -9,12 +24,12 @@ import java.util.Set;
 
 import nuclei.ui.view.LoadingView;
 
-public class LoadingManager {
+public class LoadingManager implements Destroyable {
 
-    private Activity mActivity;
-    private LoadingView mLoadingView;
-    private Set<Integer> mLoadingTokens = new HashSet<>();
-    private int mLoadingId;
+    Activity mActivity;
+    LoadingView mLoadingView;
+    final Set<Integer> mLoadingTokens = new HashSet<>();
+    int mLoadingId;
 
     public LoadingManager(Activity activity) {
         mActivity = activity;
@@ -35,7 +50,7 @@ public class LoadingManager {
         return id;
     }
 
-    private void showLoading(final Integer id, final View view, final boolean immediate) {
+    void showLoading(final Integer id, final View view, final boolean immediate) {
         if (mActivity != null)
             mActivity.runOnUiThread(new Runnable() {
                 @Override
@@ -78,6 +93,7 @@ public class LoadingManager {
             });
     }
 
+    @Override
     public void onDestroy() {
         mActivity = null;
         if (mLoadingView != null)

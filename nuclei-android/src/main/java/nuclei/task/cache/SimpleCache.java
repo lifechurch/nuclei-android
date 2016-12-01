@@ -39,7 +39,7 @@ public final class SimpleCache implements Closeable, Flushable {
         return Util.md5Hex(key);
     }
 
-    private final DiskLruCache cache;
+    final DiskLruCache cache;
 
     public SimpleCache(File directory, long maxSize) {
         cache = DiskLruCache.create(FileSystem.SYSTEM, directory, VERSION, 2, maxSize);
@@ -164,7 +164,7 @@ public final class SimpleCache implements Closeable, Flushable {
         private final long created;
         private final long ttl;
 
-        private Entry(DiskLruCache.Snapshot snapshot) throws IOException {
+        Entry(DiskLruCache.Snapshot snapshot) throws IOException {
             this.snapshot = snapshot;
             this.editor = null;
 
@@ -179,7 +179,7 @@ public final class SimpleCache implements Closeable, Flushable {
             }
         }
 
-        private Entry(String key, long created, int ttl, DiskLruCache.Editor editor) throws IOException {
+        Entry(String key, long created, int ttl, DiskLruCache.Editor editor) throws IOException {
             this.snapshot = null;
             this.editor = editor;
             this.key = key;
@@ -212,7 +212,7 @@ public final class SimpleCache implements Closeable, Flushable {
             return Okio.buffer(snapshot.getSource(CONTENT));
         }
 
-        private boolean matches(String key, int version) {
+        boolean matches(String key, int version) {
             return this.key.equals(key)
                     && this.version == version;
         }

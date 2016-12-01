@@ -41,7 +41,7 @@ public abstract class MediaProvider {
     public static final String CUSTOM_METADATA_TIMING_END = "__TIMING_END__";
 
     public static final String MEDIA_ID_SCHEME = "nuclei-media";
-    private static Context CONTEXT;
+    static Context CONTEXT;
     private static MediaProvider INSTANCE;
 
     public static void initialize(Context context, MediaProvider provider) {
@@ -55,8 +55,8 @@ public abstract class MediaProvider {
 
     private static final int METADATA_CACHE_SIZE = 5;
 
-    private final LruCache<String, MediaMetadata> mMetadataCache = new LruCache<>(METADATA_CACHE_SIZE);
-    private final LruCache<String, Queue> mQueueCache = new LruCache<>(METADATA_CACHE_SIZE);
+    final LruCache<String, MediaMetadata> mMetadataCache = new LruCache<>(METADATA_CACHE_SIZE);
+    final LruCache<String, Queue> mQueueCache = new LruCache<>(METADATA_CACHE_SIZE);
 
     public abstract float getAudioSpeed();
 
@@ -180,7 +180,7 @@ public abstract class MediaProvider {
         });
     }
 
-    private void getQueueItemImage(final QueueItem item) {
+    void getQueueItemImage(final QueueItem item) {
         Uri uri = item.getIconUri();
         if (uri != null) {
             final String url = uri.toString();

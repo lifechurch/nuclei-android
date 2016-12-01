@@ -23,7 +23,7 @@ import java.util.Map;
 
 public class MultiPersistenceListImpl<T> extends AbstractList<T> implements PersistenceList<T> {
 
-    Map<Query<T>, QueryList<T>> mListMap;
+    final Map<Query<T>, QueryList<T>> mListMap;
     QueryList<T>[] mLists;
 
     public MultiPersistenceListImpl(Query<T>[] queries) {

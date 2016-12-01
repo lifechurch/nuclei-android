@@ -236,7 +236,7 @@ public class PlayerControlsView extends FrameLayout {
         menu.show();
     }
 
-    private void onTimerSelected(View v) {
+    void onTimerSelected(View v) {
         final CharSequence off = ResourceProvider.getInstance().getString(ResourceProvider.OFF);
         final PopupMenu menu = new PopupMenu(v.getContext(), v, ResourceProvider.getInstance().getString(ResourceProvider.TIMER));
         menu.setOnItemClickListener(new AdapterView.OnItemClickListener() {

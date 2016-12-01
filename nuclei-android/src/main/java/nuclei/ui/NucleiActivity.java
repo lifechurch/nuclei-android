@@ -47,10 +47,11 @@ public abstract class NucleiActivity extends Activity implements IntentBuilderAc
     private ActivityOptionsCompat mOptions;
     private LifecycleManager mLifecycleManager;
 
-    protected void manage(Destroyable destroyable) {
+    protected <T extends Destroyable> T manage(T destroyable) {
         if (mLifecycleManager == null)
             mLifecycleManager = new LifecycleManager(LifecycleManager.ACTIVITY);
         mLifecycleManager.manage(LifecycleManager.ACTIVITY, destroyable);
+        return destroyable;
     }
 
     protected void destroy(Destroyable destroyable) {

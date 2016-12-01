@@ -84,9 +84,7 @@ public class OffsetAdapterTests extends ActivityInstrumentationTestCase2<OffsetT
             @Override
             protected boolean matchesSafely(final RecyclerView view) {
                 RecyclerView.ViewHolder viewHolder = view.findViewHolderForAdapterPosition(position);
-                if (viewHolder == null)
-                    return false;
-                return itemMatcher.matches(viewHolder.itemView);
+                return viewHolder != null && itemMatcher.matches(viewHolder.itemView);
             }
         };
     }

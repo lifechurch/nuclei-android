@@ -4,7 +4,7 @@ import android.content.Context;
 
 public class RunnableTask<T> extends Task<T> {
 
-    private TaskRunnable<T> mRunnable;
+    private final TaskRunnable<T> mRunnable;
 
     public RunnableTask(TaskRunnable<T> runnable) {
         mRunnable = runnable;

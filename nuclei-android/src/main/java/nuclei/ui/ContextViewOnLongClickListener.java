@@ -28,7 +28,7 @@ import nuclei.task.ContextHandle;
  */
 public abstract class ContextViewOnLongClickListener implements View.OnLongClickListener {
 
-	private ContextHandle mHandle;
+	private final ContextHandle mHandle;
 
 	public ContextViewOnLongClickListener(ContextHandle handle) {
 		mHandle = handle;
@@ -36,9 +36,7 @@ public abstract class ContextViewOnLongClickListener implements View.OnLongClick
 
 	public final boolean onLongClick(View view) {
 		Context context = mHandle.get();
-		if (context != null)
-			return onLongClick(context, view);
-		return false;
+		return context != null && onLongClick(context, view);
 	}
 
 	public abstract boolean onLongClick(Context context, View view);

@@ -81,7 +81,7 @@ public class TaskJobService extends JobService {
     }
 
     class JobCallback extends Result.CallbackAdapter {
-        JobParameters params;
+        final JobParameters params;
 
         public JobCallback(JobParameters params) {
             this.params = params;

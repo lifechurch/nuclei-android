@@ -21,7 +21,7 @@ import okio.BufferedSource;
 
 public final class BinaryReader {
 
-    BufferedSource input;
+    final BufferedSource input;
 
     public BinaryReader(BufferedSource input) {
         this.input = input;

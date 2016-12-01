@@ -43,10 +43,7 @@ import nuclei.logs.Logs;
 
 public class PlaybackManager implements Playback.Callback {
 
-    private static final Log LOG = Logs.newLog(PlaybackManager.class);
-
-    public static final String INTERRUPTED = "interrupted";
-    public static final String CANCELED = "canceled";
+    static final Log LOG = Logs.newLog(PlaybackManager.class);
 
     public static final int ONE_SECOND = 1000;
     public static final int THIRY_SECOND = 30000;
@@ -61,13 +58,13 @@ public class PlaybackManager implements Playback.Callback {
     private static final int TIMER_COUNTDOWN = 1;
     private static final int TIMER_TIMING = 2;
 
-    private MediaMetadata mMediaMetadata;
-    private Playback mPlayback;
-    private PlaybackServiceCallback mServiceCallback;
-    private MediaSessionCallback mMediaSessionCallback;
-    private long mTimer = -1;
-    private final PlaybackHandler mHandler = new PlaybackHandler(this);
-    private Queue mQueue;
+    MediaMetadata mMediaMetadata;
+    Playback mPlayback;
+    final PlaybackServiceCallback mServiceCallback;
+    final MediaSessionCallback mMediaSessionCallback;
+    long mTimer = -1;
+    final PlaybackHandler mHandler = new PlaybackHandler(this);
+    Queue mQueue;
 
     public PlaybackManager(PlaybackServiceCallback serviceCallback, Playback playback) {
         mServiceCallback = serviceCallback;
@@ -325,7 +322,7 @@ public class PlaybackManager implements Playback.Callback {
         }
     }
 
-    private class MediaSessionCallback extends MediaSessionCompat.Callback {
+    class MediaSessionCallback extends MediaSessionCompat.Callback {
 
         @Override
         public void onPlay() {
@@ -339,7 +336,7 @@ public class PlaybackManager implements Playback.Callback {
             mServiceCallback.onPlaybackSeekTo(mPlayback.getCurrentMediaId(), current, position);
         }
 
-        private void onQueue(MediaId mediaId, Queue queue, final Bundle extras, boolean play) {
+        void onQueue(MediaId mediaId, Queue queue, final Bundle extras, boolean play) {
             mQueue = queue;
             if (mQueue != null && !mQueue.empty()) {
                 mQueue.moveToId(mediaId);
@@ -654,7 +651,7 @@ public class PlaybackManager implements Playback.Callback {
 
     private static class PlaybackHandler extends Handler {
 
-        private WeakReference<PlaybackManager> mManager;
+        private final WeakReference<PlaybackManager> mManager;
 
         PlaybackHandler(PlaybackManager manager) {
             mManager = new WeakReference<>(manager);

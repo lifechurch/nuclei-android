@@ -42,7 +42,7 @@ public class LifecycleManager {
     private List<Destroyable> mContainerDestroyables;
 
     @ContainerLifecycle
-    private int mContainerLifecycle;
+    private final int mContainerLifecycle;
 
     public LifecycleManager(@ContainerLifecycle int containerLifecycle) {
         mContainerLifecycle = containerLifecycle;

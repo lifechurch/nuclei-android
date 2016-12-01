@@ -35,16 +35,16 @@ import android.support.v4.app.Fragment;
  */
 public final class ActivityIntent<T> {
 
-    private Fragment supportFragment;
-    private android.app.Fragment fragment;
-    private Activity activity;
-    private AbstractBinding<T> binding;
-    private ActivityOptionsCompat options;
-    private int requestCode;
-    private int resultCode;
-    private T model;
+    private final Fragment supportFragment;
+    private final android.app.Fragment fragment;
+    private final Activity activity;
+    private final AbstractBinding<T> binding;
+    private final ActivityOptionsCompat options;
+    private final int requestCode;
+    private final int resultCode;
+    private final T model;
 
-    private ActivityIntent(T model, Fragment supportFragment, android.app.Fragment fragment, Activity activity,
+    ActivityIntent(T model, Fragment supportFragment, android.app.Fragment fragment, Activity activity,
                            ActivityOptionsCompat options, AbstractBinding<T> binding, int requestCode, int resultCode) {
         this.model = model;
         this.options = options;
@@ -125,13 +125,8 @@ public final class ActivityIntent<T> {
         Intent intent = binding.toIntent(activity, model);
         if (!binding.filter(activity, intent))
             return intent;
-        if (Build.VERSION.SDK_INT >= 11) {
-            if (startActivity(intent))
-                return intent;
-        } else {
-            if (supportStartActivity(intent))
-                return intent;
-        }
+        if (startActivity(intent))
+            return intent;
         if (options != null)
             ActivityCompat.startActivity(activity, intent, options.toBundle());
         else
@@ -148,13 +143,8 @@ public final class ActivityIntent<T> {
         Intent intent = binding.toIntent(activity, model);
         if (!binding.filter(activity, intent))
             return intent;
-        if (Build.VERSION.SDK_INT >= 11) {
-            if (startActivityForResult(intent))
-                return intent;
-        } else {
-            if (supportStartActivityForResult(intent))
-                return intent;
-        }
+        if (startActivityForResult(intent))
+            return intent;
         if (options != null)
             ActivityCompat.startActivityForResult(activity, intent, requestCode, options.toBundle());
         else
@@ -213,13 +203,8 @@ public final class ActivityIntent<T> {
         Intent intent = binding.toIntent(activity, model);
         if (!binding.filter(activity, intent))
             return intent;
-        if (Build.VERSION.SDK_INT >= 11) {
-            if (finishForResult(intent))
-                return intent;
-        } else {
-            if (supportFinishForResult(intent))
-                return intent;
-        }
+        if (finishForResult(intent))
+            return intent;
         activity.setResult(resultCode, intent);
         ActivityCompat.finishAfterTransition(activity);
         return intent;
@@ -229,8 +214,8 @@ public final class ActivityIntent<T> {
 
         private Fragment supportFragment;
         private android.app.Fragment fragment;
-        private Activity activity;
-        private AbstractBinding<T> binding;
+        private final Activity activity;
+        private final AbstractBinding<T> binding;
         private int requestCode;
         private int resultCode;
         private T model;

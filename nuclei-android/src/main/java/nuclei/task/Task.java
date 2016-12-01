@@ -34,7 +34,7 @@ public abstract class Task<T> implements Runnable {
 
     private static final Log LOG = Logs.newLog(Task.class);
 
-    private static AtomicInteger sJobId = new AtomicInteger(1);
+    private static final AtomicInteger sJobId = new AtomicInteger(1);
 
     private TaskPool pool;
     private ContextHandle handle;
@@ -44,7 +44,7 @@ public abstract class Task<T> implements Runnable {
     private boolean fromCache;
     private boolean resultSet;
 
-    private AtomicBoolean interrupted = new AtomicBoolean(false);
+    private final AtomicBoolean interrupted = new AtomicBoolean(false);
     private Thread currentThread;
 
     /**

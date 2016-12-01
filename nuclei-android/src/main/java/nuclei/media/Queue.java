@@ -22,9 +22,9 @@ import java.util.List;
 
 public class Queue {
 
-    private MediaId mId;
-    private CharSequence mTitle;
-    private List<QueueItem> mItems;
+    private final MediaId mId;
+    private final CharSequence mTitle;
+    private final List<QueueItem> mItems;
     private int mItemPosition;
     private MediaId mPrevious;
     private MediaId mNext;

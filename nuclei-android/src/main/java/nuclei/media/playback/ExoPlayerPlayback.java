@@ -70,7 +70,7 @@ public class ExoPlayerPlayback extends BasePlayback
         ExtractorMediaSource.EventListener,
         AdaptiveMediaSourceEventListener {
 
-    private static final Log LOG = Logs.newLog(ExoPlayerPlayback.class);
+    static final Log LOG = Logs.newLog(ExoPlayerPlayback.class);
 
     // The volume we set the media player to when we lose audio focus, but are
     // allowed to reduce the volume instead of stopping playback.
@@ -88,7 +88,7 @@ public class ExoPlayerPlayback extends BasePlayback
     private static final DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
 
     private final Handler mHandler;
-    private final MediaService mService;
+    final MediaService mService;
     private final WifiManager.WifiLock mWifiLock;
     private int mState;
     private boolean mPlayOnFocusGain;
@@ -110,7 +110,7 @@ public class ExoPlayerPlayback extends BasePlayback
     private Surface mSurface;
     private PlaybackParams mPlaybackParams;
 
-    private PowerManager.WakeLock mWakeLock;
+    private final PowerManager.WakeLock mWakeLock;
 
     private final IntentFilter mAudioNoisyIntentFilter =
             new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
@@ -135,9 +135,10 @@ public class ExoPlayerPlayback extends BasePlayback
     public ExoPlayerPlayback(MediaService service) {
         mService = service;
         mHandler = new Handler();
-        mAudioManager = (AudioManager) service.getSystemService(Context.AUDIO_SERVICE);
-        PowerManager powerManager = (PowerManager) service.getSystemService(Context.POWER_SERVICE);
-        WifiManager wifiManager = (WifiManager) service.getSystemService(Context.WIFI_SERVICE);
+        final Context ctx = service.getApplicationContext();
+        mAudioManager = (AudioManager) ctx.getSystemService(Context.AUDIO_SERVICE);
+        PowerManager powerManager = (PowerManager) ctx.getSystemService(Context.POWER_SERVICE);
+        WifiManager wifiManager = (WifiManager) ctx.getSystemService(Context.WIFI_SERVICE);
         // Create the Wifi lock (this does not acquire the lock, this just creates it)
         mWifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, "nuclei_media_wifi_lock");
         mWakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "nuclei_media_cpu_lock");

@@ -52,7 +52,7 @@ public class MediaInterface implements Destroyable {
 
     private Activity mLActivity;
     private FragmentActivity mFragmentActivity;
-    private MediaInterfaceCallback mCallbacks;
+    MediaInterfaceCallback mCallbacks;
     private MediaBrowserCompat mMediaBrowser;
     private MediaControllerCompat mMediaControls;
     private MediaControllerCompat.Callback mMediaCallback;
@@ -146,7 +146,7 @@ public class MediaInterface implements Destroyable {
             mLActivity.setMediaController((MediaController) mMediaControls.getMediaController());
     }
 
-    private void onConnected() {
+    void onConnected() {
         try {
             Context context = mFragmentActivity == null ? mLActivity : mFragmentActivity;
             if (context == null)
@@ -216,7 +216,7 @@ public class MediaInterface implements Destroyable {
         }
     }
 
-    private void onPlaybackStateChanged(PlaybackStateCompat state) {
+    void onPlaybackStateChanged(PlaybackStateCompat state) {
         if (mCallbacks != null) {
             if (state.getState() != PlaybackStateCompat.STATE_BUFFERING) {
                 mCallbacks.onLoaded(mPlayerControls);
@@ -252,7 +252,7 @@ public class MediaInterface implements Destroyable {
         }
     }
 
-    private void onSessionEvent(String event, Bundle extras) {
+    void onSessionEvent(String event, Bundle extras) {
         if (mCallbacks != null) {
             if (event.startsWith(MediaService.EVENT_TIMER)) {
                 mCallbacks.onTimerChanged(this, MediaService.getTimerFromEvent(event));
@@ -264,7 +264,7 @@ public class MediaInterface implements Destroyable {
         }
     }
 
-    private void onMetadataChanged(@Nullable MediaMetadataCompat metadata) {
+    void onMetadataChanged(@Nullable MediaMetadataCompat metadata) {
         if (mCallbacks != null) {
             if (mPlayerControls != null) {
                 final String mediaId = MediaPlayerController.getMediaId(metadata);
@@ -325,7 +325,7 @@ public class MediaInterface implements Destroyable {
         private static final int AUTO_HIDE = 2;
         public static final int MAX_PROGRESS = 1000;
 
-        private WeakReference<MediaInterface> mMediaInterface;
+        private final WeakReference<MediaInterface> mMediaInterface;
 
         public ProgressHandler(MediaInterface mediaInterface) {
             mMediaInterface = new WeakReference<>(mediaInterface);

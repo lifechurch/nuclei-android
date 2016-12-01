@@ -377,7 +377,7 @@ public class CastPlayback extends BasePlayback implements Playback {
                 .build();
     }
 
-    private void setMetadataFromRemote() {
+    void setMetadataFromRemote() {
         // Sync: We get the customData from the remote media information and update the local
         // metadata if it happens to be different from the one we are currently using.
         // This can happen when the app was either restarted/disconnected + connected, or if the
@@ -409,7 +409,7 @@ public class CastPlayback extends BasePlayback implements Playback {
         }
     }
 
-    private void updatePlaybackState() {
+    void updatePlaybackState() {
         final int status = VideoCastManager.getInstance().getPlaybackStatus();
 
         // Convert the remote playback states to media playback states.

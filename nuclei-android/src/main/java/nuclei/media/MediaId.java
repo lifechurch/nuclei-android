@@ -50,9 +50,7 @@ public abstract class MediaId {
 
     @Override
     public boolean equals(Object o) {
-        if (o instanceof MediaId)
-            return uri.compareTo(((MediaId) o).uri) == 0;
-        return false;
+        return o instanceof MediaId && uri.compareTo(((MediaId) o).uri) == 0;
     }
 
     @Override

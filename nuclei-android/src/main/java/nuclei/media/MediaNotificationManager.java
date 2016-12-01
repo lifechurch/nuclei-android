@@ -45,7 +45,7 @@ import nuclei.logs.Logs;
  */
 public class MediaNotificationManager extends BroadcastReceiver {
 
-    private static final Log LOG = Logs.newLog(MediaNotificationManager.class);
+    static final Log LOG = Logs.newLog(MediaNotificationManager.class);
 
     private static final int NOTIFICATION_ID = 412;
     private static final int REQUEST_CODE = 100;
@@ -62,10 +62,10 @@ public class MediaNotificationManager extends BroadcastReceiver {
     private MediaControllerCompat mController;
     private MediaControllerCompat.TransportControls mTransportControls;
 
-    private PlaybackStateCompat mPlaybackState;
-    private MediaMetadataCompat mMetadata;
+    PlaybackStateCompat mPlaybackState;
+    MediaMetadataCompat mMetadata;
 
-    private final NotificationManagerCompat mNotificationManager;
+    final NotificationManagerCompat mNotificationManager;
 
     private final PendingIntent mPauseIntent;
     private final PendingIntent mPlayIntent;
@@ -192,7 +192,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
      * we are running for the first time or when the media session owner has destroyed the session
      * (see {@link android.media.session.MediaController.Callback#onSessionDestroyed()})
      */
-    private void updateSessionToken() throws RemoteException {
+    void updateSessionToken() throws RemoteException {
         MediaSessionCompat.Token freshToken = mService.getSessionToken();
         if (mSessionToken == null && freshToken != null
                 || mSessionToken != null && !mSessionToken.equals(freshToken)) {
@@ -263,7 +263,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
         }
     };
 
-    private Notification createNotification() {
+    Notification createNotification() {
         LOG.d("updateNotificationMetadata. mMetadata=", mMetadata);
         if (mMetadata == null || mPlaybackState == null) {
             return null;

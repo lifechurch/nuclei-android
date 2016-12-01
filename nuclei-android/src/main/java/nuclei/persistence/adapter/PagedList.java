@@ -34,16 +34,16 @@ import java.util.Set;
  */
 public abstract class PagedList<T> extends AbstractList<T> {
 
-    Context mContext;
+    final Context mContext;
     Handler mHandler;
-    LruCache<Integer, List<T>> mPages;
+    final LruCache<Integer, List<T>> mPages;
     int mPageSize;
     int mSize;
     OnPageListener mListener;
-    Set<Integer> mLoading = new HashSet<>();
+    final Set<Integer> mLoading = new HashSet<>();
     int mMinPageIndex = 0;
     int mMaxPageIndex = 0;
-    int mMaxPages;
+    final int mMaxPages;
     boolean mMore;
 
     public PagedList(Context context, int maxPages, int pageSize) {

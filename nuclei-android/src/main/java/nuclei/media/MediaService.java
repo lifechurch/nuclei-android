@@ -54,7 +54,7 @@ import nuclei.logs.Logs;
 public class MediaService extends MediaBrowserServiceCompat implements
         PlaybackManager.PlaybackServiceCallback {
 
-    private static final Log LOG = Logs.newLog(MediaService.class);
+    static final Log LOG = Logs.newLog(MediaService.class);
 
     public static final String EVENT_TIMER = "nuclei.TIMER_CHANGE.";
     public static final String EVENT_SPEED = "nuclei.SPEED_CHANGE.";
@@ -90,17 +90,17 @@ public class MediaService extends MediaBrowserServiceCompat implements
 
     public static final String MEDIA_ID = "media_id";
 
-    private PlaybackManager mPlaybackManager;
+    PlaybackManager mPlaybackManager;
 
-    private MediaSessionCompat mSession;
-    private MediaNotificationManager mMediaNotificationManager;
-    private Bundle mSessionExtras;
-    private final DelayedStopHandler mDelayedStopHandler = new DelayedStopHandler(this);
-    private MediaRouter mMediaRouter;
-    private PackageValidator mPackageValidator;
+    MediaSessionCompat mSession;
+    MediaNotificationManager mMediaNotificationManager;
+    Bundle mSessionExtras;
+    final DelayedStopHandler mDelayedStopHandler = new DelayedStopHandler(this);
+    MediaRouter mMediaRouter;
+    PackageValidator mPackageValidator;
 
-    private boolean mIsConnectedToCar;
-    private BroadcastReceiver mCarConnectionReceiver;
+    boolean mIsConnectedToCar;
+    BroadcastReceiver mCarConnectionReceiver;
 
     /**
      * Consumer responsible for switching the Playback instances depending on whether
@@ -430,10 +430,10 @@ public class MediaService extends MediaBrowserServiceCompat implements
     /**
      * A simple handler that stops the service if playback is not active (playing).
      */
-    private static final class DelayedStopHandler extends Handler {
+    static final class DelayedStopHandler extends Handler {
         private final WeakReference<MediaService> mWeakReference;
 
-        private DelayedStopHandler(MediaService service) {
+        DelayedStopHandler(MediaService service) {
             mWeakReference = new WeakReference<>(service);
         }
 

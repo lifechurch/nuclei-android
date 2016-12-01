@@ -27,9 +27,9 @@ import android.widget.ProgressBar;
 
 public class LoadingView {
 
-    private ViewGroup mParent;
-    private ProgressBar mView;
-    private int mDismissed;
+    ViewGroup mParent;
+    ProgressBar mView;
+    int mDismissed;
 
     private LoadingView(ViewGroup parent) {
         mParent = parent;
@@ -110,7 +110,7 @@ public class LoadingView {
         immediateShow();
     }
 
-    private void immediateShow() {
+    void immediateShow() {
         if (mDismissed >= 0)
             return;
         if (mView != null && mParent != null) {

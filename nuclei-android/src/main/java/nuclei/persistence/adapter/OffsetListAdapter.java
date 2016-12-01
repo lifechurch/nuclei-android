@@ -232,7 +232,7 @@ public abstract class OffsetListAdapter<T, VH extends ListAdapter.ViewHolder<T>>
     /**
      * Keep track of the range offsets.
      */
-    private static class RangeOffset {
+    static class RangeOffset {
 
         public int start = 0; // the start of the range
         public int end = 0; // the end of the range

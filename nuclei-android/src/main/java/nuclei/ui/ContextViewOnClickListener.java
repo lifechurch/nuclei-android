@@ -28,7 +28,7 @@ import nuclei.task.ContextHandle;
  */
 public abstract class ContextViewOnClickListener implements View.OnClickListener {
 
-	private ContextHandle mHandle;
+	private final ContextHandle mHandle;
 
 	public ContextViewOnClickListener(ContextHandle handle) {
 		mHandle = handle;

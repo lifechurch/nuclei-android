@@ -36,7 +36,7 @@ public class DefaultCallback implements MediaInterface.MediaInterfaceCallback {
     private final ImageView next;
     private final ImageView previous;
 
-    private PlayerControlsView mView;
+    PlayerControlsView mView;
     private OnConnectedListener mConnectedListener;
 
     public DefaultCallback(PlayerControlsView view, OnConnectedListener listener) {
@@ -57,9 +57,9 @@ public class DefaultCallback implements MediaInterface.MediaInterfaceCallback {
         }
     }
 
-    private MediaInterface.ProgressHandler mHandler;
-    private boolean mDragging;
-    private final SeekBar.OnSeekBarChangeListener mSeekListener = new SeekBar.OnSeekBarChangeListener() {
+    MediaInterface.ProgressHandler mHandler;
+    boolean mDragging;
+    final SeekBar.OnSeekBarChangeListener mSeekListener = new SeekBar.OnSeekBarChangeListener() {
 
         @Override
         public void onStartTrackingTouch(SeekBar bar) {

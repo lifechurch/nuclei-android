@@ -26,7 +26,7 @@ import nuclei.persistence.PersistenceList;
  */
 public class PersistenceAdapterListener<T> implements PersistenceList.Listener<T> {
 
-    WeakReference<PersistenceListAdapter<T>> mAdapter;
+    final WeakReference<PersistenceListAdapter<T>> mAdapter;
 
     public PersistenceAdapterListener(PersistenceListAdapter<T> adapter) {
         mAdapter = new WeakReference<>(adapter);

@@ -35,7 +35,7 @@ import nuclei.logs.Logs;
  */
 public final class AlbumArtCache {
 
-    private static final Log LOG = Logs.newLog(AlbumArtCache.class);
+    static final Log LOG = Logs.newLog(AlbumArtCache.class);
 
     private static final int MAX_ART_WIDTH = 800;  // pixels
     private static final int MAX_ART_HEIGHT = 480;  // pixels

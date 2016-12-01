@@ -27,9 +27,9 @@ import java.lang.ref.WeakReference;
 
 public class VisibilityAnimator {
 
-    private ValueAnimator mAnimator;
-    private Callback mCallback;
-    private boolean mShowing;
+    ValueAnimator mAnimator;
+    final Callback mCallback;
+    boolean mShowing;
 
     public VisibilityAnimator(Callback callback) {
         mCallback = callback;
@@ -105,8 +105,8 @@ public class VisibilityAnimator {
 
     public static class ViewOffsetCallback implements Callback {
 
-        private WeakReference<View> mView;
-        private WeakReference<ViewOffsetBehavior> mBehavior;
+        private final WeakReference<View> mView;
+        private final WeakReference<ViewOffsetBehavior> mBehavior;
 
         public ViewOffsetCallback(View view) {
             mView = new WeakReference<>(view);

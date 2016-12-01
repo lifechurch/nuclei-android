@@ -21,8 +21,8 @@ import android.support.v4.app.FragmentTransaction;
 
 public abstract class FragmentButtonAdapter extends ButtonAdapter implements ButtonBarView.OnItemSelectedListener {
 
-    private FragmentManager mFragmentManager;
-    private int mContainerViewId;
+    private final FragmentManager mFragmentManager;
+    private final int mContainerViewId;
 
     public FragmentButtonAdapter(FragmentManager fragmentManager, int containerViewId) {
         mFragmentManager = fragmentManager;

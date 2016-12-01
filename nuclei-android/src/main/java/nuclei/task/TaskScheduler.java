@@ -63,7 +63,7 @@ public final class TaskScheduler {
     public static final int BACKOFF_POLICY_LINEAR = 0;
     public static final int BACKOFF_POLICY_EXPONENTIAL = 1;
 
-    private Builder mBuilder;
+    private final Builder mBuilder;
 
     /**
      * Check to see if this device supports scheduling
@@ -76,7 +76,7 @@ public final class TaskScheduler {
                 .isGooglePlayServicesAvailable(ContextHandle.getApplicationHandle().get()) == ConnectionResult.SUCCESS;
     }
 
-    private TaskScheduler(Builder builder) {
+    TaskScheduler(Builder builder) {
         mBuilder = builder;
     }
 
@@ -294,7 +294,7 @@ public final class TaskScheduler {
 
     public static final class Builder {
 
-        nuclei.task.Task mTask;
+        final nuclei.task.Task mTask;
         int mNetworkState = NETWORK_STATE_ANY;
         boolean mRequiresDeviceIdle;
         boolean mRequiresCharging;
@@ -311,7 +311,7 @@ public final class TaskScheduler {
         long mInitialBackoffMillis;
         boolean mForceGcm;
 
-        private Builder(nuclei.task.Task task, int type) {
+        Builder(nuclei.task.Task task, int type) {
             mTask = task;
             mTaskType = type;
         }

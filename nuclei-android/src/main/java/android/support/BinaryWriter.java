@@ -25,7 +25,7 @@ public class BinaryWriter {
     static final byte NULL = 1;
     static final byte NOT_NULL = 2;
 
-    BufferedSink output;
+    final BufferedSink output;
 
     public BinaryWriter(BufferedSink output) {
         this.output = output;
