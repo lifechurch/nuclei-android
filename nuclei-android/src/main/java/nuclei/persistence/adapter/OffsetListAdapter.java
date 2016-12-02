@@ -40,6 +40,7 @@ public abstract class OffsetListAdapter<T, VH extends ListAdapter.ViewHolder<T>>
     private SparseArrayCompat<T> mItems;
     private RangeOffset mOffset;
     private LayoutInflater mInflater;
+    private Observer mObserver;
 
     /**
      * If the wrapped adapter has stable IDs, the offset list adapter must have stable IDs too.
@@ -49,10 +50,12 @@ public abstract class OffsetListAdapter<T, VH extends ListAdapter.ViewHolder<T>>
      * @param items The items where the key is the position the value will be placed.
      */
     public OffsetListAdapter(Context context, RecyclerView.Adapter<VH> adapter, SparseArrayCompat<T> items) {
+        mObserver = new Observer();
         mInflater = LayoutInflater.from(context);
         super.setHasStableIds(adapter.hasStableIds());
         mOriginalAdapter = adapter;
         mItems = items;
+        adapter.registerAdapterDataObserver(mObserver);
         buildOffsets();
     }
 
@@ -60,6 +63,10 @@ public abstract class OffsetListAdapter<T, VH extends ListAdapter.ViewHolder<T>>
      * Rebuild the item offsets
      */
     private void buildOffsets() {
+        if (mItems == null || mItems.size() == 0) {
+            mOffset = null;
+            return;
+        }
         mOffset = new RangeOffset();
         RangeOffset offset = mOffset;
         int[] positions = new int[mItems.size()];
@@ -77,8 +84,8 @@ public abstract class OffsetListAdapter<T, VH extends ListAdapter.ViewHolder<T>>
         return mOriginalAdapter;
     }
 
-    public SparseArrayCompat<T> getItems() {
-        return mItems;
+    public T getOffsetItem(int position) {
+        return mItems.get(position);
     }
 
     /**
@@ -98,6 +105,8 @@ public abstract class OffsetListAdapter<T, VH extends ListAdapter.ViewHolder<T>>
      * @return
      */
     protected int getOriginalPosition(int position) {
+        if (mOffset == null)
+            return position;
         if (!mOffset.contains(position)) {
             mOffset = mOffset.find(position);
         }
@@ -225,8 +234,44 @@ public abstract class OffsetListAdapter<T, VH extends ListAdapter.ViewHolder<T>>
 
     @Override
     public void onDestroy() {
+        if (mOriginalAdapter != null)
+            mOriginalAdapter.unregisterAdapterDataObserver(mObserver);
+        mObserver = null;
         mInflater = null;
         mOriginalAdapter = null;
+    }
+
+    class Observer extends RecyclerView.AdapterDataObserver {
+
+        @Override
+        public void onChanged() {
+            OffsetListAdapter.this.notifyDataSetChanged();
+        }
+
+        @Override
+        public void onItemRangeChanged(int positionStart, int itemCount) {
+            OffsetListAdapter.this.notifyItemRangeChanged(positionStart, itemCount);
+        }
+
+        @Override
+        public void onItemRangeChanged(int positionStart, int itemCount, Object payload) {
+            OffsetListAdapter.this.notifyItemRangeChanged(positionStart, itemCount, payload);
+        }
+
+        @Override
+        public void onItemRangeInserted(int positionStart, int itemCount) {
+            OffsetListAdapter.this.notifyItemRangeInserted(positionStart, itemCount);
+        }
+
+        @Override
+        public void onItemRangeRemoved(int positionStart, int itemCount) {
+            OffsetListAdapter.this.notifyItemRangeRemoved(positionStart, itemCount);
+        }
+
+        @Override
+        public void onItemRangeMoved(int fromPosition, int toPosition, int itemCount) {
+            OffsetListAdapter.this.notifyItemMoved(fromPosition, toPosition);
+        }
     }
 
     /**
@@ -282,16 +327,8 @@ public abstract class OffsetListAdapter<T, VH extends ListAdapter.ViewHolder<T>>
          * @return The next range offset (or the currently expanded one)
          */
         public RangeOffset expand(int position) {
-            if (position == 0 && start == 0) {
-                return nextOffset(position);
-            } else if (position == end) {
-                end++;
-                return this;
-            } else if (position > end) {
-                end = position;
-                return nextOffset(position);
-            }
-            return this;
+            end = position;
+            return nextOffset(position);
         }
 
         private RangeOffset nextOffset(int position) {

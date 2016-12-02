@@ -18,6 +18,7 @@
             android:label="@string/share_via" />
 
         <activity android:name="nuclei.ui.OffsetTestActivity" />
+        <activity android:name="nuclei.ui.OffsetTestActivity2" />
 
     </application>
 

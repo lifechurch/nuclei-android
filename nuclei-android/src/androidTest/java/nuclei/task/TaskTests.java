@@ -80,7 +80,6 @@ public class TaskTests extends ApplicationTestCase<Application> {
         };
         for (int i = 0; i < tasks.get(); i++)
             pool.execute(new TestTask()).addCallback(callback);
-        assertEquals(0, count.get());
         while (tasks.get() > 0) {
             synchronized (count) {
                 try {
@@ -88,6 +87,7 @@ public class TaskTests extends ApplicationTestCase<Application> {
                 } catch (InterruptedException ignore) {}
             }
         }
+        assertEquals(0, count.get());
         assertEquals(0, tasks.get());
         pool.shutdown();
     }
