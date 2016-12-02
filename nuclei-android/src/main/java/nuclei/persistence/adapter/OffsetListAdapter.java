@@ -327,6 +327,7 @@ public abstract class OffsetListAdapter<T, VH extends ListAdapter.ViewHolder<T>>
          * @return The next range offset (or the currently expanded one)
          */
         public RangeOffset expand(int position) {
+            // TODO: It's unnecessary to create a new offset if there are contiguous positions
             end = position;
             return nextOffset(position);
         }
