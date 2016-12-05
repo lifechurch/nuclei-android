@@ -38,6 +38,7 @@ import android.support.v4.media.session.PlaybackStateCompat;
 import android.view.Surface;
 
 import java.lang.ref.WeakReference;
+import java.util.concurrent.atomic.AtomicLong;
 
 import nuclei.logs.Log;
 import nuclei.logs.Logs;
@@ -50,6 +51,8 @@ public class MediaInterface implements Destroyable {
 
     public static final String ACTION_CONNECTED = "nuclei.media.interface.CONNECTED";
 
+    private static final AtomicLong SURFACE_ID = new AtomicLong(1);
+
     private Activity mLActivity;
     private FragmentActivity mFragmentActivity;
     MediaInterfaceCallback mCallbacks;
@@ -59,6 +62,7 @@ public class MediaInterface implements Destroyable {
     private MediaPlayerController mPlayerControls;
     private ProgressHandler mHandler = new ProgressHandler(this);
     private Surface mSurface;
+    private long mSurfaceId;
 
     public MediaInterface(FragmentActivity activity, MediaId mediaId, MediaInterfaceCallback callback) {
         mFragmentActivity = activity;
@@ -74,6 +78,9 @@ public class MediaInterface implements Destroyable {
                     }
                 }, null);
         mMediaBrowser.connect();
+        mSurfaceId = SURFACE_ID.incrementAndGet();
+        if (SURFACE_ID.longValue() == Long.MAX_VALUE)
+            SURFACE_ID.set(1);
     }
 
     @TargetApi(21)
@@ -91,6 +98,9 @@ public class MediaInterface implements Destroyable {
                     }
                 }, null);
         mMediaBrowser.connect();
+        mSurfaceId = SURFACE_ID.incrementAndGet();
+        if (SURFACE_ID.longValue() == Long.MAX_VALUE)
+            SURFACE_ID.set(1);
     }
 
     public MediaPlayerController getPlayerController() {
@@ -112,6 +122,7 @@ public class MediaInterface implements Destroyable {
         if (mMediaControls != null) {
             final Bundle args = new Bundle();
             args.putParcelable(MediaService.EXTRA_SURFACE, surface);
+            args.putLong(MediaService.EXTRA_SURFACE_ID, mSurfaceId);
             mMediaControls.getTransportControls().sendCustomAction(MediaService.ACTION_SET_SURFACE, args);
             mSurface = null;
         } else {
