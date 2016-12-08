@@ -159,7 +159,7 @@ public class EntityModel {
             if (e.getName().equals(name))
                 return e;
         }
-        Query q = new Query(name, selection, orderBy, properties);
+        Query q = new Query(name, selection, orderBy, this, properties);
         selectQueries.add(q);
         return q;
     }
@@ -169,7 +169,7 @@ public class EntityModel {
             if (e.getName().equals(name))
                 return e;
         }
-        Query q = new Query(name, selection, null, properties);
+        Query q = new Query(name, selection, null, this, properties);
         updateQueries.add(q);
         return q;
     }
@@ -179,7 +179,7 @@ public class EntityModel {
             if (e.getName().equals(name))
                 return e;
         }
-        Query q = new Query(name, selection, null, null);
+        Query q = new Query(name, selection, null, this, null);
         deleteQueries.add(q);
         return q;
     }

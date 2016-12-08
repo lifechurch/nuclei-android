@@ -635,15 +635,14 @@ public class DbContext {
     }
 
     static List<EntityProperty> getProperties(JSONObject query, EntityModel m, Version version) {
-        List<EntityProperty> props;
+        List<EntityProperty> props = null;
         if (query.has("properties")) {
-            props = new ArrayList<EntityProperty>();
+            props = new ArrayList<>();
             JSONArray names = query.getJSONArray("properties");
             for (int n = 0; n < names.length(); n++) {
                 props.add(m.getProperty(version, names.getString(n)));
             }
-        } else
-            props = m.getAllProperties(version);
+        }
         return props;
     }
 

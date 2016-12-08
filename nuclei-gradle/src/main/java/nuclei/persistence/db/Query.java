@@ -20,19 +20,19 @@ import java.util.List;
 
 public class Query {
 
+    private EntityModel entityModel;
     private String name;
     private String selection;
     private String orderBy;
     private List<EntityProperty> properties;
 
-    public Query(String name, String selection, String orderBy, List<EntityProperty> properties) {
+    public Query(String name, String selection, String orderBy, EntityModel model, List<EntityProperty> properties) {
         this.name = name;
         this.selection = selection;
         this.orderBy = orderBy;
         if (properties != null)
             this.properties = new ArrayList<>(properties);
-        else
-            this.properties = new ArrayList<>();
+        this.entityModel = model;
     }
 
     public String getName() {
@@ -60,6 +60,8 @@ public class Query {
     }
 
     public List<EntityProperty> getProperties() {
+        if (properties == null)
+            return entityModel.getAllProperties(entityModel.currentVersion().getVersion());
         return properties;
     }
 
