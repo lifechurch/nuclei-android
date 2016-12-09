@@ -15,4 +15,9 @@
  * limitations under the License.
  */
 -->
-alter table ${model.name} drop column ${property.name};
+BEGIN TRANSACTION;
+alter table ${model.name} rename to ${model.name}_old;
+create table ${model.name} (_id INTEGER PRIMARY KEY<#list properties as property><#if property.name != '_id'>,${property.name} ${property.sqlType}</#if></#list>);
+insert into ${model.name} (_id<#list properties as property><#if property.name != '_id'>,${property.name}</#if></#list>) select _id<#list properties as property><#if property.name != '_id'>,${property.name}</#if></#list> from ${model.name}_old;
+drop table ${model.name}_old;
+COMMIT;

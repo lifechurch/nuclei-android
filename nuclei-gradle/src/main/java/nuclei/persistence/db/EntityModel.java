@@ -147,6 +147,12 @@ public class EntityModel {
         return new ArrayList<>(diff.properties);
     }
 
+    public List<EntityIndex> getAllIndexes(Version version) {
+        Version.Diff diff = baseVersion().getVersion()
+                .diff(version, this);
+        return new ArrayList<>(diff.indexes);
+    }
+
     public List<EntityIndex> getIndexes(Version version) {
         for (EntityModelVersion v : versions) {
             if (v.getVersion() == version)

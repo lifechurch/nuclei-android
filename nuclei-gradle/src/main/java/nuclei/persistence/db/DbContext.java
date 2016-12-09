@@ -132,8 +132,14 @@ public class DbContext {
     void diffProperties(List<String> sql, Version lastVersion, Version version, Version.Diff diff, Configuration cfg) throws IOException {
         for (EntityModel model : diff.models) {
             diff = lastVersion.diff(version, model);
-            for (EntityProperty removed : diff.removedProperties) {
-                sql.add(renderDropProperty(removed, cfg));
+            //for (EntityProperty removed : diff.removedProperties) {
+            //    sql.add(renderDropProperty(removed, cfg));
+            //}
+            if (diff.removedProperties.size() > 0) {
+                renderDropProperty(model, version, cfg);
+                for (EntityIndex index : diff.indexes) {
+                    sql.add(renderCreateIndex(index, cfg));
+                }
             }
             for (EntityProperty added : diff.addedProperties) {
                 sql.add(renderAddProperty(added, cfg));
@@ -215,8 +221,12 @@ public class DbContext {
                     }
                     case DROP_PROPERTIES: {
                         for (EntityModel model : version.getModels()) {
-                            for (EntityProperty property : model.getProperties(version)) {
-                                sql.add(renderDropProperty(property, cfg));
+                            //for (EntityProperty property : model.getProperties(version)) {
+                            //    sql.add(renderDropProperty(property, cfg));
+                            //}
+                            sql.add(renderDropProperty(model, version, cfg));
+                            for (EntityIndex index : model.getAllIndexes(version)) {
+                                sql.add(renderCreateIndex(index, cfg));
                             }
                         }
                         break;
@@ -315,17 +325,17 @@ public class DbContext {
         return out.toString().replaceAll("\\n", "").replaceAll("\\r", "");
     }
 
-    String renderDropProperty(EntityProperty property, Configuration cfg) throws IOException {
+    String renderDropProperty(EntityModel model, Version version, Configuration cfg) throws IOException {
         StringWriter out = new StringWriter();
         try {
             Map<String, Object> params = new HashMap<String, Object>();
-            params.put("model", property.getModel());
-            params.put("property", property);
+            params.put("model", model);
+            params.put("properties", model.getAllProperties(version));
             getTemplate(cfg, "sql", "model_drop_column").process(params, out);
         } catch (TemplateException err) {
             throw new IOException(err);
         }
-        return out.toString().replaceAll("\\n", "").replaceAll("\\r", "");
+        return out.toString().replaceAll("\\n", " ").replaceAll("\\r", " ");
     }
 
     String renderDropIndex(EntityIndex index, Configuration cfg) throws IOException {

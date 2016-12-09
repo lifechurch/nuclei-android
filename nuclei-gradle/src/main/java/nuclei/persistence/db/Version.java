@@ -186,6 +186,7 @@ public class Version {
             ix++;
         }
         diff.properties.addAll(model.getVersions().get(startIx).getProperties());
+        diff.indexes.addAll(model.getVersions().get(startIx).getIndexes());
         for (int i = startIx + 1; i < endIx; i++) {
             EntityModelVersion modelVersion = model.getVersions().get(i);
 
