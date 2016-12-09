@@ -29,7 +29,7 @@ public class ${model.name} extends ${model.rootModel.fullName} {
     <#list model.selectQueries as query>
     public static final Query<${model.name}> SELECT_${query.upperCaseName} =
         new Query<>(Schemas.${model.name}.QUERY_${query.upperCaseName}, Query.QUERY_OPERATION_SELECT, Schemas.${model.name}.CONTENT_URI, ${model.name}.class, new ${model.packageName}.mapper.cursor.${model.name}${query.name}Mapper(),
-            <#if query.selection??>"${query.selection}"<#else>null</#if>, <#if query.orderBy??>"${query.orderBy}"<#else>null</#if><#list query.properties as property>, Schemas.${model.name}.${property.upperCaseName}</#list>);
+            <#if query.selection??>"${query.selection}"<#else>null</#if>, <#if query.orderBy??>"${query.orderBy}"<#else>null</#if><#list query.properties as property>, Schemas.${property.model.name}.${property.upperCaseName}</#list>);
     </#list>
     <#list model.updateQueries as query>
     public static final Query<${model.name}> UPDATE_${query.upperCaseName} =

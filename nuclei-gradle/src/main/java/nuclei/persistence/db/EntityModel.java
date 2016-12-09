@@ -16,7 +16,9 @@
 package nuclei.persistence.db;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class EntityModel {
 
@@ -92,6 +94,20 @@ public class EntityModel {
     }
 
     public List<Query> getSelectQueries() {
+        if (isView()) {
+            ViewEntityModel model = (ViewEntityModel) this;
+            EntityModel entityModel = model.getRootModel();
+            Map<String, Query> queries = new HashMap<>();
+            for (Query query : entityModel.getSelectQueries()) {
+                query = query.clone();
+                query.setProperties(getAllProperties(currentVersion().getVersion()));
+                queries.put(query.getName(), query.clone());
+            }
+            for (Query query : selectQueries) {
+                queries.put(query.getName(), query);
+            }
+            return new ArrayList<>(queries.values());
+        }
         return selectQueries;
     }
 

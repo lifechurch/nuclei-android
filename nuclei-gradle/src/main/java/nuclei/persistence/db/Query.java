@@ -35,6 +35,10 @@ public class Query {
         this.entityModel = model;
     }
 
+    public EntityModel getModel() {
+        return entityModel;
+    }
+
     public String getName() {
         return name;
     }
@@ -63,6 +67,18 @@ public class Query {
         if (properties == null)
             return entityModel.getAllProperties(entityModel.currentVersion().getVersion());
         return properties;
+    }
+
+    public boolean hasProperties() {
+        return properties != null && properties.size() > 0;
+    }
+
+    public void setProperties(List<EntityProperty> properties) {
+        this.properties = properties;
+    }
+
+    public Query clone() {
+        return new Query(name, selection, orderBy, entityModel, properties);
     }
 
 }
