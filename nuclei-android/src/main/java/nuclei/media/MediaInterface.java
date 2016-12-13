@@ -181,9 +181,9 @@ public class MediaInterface implements Destroyable {
             };
             mMediaControls.registerCallback(mMediaCallback);
 
-            if (mFragmentActivity != null)
-                mFragmentActivity.setSupportMediaController(mMediaControls);
-            else if (mLActivity != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+            if (mFragmentActivity != null) {
+                MediaControllerCompat.setMediaController(mFragmentActivity, mMediaControls);
+            } else if (mLActivity != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
                 setMediaControllerL();
 
             if (mPlayerControls != null)

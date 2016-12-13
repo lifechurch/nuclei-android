@@ -27,6 +27,7 @@ import okhttp3.internal.cache.DiskLruCache;
 import okhttp3.internal.io.FileSystem;
 import okio.BufferedSink;
 import okio.BufferedSource;
+import okio.ByteString;
 import okio.Okio;
 
 public final class SimpleCache implements Closeable, Flushable {
@@ -36,7 +37,7 @@ public final class SimpleCache implements Closeable, Flushable {
     private static final int CONTENT = 1;
 
     private static String stringToKey(String key) {
-        return Util.md5Hex(key);
+        return ByteString.encodeUtf8(key).md5().hex();
     }
 
     final DiskLruCache cache;
