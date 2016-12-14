@@ -61,6 +61,7 @@ import nuclei.media.MediaService;
 import nuclei.task.http.ErrorUtil;
 import nuclei.logs.Log;
 import nuclei.logs.Logs;
+import okhttp3.MediaType;
 
 public class ExoPlayerPlayback extends BasePlayback
         implements
@@ -535,10 +536,18 @@ public class ExoPlayerPlayback extends BasePlayback
         mMediaPlayer = ExoPlayerFactory.newSimpleInstance(mService.getApplicationContext(),
                 new DefaultTrackSelector(mHandler), new DefaultLoadControl());
         mMediaPlayer.addListener(this);
-        boolean file = url.startsWith("file://");
-        if (file || type == MediaId.TYPE_AUDIO) {
+        boolean hls = false;
+        boolean localFile = url.startsWith("file://");
+        if (!localFile) {
+            try {
+                hls = type == MediaId.TYPE_VIDEO || Uri.parse(url).getPath().endsWith(".m3u8");
+            } catch (Exception ignore) {
+            }
+        }
+        // expecting MP3 here ... otherwise HLS
+        if ((localFile || type == MediaId.TYPE_AUDIO) && !hls) {
             MediaSource mediaSource = new ExtractorMediaSource(Uri.parse(url),
-                    buildDataSourceFactory(mService.getApplication(), true, !file),
+                    buildDataSourceFactory(mService.getApplication(), true, !localFile),
                     new DefaultExtractorsFactory(),
                     mHandler,
                     this);
