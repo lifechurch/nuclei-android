@@ -42,8 +42,11 @@ import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
 import com.google.android.exoplayer2.source.AdaptiveMediaSourceEventListener;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
+import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.source.hls.HlsMediaSource;
+import com.google.android.exoplayer2.trackselection.AdaptiveVideoTrackSelection;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
+import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DataSpec;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
@@ -58,10 +61,8 @@ import nuclei.media.MediaId;
 import nuclei.media.MediaMetadata;
 import nuclei.media.MediaProvider;
 import nuclei.media.MediaService;
-import nuclei.task.http.ErrorUtil;
 import nuclei.logs.Log;
 import nuclei.logs.Logs;
-import okhttp3.MediaType;
 
 public class ExoPlayerPlayback extends BasePlayback
         implements
@@ -534,7 +535,7 @@ public class ExoPlayerPlayback extends BasePlayback
         }
         mPrepared = false;
         mMediaPlayer = ExoPlayerFactory.newSimpleInstance(mService.getApplicationContext(),
-                new DefaultTrackSelector(mHandler), new DefaultLoadControl());
+                new DefaultTrackSelector(new AdaptiveVideoTrackSelection.Factory(BANDWIDTH_METER)), new DefaultLoadControl());
         mMediaPlayer.addListener(this);
         boolean hls = false;
         boolean localFile = url.startsWith("file://");
@@ -570,6 +571,11 @@ public class ExoPlayerPlayback extends BasePlayback
 
     @Override
     public void onLoadingChanged(boolean isLoading) {
+
+    }
+
+    @Override
+    public void onTracksChanged(TrackGroupArray trackGroups, TrackSelectionArray trackSelections) {
 
     }
 
