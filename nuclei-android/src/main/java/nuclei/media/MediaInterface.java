@@ -281,7 +281,7 @@ public class MediaInterface implements Destroyable {
             if (mPlayerControls != null) {
                 final String mediaId = MediaPlayerController.getMediaId(metadata);
                 if (mediaId != null && (mPlayerControls.mMediaId == null || !mediaId.equals(mPlayerControls.mMediaId.toString()))) {
-                    LOG.i("Media ID Changed");
+                    LOG.v("Media ID Changed");
                     mPlayerControls.mMediaId = MediaProvider.getInstance().getMediaId(mediaId);
                     onPlaybackStateChanged(mMediaControls.getPlaybackState());
                 }

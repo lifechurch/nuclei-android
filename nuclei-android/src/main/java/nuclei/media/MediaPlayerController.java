@@ -177,9 +177,9 @@ public class MediaPlayerController implements MediaController.MediaPlayerControl
             MediaId id = MediaProvider.getInstance().getMediaId(currentId);
             if (mediaId != null && mediaId.equals(id))
                 return true;
-            LOG.i("ID (" + id + ") != (" + mediaId + ")");
+            LOG.v("ID (" + id + ") != (" + mediaId + ")");
         } else {
-            LOG.i("Media ID not set on controller");
+            LOG.v("Media ID not set on controller");
         }
         return false;
     }
