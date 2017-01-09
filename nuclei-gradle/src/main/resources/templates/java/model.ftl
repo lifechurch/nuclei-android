@@ -28,16 +28,16 @@ public class ${model.name} extends ${model.rootModel.fullName} {
     public static final MapperEntity<${model.name}> INSERT = new MapperEntity<>(Schemas.${model.name}.CONTENT_URI, new ${model.packageName}.mapper.content.insert.${model.name}Mapper());
     <#list model.selectQueries as query>
     public static final Query<${model.name}> SELECT_${query.upperCaseName} =
-        new Query<>(Schemas.${model.name}.QUERY_${query.upperCaseName}, Query.QUERY_OPERATION_SELECT, Schemas.${model.name}.CONTENT_URI, ${model.name}.class, new ${model.packageName}.mapper.cursor.${model.name}${query.name}Mapper(),
+        new Query<>(Schemas.${model.name}.QUERY_${query.upperCaseName}, Query.QUERY_OPERATION_SELECT, Schemas.${model.name}.CONTENT_URI, ${model.name}.class, new ${model.packageName}.mapper.cursor.${model.name}${query.name}Mapper(), ${query.placeholders},
             <#if query.selection??>"${query.selection}"<#else>null</#if>, <#if query.orderBy??>"${query.orderBy}"<#else>null</#if><#list query.properties as property>, Schemas.${property.model.name}.${property.upperCaseName}</#list>);
     </#list>
     <#list model.updateQueries as query>
     public static final Query<${model.name}> UPDATE_${query.upperCaseName} =
-        new Query<>(Schemas.${model.name}.QUERY_UPDATE_${query.upperCaseName}, Query.QUERY_OPERATION_UPDATE, Schemas.${model.name}.CONTENT_URI, ${model.name}.class, new ${model.packageName}.mapper.content.update.${model.name}${query.name}Mapper(), <#if query.selection??>"${query.selection}"<#else>null</#if>);
+        new Query<>(Schemas.${model.name}.QUERY_UPDATE_${query.upperCaseName}, Query.QUERY_OPERATION_UPDATE, Schemas.${model.name}.CONTENT_URI, ${model.name}.class, new ${model.packageName}.mapper.content.update.${model.name}${query.name}Mapper(), ${query.placeholders}, <#if query.selection??>"${query.selection}"<#else>null</#if>);
     </#list>
     <#list model.deleteQueries as query>
     public static final Query<${model.name}> DELETE_${query.upperCaseName} =
-        new Query<>(Schemas.${model.name}.QUERY_DELETE_${query.upperCaseName}, Query.QUERY_OPERATION_DELETE, Schemas.${model.name}.CONTENT_URI, ${model.name}.class, null, <#if query.selection??>"${query.selection}"<#else>null</#if>);
+        new Query<>(Schemas.${model.name}.QUERY_DELETE_${query.upperCaseName}, Query.QUERY_OPERATION_DELETE, Schemas.${model.name}.CONTENT_URI, ${model.name}.class, null, ${query.placeholders}, <#if query.selection??>"${query.selection}"<#else>null</#if>);
     </#list>
 
     <#list properties as property>
@@ -54,16 +54,16 @@ public class ${model.name} implements ModelObject {
     public static final MapperEntity<${model.name}> INSERT = new MapperEntity<>(Schemas.${model.name}.CONTENT_URI, new ${model.packageName}.mapper.content.insert.${model.name}Mapper());
     <#list model.selectQueries as query>
     public static final Query<${model.name}> SELECT_${query.upperCaseName} =
-        new Query<>(Schemas.${model.name}.QUERY_${query.upperCaseName}, Query.QUERY_OPERATION_SELECT, Schemas.${model.name}.CONTENT_URI, ${model.name}.class, new ${model.packageName}.mapper.cursor.${model.name}${query.name}Mapper(),
+        new Query<>(Schemas.${model.name}.QUERY_${query.upperCaseName}, Query.QUERY_OPERATION_SELECT, Schemas.${model.name}.CONTENT_URI, ${model.name}.class, new ${model.packageName}.mapper.cursor.${model.name}${query.name}Mapper(), ${query.placeholders},
             <#if query.selection??>"${query.selection}"<#else>null</#if>, <#if query.orderBy??>"${query.orderBy}"<#else>null</#if><#list query.properties as property>, Schemas.${model.name}.${property.upperCaseName}</#list>);
     </#list>
     <#list model.updateQueries as query>
     public static final Query<${model.name}> UPDATE_${query.upperCaseName} =
-        new Query<>(Schemas.${model.name}.QUERY_UPDATE_${query.upperCaseName}, Query.QUERY_OPERATION_UPDATE, Schemas.${model.name}.CONTENT_URI, ${model.name}.class, new ${model.packageName}.mapper.content.update.${model.name}${query.name}Mapper(), <#if query.selection??>"${query.selection}"<#else>null</#if>);
+        new Query<>(Schemas.${model.name}.QUERY_UPDATE_${query.upperCaseName}, Query.QUERY_OPERATION_UPDATE, Schemas.${model.name}.CONTENT_URI, ${model.name}.class, new ${model.packageName}.mapper.content.update.${model.name}${query.name}Mapper(), ${query.placeholders}, <#if query.selection??>"${query.selection}"<#else>null</#if>);
     </#list>
     <#list model.deleteQueries as query>
     public static final Query<${model.name}> DELETE_${query.upperCaseName} =
-        new Query<>(Schemas.${model.name}.QUERY_DELETE_${query.upperCaseName}, Query.QUERY_OPERATION_DELETE, Schemas.${model.name}.CONTENT_URI, ${model.name}.class, null, <#if query.selection??>"${query.selection}"<#else>null</#if>);
+        new Query<>(Schemas.${model.name}.QUERY_DELETE_${query.upperCaseName}, Query.QUERY_OPERATION_DELETE, Schemas.${model.name}.CONTENT_URI, ${model.name}.class, null, ${query.placeholders}, <#if query.selection??>"${query.selection}"<#else>null</#if>);
     </#list>
 
     <#list properties as property>

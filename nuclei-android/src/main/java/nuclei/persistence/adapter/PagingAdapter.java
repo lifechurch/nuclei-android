@@ -37,15 +37,19 @@ public abstract class PagingAdapter<T, L extends List<T>, VH extends Persistence
     private static final String STATE_HAS_MORE = PagingAdapter.class.getSimpleName() + ".HAS_MORE";
     private static final String STATE_READY = PagingAdapter.class.getSimpleName() + ".READY";
     private static final String STATE_LAST_INDEX = PagingAdapter.class.getSimpleName() + ".LAST_INDEX";
+    private static final String STATE_NEXT_INDEX = PagingAdapter.class.getSimpleName() + ".NEXT_INDEX";
     private static final String STATE_PAGE_SIZE = PagingAdapter.class.getSimpleName() + ".PAGE_SIZE";
     private static final String STATE_PREV_LOADING = PagingAdapter.class.getSimpleName() + ".PREV_LOADING";
     private static final String STATE_NEXT_LOADING = PagingAdapter.class.getSimpleName() + ".NEXT_LOADING";
 
     private boolean mLoading;
-    private boolean mHasMore = true;
+    boolean mHasMore = true;
     private boolean mReady;
+    private boolean mSaveState = false;
 
-    private int mLastPageIndex = -1; // the last page index that was loaded
+    int mLastPageIndex = -1; // the last page index that was loaded
+    int mNextPageIndex;
+    long mPagedListUpdates;
     private int mPageSize;
     private int mPrevLoadingIndex; // the first item index that will be loading when traversing backwards
     private int mNextLoadingIndex; // the first item index that will be loading when traversing forwards
@@ -59,22 +63,38 @@ public abstract class PagingAdapter<T, L extends List<T>, VH extends Persistence
         mMoreId = getMoreItemId();
     }
 
+    protected final int getNextPageIndex() {
+        return mNextPageIndex;
+    }
+
+    protected final int getLastPageIndex() {
+        return mLastPageIndex;
+    }
+
+    protected void setSaveState(boolean saveState) {
+        mSaveState = saveState;
+    }
+
     public void onSaveInstanceState(Bundle outState) {
-        outState.putBoolean(STATE_LOADING, mLoading);
-        outState.putBoolean(STATE_HAS_MORE, mHasMore);
-        outState.putBoolean(STATE_READY, mReady);
-        outState.putInt(STATE_LAST_INDEX, mLastPageIndex);
-        outState.putInt(STATE_PAGE_SIZE, mPageSize);
-        outState.putInt(STATE_PREV_LOADING, mPrevLoadingIndex);
-        outState.putInt(STATE_NEXT_LOADING, mNextLoadingIndex);
+        if (mSaveState) {
+            outState.putBoolean(STATE_LOADING, mLoading);
+            outState.putBoolean(STATE_HAS_MORE, mHasMore);
+            outState.putBoolean(STATE_READY, mReady);
+            outState.putInt(STATE_LAST_INDEX, mLastPageIndex);
+            outState.putInt(STATE_NEXT_INDEX, mNextLoadingIndex);
+            outState.putInt(STATE_PAGE_SIZE, mPageSize);
+            outState.putInt(STATE_PREV_LOADING, mPrevLoadingIndex);
+            outState.putInt(STATE_NEXT_LOADING, mNextLoadingIndex);
+        }
     }
 
     public void onViewStateRestored(@Nullable Bundle savedInstanceState) {
-        if (savedInstanceState != null) {
+        if (savedInstanceState != null && mSaveState) {
             mLoading = savedInstanceState.getBoolean(STATE_LOADING);
             mHasMore = savedInstanceState.getBoolean(STATE_HAS_MORE);
             mReady = savedInstanceState.getBoolean(STATE_READY);
             mLastPageIndex = savedInstanceState.getInt(STATE_LAST_INDEX);
+            mNextPageIndex = savedInstanceState.getInt(STATE_NEXT_INDEX);
             mPageSize = savedInstanceState.getInt(STATE_PAGE_SIZE);
             mPrevLoadingIndex = savedInstanceState.getInt(STATE_PREV_LOADING);
             mNextLoadingIndex = savedInstanceState.getInt(STATE_NEXT_LOADING);
@@ -196,22 +216,26 @@ public abstract class PagingAdapter<T, L extends List<T>, VH extends Persistence
         return super.getItem(position);
     }
 
+    protected void onLoadMore(int position) {
+        if (!mLoading && mReady && mHasMore) {
+            if (mPageSize > 0) {
+                if (position == mPrevLoadingIndex)
+                    loadPage(mPrevLoadingIndex / mPageSize);
+                else
+                    loadPage(mNextLoadingIndex / mPageSize);
+            } else {
+                if (position == mPrevLoadingIndex)
+                    loadPage(Math.max(0, mLastPageIndex - 1));
+                else
+                    loadPage(mLastPageIndex + 1);
+            }
+        }
+    }
+
     @Override
     public void onBindViewHolder(VH holder, int position) {
         if (holder.getItemViewType() == mMoreViewType) {
-            if (!mLoading && mReady) {
-                if (mPageSize > 0) {
-                    if (position == mPrevLoadingIndex)
-                        loadPage(mPrevLoadingIndex / mPageSize);
-                    else
-                        loadPage(mNextLoadingIndex / mPageSize);
-                } else {
-                    if (position == mPrevLoadingIndex)
-                        loadPage(Math.max(0, mLastPageIndex - 1));
-                    else
-                        loadPage(mLastPageIndex + 1);
-                }
-            }
+            onLoadMore(position);
         } else {
             holder.item = getItem(position);
             holder.onBind();
@@ -228,20 +252,27 @@ public abstract class PagingAdapter<T, L extends List<T>, VH extends Persistence
             return;
         mLoading = true;
         mReady = false;
+        mNextPageIndex = ((pageIndex + 1) * mPageSize) - 1;
         mLastPageIndex = pageIndex;
-        onLoadPage(pageIndex);
+        mPagedListUpdates = getListUpdates();
+        onLoadPage(pageIndex, mPageSize);
     }
 
-    protected abstract void onLoadPage(int pageIndex);
+    protected abstract void onLoadPage(int pageIndex, int pageSize);
 
     public void onLoadComplete(boolean hasMore, boolean ready) {
+        onLoadComplete(hasMore, ready, mPagedListUpdates != getListUpdates());
+    }
+
+    public void onLoadComplete(boolean hasMore, boolean ready, boolean notifyChanged) {
         mLoading = false;
         mHasMore = hasMore;
         mReady = ready;
         mPageSize = getPageSize(mList);
         mPrevLoadingIndex = getPrevLoadingIndex(mList);
         mNextLoadingIndex = getNextLoadingIndex(mList);
-        notifyDataSetChanged();
+        if (notifyChanged)
+            notifyDataSetChanged();
     }
 
     protected int getActualCount() {

@@ -64,9 +64,9 @@ public abstract class PagedListAdapter<T, VH extends ListAdapter.ViewHolder<T>>
     public void onPageLoaded(int pageIndex) {
         PagedList<T> list = getList();
         if (list == null)
-            onLoadComplete(false, false);
+            onLoadComplete(false, false, true);
         else
-            onLoadComplete(list.mMore, !list.isPaging());
+            onLoadComplete(list.mMore, !list.isPaging(), true);
     }
 
     @Override
@@ -76,11 +76,11 @@ public abstract class PagedListAdapter<T, VH extends ListAdapter.ViewHolder<T>>
 
     @Override
     public void onPageFailed(int pageIndex, Exception err) {
-        onLoadComplete(false, false);
+        onLoadComplete(false, false, true);
     }
 
     @Override
-    protected void onLoadPage(int pageIndex) {
+    protected void onLoadPage(int pageIndex, int pageSize) {
         PagedList<T> list = getList();
         if (list != null)
             list.ensurePage(pageIndex);
@@ -88,7 +88,7 @@ public abstract class PagedListAdapter<T, VH extends ListAdapter.ViewHolder<T>>
 
     @Override
     public void onPagesCleared() {
-        onLoadComplete(true, true);
+        onLoadComplete(true, true, true);
     }
 
     @Override

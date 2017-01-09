@@ -36,33 +36,49 @@ public class Query<T> {
     public final int opType;
 
     public final String[] projection;
+    public final int placeholders;
     public final String selection;
     public final String orderBy;
     public final PersistenceList.CursorObjectMapper<T> objectMapper;
     public final ContentValuesMapper<T> contentValuesMapper;
 
-    public Query(String id, int opType, Uri uri, Class<T> type, PersistenceList.CursorObjectMapper<T> objectMapper, String selection, String orderBy, String...projection) {
+    public Query(String id, int opType, Uri uri, Class<T> type, PersistenceList.CursorObjectMapper<T> objectMapper, int placeholders, String selection, String orderBy, String...projection) {
         this.id = id;
         this.opType = opType;
         this.uri = uri;
         this.type = type;
         this.projection = projection;
+        this.placeholders = placeholders;
         this.selection = selection;
         this.orderBy = orderBy;
         this.objectMapper = objectMapper;
         this.contentValuesMapper = null;
     }
 
-    public Query(String id, int opType, Uri uri, Class<T> type, ContentValuesMapper<T> contentValuesMapper, String selection) {
+    public Query(String id, int opType, Uri uri, Class<T> type, ContentValuesMapper<T> contentValuesMapper, int placeholders, String selection) {
         this.id = id;
         this.opType = opType;
         this.uri = uri;
         this.type = type;
         this.projection = null;
+        this.placeholders = placeholders;
         this.selection = selection;
         this.orderBy = null;
         this.contentValuesMapper = contentValuesMapper;
         this.objectMapper = null;
+    }
+
+    @TargetApi(11)
+    public SelectQueryBuilder<T> newSelectBuilder(Context context) {
+        return new SelectQueryBuilder<>(context.getApplicationContext(), this);
+    }
+
+    public SupportSelectQueryBuilder<T> newSupportSelectBuilder(Context context) {
+        return new SupportSelectQueryBuilder<>(context.getApplicationContext(), this);
+    }
+
+    public UpdateQueryBuilder<T> newUpdateBuilder(Context context) {
+        return new UpdateQueryBuilder<>(context.getApplicationContext(), this);
     }
 
     public Uri insert(Context context, ContentValues values) {
@@ -80,47 +96,66 @@ public class Query<T> {
         return context.getContentResolver().insert(uri, values);
     }
 
+    @Deprecated
     public int update(Context context, ContentValues values, String...args) {
         if (opType != QUERY_OPERATION_UPDATE)
             throw new IllegalArgumentException("Not an update query");
+        if (args != null && placeholders != args.length)
+            throw new IllegalArgumentException("Invalid selection args");
         return context.getContentResolver().update(uri, values, selection, args);
     }
 
+    @Deprecated
     public int update(Context context, T value, String...args) {
         if (opType != QUERY_OPERATION_UPDATE)
             throw new IllegalArgumentException("Not an update query");
         if (contentValuesMapper == null)
             throw new IllegalArgumentException("Content Value Mapper not set");
+        if (args != null && placeholders != args.length)
+            throw new IllegalArgumentException("Invalid selection args");
         ContentValues values = contentValuesMapper.map(value);
         return context.getContentResolver().update(uri, values, selection, args);
     }
 
+    @Deprecated
     public int delete(Context context, String...args) {
         if (opType != QUERY_OPERATION_DELETE)
             throw new IllegalArgumentException("Not a delete query");
+        if (args != null && placeholders != args.length)
+            throw new IllegalArgumentException("Invalid selection args");
         return context.getContentResolver().delete(uri, selection, args);
     }
 
+    @Deprecated
     public Cursor execute(Context context, String[] args, String sort) {
         return execute(context.getContentResolver(), args, sort);
     }
 
+    @Deprecated
     public Cursor execute(ContentResolver resolver, String[] args, String sort) {
         if (opType != QUERY_OPERATION_SELECT)
             throw new IllegalArgumentException("Not a select query");
+        if (args != null && placeholders != args.length)
+            throw new IllegalArgumentException("Invalid selection args");
         return resolver.query(uri, projection, selection, args, sort);
     }
 
     @TargetApi(11)
+    @Deprecated
     public android.content.CursorLoader executeLoader(Context context, String[] args, String sort) {
         if (opType != QUERY_OPERATION_SELECT)
             throw new IllegalArgumentException("Not a select query");
+        if (args != null && placeholders != args.length)
+            throw new IllegalArgumentException("Invalid selection args");
         return new android.content.CursorLoader(context, uri, projection, selection, args, sort);
     }
 
+    @Deprecated
     public android.support.v4.content.CursorLoader executeSupportLoader(Context context, String[] args, String sort) {
         if (opType != QUERY_OPERATION_SELECT)
             throw new IllegalArgumentException("Not a select query");
+        if (args != null && placeholders != args.length)
+            throw new IllegalArgumentException("Invalid selection args");
         return new android.support.v4.content.CursorLoader(context, uri, projection, selection, args, sort);
     }
 
@@ -146,22 +181,26 @@ public class Query<T> {
                 .build();
     }
 
-    public ContentProviderOperation toUpdateOperation(T object, String...selectionArgs) {
+    public ContentProviderOperation toUpdateOperation(T object, String...args) {
         if (opType != QUERY_OPERATION_UPDATE)
             throw new IllegalArgumentException("Not an update query");
         if (contentValuesMapper == null)
             throw new IllegalArgumentException("Content Values Mapper is null");
+        if (args != null && placeholders != args.length)
+            throw new IllegalArgumentException("Invalid selection args");
         return ContentProviderOperation.newUpdate(uri)
-                .withSelection(selection, selectionArgs)
+                .withSelection(selection, args)
                 .withValues(contentValuesMapper.map(object))
                 .build();
     }
 
-    public ContentProviderOperation toDeleteOperation(String...selectionArgs) {
+    public ContentProviderOperation toDeleteOperation(String...args) {
         if (opType != QUERY_OPERATION_DELETE)
             throw new IllegalArgumentException("Not a delete query");
+        if (args != null && placeholders != args.length)
+            throw new IllegalArgumentException("Invalid selection args");
         return ContentProviderOperation.newDelete(uri)
-                .withSelection(selection, selectionArgs)
+                .withSelection(selection, args)
                 .build();
     }
 

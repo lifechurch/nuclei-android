@@ -38,6 +38,7 @@ public abstract class ListAdapter<T, L extends List<T>, VH extends ListAdapter.V
     Context mContext;
     LayoutInflater mInflater;
     L mList;
+    long mListUpdates;
 
     public ListAdapter(Context context) {
         mContext = context;
@@ -48,12 +49,21 @@ public abstract class ListAdapter<T, L extends List<T>, VH extends ListAdapter.V
         return mContext;
     }
 
+    /**
+     * Get the number of times setList has been called.
+     * @return The # of times set list is called
+     */
+    public long getListUpdates() {
+        return mListUpdates;
+    }
+
     public L getList() {
         return mList;
     }
 
     public void setList(L list) {
         mList = list;
+        mListUpdates++;
         notifyDataSetChanged();
     }
 

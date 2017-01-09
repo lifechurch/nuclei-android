@@ -22,8 +22,9 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.view.View;
 
+import nuclei.persistence.LoaderQueryBuilder;
 import nuclei.persistence.PersistenceList;
-import nuclei.persistence.PersistenceLoader;
+import nuclei.persistence.PersistenceLoaderImpl;
 import nuclei.persistence.Query;
 import nuclei.persistence.adapter.PersistenceAdapterListener;
 import nuclei.persistence.adapter.PersistenceListAdapter;
@@ -43,7 +44,7 @@ public abstract class NucleiFragment extends Fragment implements NucleiContext {
     private ContextHandle mHandle;
     private ContextHandle mViewHandle;
     private Trace mTrace;
-    private PersistenceLoader mLoader;
+    private PersistenceLoaderImpl mLoader;
     private LifecycleManager mLifecycleManager;
 
     @LifecycleManager.ManagedLifecycle
@@ -63,10 +64,17 @@ public abstract class NucleiFragment extends Fragment implements NucleiContext {
             destroyable.onDestroy();
     }
 
+    public <T> LoaderQueryBuilder<T> newQueryBuilder(Query<T> query, PersistenceList.Listener<T> listener) {
+        if (mLoader == null)
+            mLoader = PersistenceLoaderImpl.newLoaderManager(getActivity(), getLoaderManager());
+        return mLoader.newBuilder(query, listener);
+    }
+
+    @Deprecated
     public <T> int executeQueryWithOrder(Query<T> query, PersistenceList.Listener<T> listener, String orderBy, String...selectionArgs) {
         try {
             if (mLoader == null)
-                mLoader = PersistenceLoader.newLoaderManager(getActivity(), getLoaderManager());
+                mLoader = PersistenceLoaderImpl.newLoaderManager(getActivity(), getLoaderManager());
             return mLoader.executeWithOrder(query, listener, orderBy, selectionArgs);
         } catch (IllegalStateException err) {
             LOG.wtf("Error executing query", err);
@@ -74,14 +82,16 @@ public abstract class NucleiFragment extends Fragment implements NucleiContext {
         }
     }
 
+    @Deprecated
     public <T> int executeQueryWithOrder(Query<T> query, PersistenceListAdapter<T> adapter, String orderBy, String...selectionArgs) {
         return executeQueryWithOrder(query, new PersistenceAdapterListener<T>(adapter), orderBy, selectionArgs);
     }
 
+    @Deprecated
     public <T> int executeQuery(Query<T> query, PersistenceList.Listener<T> listener, String...selectionArgs) {
         try {
             if (mLoader == null)
-                mLoader = PersistenceLoader.newLoaderManager(getActivity(), getLoaderManager());
+                mLoader = PersistenceLoaderImpl.newLoaderManager(getActivity(), getLoaderManager());
             return mLoader.execute(query, listener, selectionArgs);
         } catch (IllegalStateException err) {
             LOG.wtf("Error executing query", err);
@@ -89,15 +99,18 @@ public abstract class NucleiFragment extends Fragment implements NucleiContext {
         }
     }
 
+    @Deprecated
     public <T> int executeQuery(Query<T> query, PersistenceListAdapter<T> adapter, String...selectionArgs) {
         return executeQuery(query, new PersistenceAdapterListener<T>(adapter), selectionArgs);
     }
 
+    @Deprecated
     public void reexecuteQuery(int id, String...selectionArgs) {
         if (mLoader != null)
             mLoader.reexecute(id, selectionArgs);
     }
 
+    @Deprecated
     public <T> void reexecuteQueryByName(int id, Query<T> query, String...selectionArgs) {
         if (mLoader != null) {
             mLoader.reexecute(id, query, selectionArgs);

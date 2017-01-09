@@ -25,6 +25,7 @@ public class Query {
     private String selection;
     private String orderBy;
     private List<EntityProperty> properties;
+    private int placeholders;
 
     public Query(String name, String selection, String orderBy, EntityModel model, List<EntityProperty> properties) {
         this.name = name;
@@ -33,10 +34,20 @@ public class Query {
         if (properties != null)
             this.properties = new ArrayList<>(properties);
         this.entityModel = model;
+
+        if (selection != null)
+            for (char c : selection.toCharArray()) {
+                if (c == '?')
+                    placeholders++;
+            }
     }
 
     public EntityModel getModel() {
         return entityModel;
+    }
+
+    public int getPlaceholders() {
+        return placeholders;
     }
 
     public String getName() {

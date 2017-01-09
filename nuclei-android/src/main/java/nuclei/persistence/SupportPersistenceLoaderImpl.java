@@ -24,18 +24,22 @@ import android.support.v4.util.SparseArrayCompat;
 
 import static android.support.v4.app.LoaderManager.LoaderCallbacks;
 
-public class SupportPersistenceLoader implements LoaderCallbacks<Cursor> {
+public class SupportPersistenceLoaderImpl implements LoaderCallbacks<Cursor>, PersistenceLoader {
 
     Context mContext;
     LoaderManager mManager;
     SparseArrayCompat<LoaderArgs> mParams = new SparseArrayCompat<>();
     int mIndex;
 
-    public static SupportPersistenceLoader newLoaderManager(Context context, LoaderManager manager) {
-        SupportPersistenceLoader persistenceLoader = new SupportPersistenceLoader();
+    public static SupportPersistenceLoaderImpl newLoaderManager(Context context, LoaderManager manager) {
+        SupportPersistenceLoaderImpl persistenceLoader = new SupportPersistenceLoaderImpl();
         persistenceLoader.mContext = context;
         persistenceLoader.mManager = manager;
         return persistenceLoader;
+    }
+
+    public <T> LoaderQueryBuilder<T> newBuilder(Query<T> query, PersistenceList.Listener<T> listener) {
+        return new LoaderQueryBuilder<T>(mContext, query, this, listener);
     }
 
     public <T> int execute(Query<T> query, PersistenceList.Listener<T> listener, String...selectionArgs) {

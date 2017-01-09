@@ -76,6 +76,8 @@ public class Persistence {
     public static int getCount(Query query, String...selectionArgs) {
         if (query.opType != Query.QUERY_OPERATION_SELECT)
             throw new IllegalArgumentException("Query is not a select");
+        if (selectionArgs != null && query.placeholders != selectionArgs.length)
+            throw new IllegalArgumentException("Invalid selection args");
         Cursor cursor = sContext.getContentResolver()
                                 .query(query.uri, COLUMNS_COUNT, query.selection, selectionArgs, null);
         if (cursor == null)
