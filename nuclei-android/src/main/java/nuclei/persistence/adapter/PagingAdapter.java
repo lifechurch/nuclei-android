@@ -23,6 +23,9 @@ import android.view.ViewGroup;
 
 import java.util.List;
 
+import nuclei.logs.Log;
+import nuclei.logs.Logs;
+
 /**
  * A base adapter to help with paging items
  *
@@ -32,6 +35,8 @@ import java.util.List;
  */
 public abstract class PagingAdapter<T, L extends List<T>, VH extends PersistenceAdapter.ViewHolder<T>>
         extends ListAdapter<T, L, VH> {
+
+    static final Log LOG = Logs.newLog(PagingAdapter.class);
 
     private static final String STATE_LOADING = PagingAdapter.class.getSimpleName() + ".LOADING";
     private static final String STATE_HAS_MORE = PagingAdapter.class.getSimpleName() + ".HAS_MORE";
@@ -216,9 +221,14 @@ public abstract class PagingAdapter<T, L extends List<T>, VH extends Persistence
         return super.getItem(position);
     }
 
+    /**
+     * Load the next page when a loading indicator is being displayed at the supplied position
+     * @param position The position being viewed
+     */
     protected void onLoadMore(int position) {
         if (!mLoading && mReady && mHasMore) {
             if (mPageSize > 0) {
+                LOG.i("onLoadMore");
                 if (position == mPrevLoadingIndex)
                     loadPage(mPrevLoadingIndex / mPageSize);
                 else
@@ -252,7 +262,7 @@ public abstract class PagingAdapter<T, L extends List<T>, VH extends Persistence
             return;
         mLoading = true;
         mReady = false;
-        mNextPageIndex = ((pageIndex + 1) * mPageSize) - 1;
+        mNextPageIndex = pageIndex + 1;
         mLastPageIndex = pageIndex;
         mPagedListUpdates = getListUpdates();
         onLoadPage(pageIndex, mPageSize);

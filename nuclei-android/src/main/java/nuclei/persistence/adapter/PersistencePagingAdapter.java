@@ -1,12 +1,12 @@
 /**
  * Copyright 2016 YouVersion
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -70,14 +70,19 @@ public abstract class PersistencePagingAdapter<T, VH extends PersistenceAdapter.
         }
     }
 
-    @Override
-    protected void onLoadMore(int position) {
-        super.onLoadMore(position);
-        if (mHasMore && mPageSize != -1 && position >= mNextPageIndex) {
-            final int nextPage = ((position + 1) / mPageSize);
-            final int lastPage = mLastPageIndex == -1 ? 0 : mLastPageIndex + 1;
-            for (int p = lastPage; p <= nextPage; p++) {
-                loadPage(p);
+    /**
+     * Load new pages based upon last viewed position, as
+     * opposed to the last time the loading indicator was viewed (which is what onLoadMore is for).
+     * @param position The currently binding view position
+     */
+    protected void onLoadBind(int position) {
+        if (mHasMore && mPageSize != -1) {
+            final int curPageIndex = position / mPageSize;
+            if (curPageIndex >= mNextPageIndex) {
+                LOG.i("onLoadBind");
+                for (int p = mLastPageIndex + 1; p <= curPageIndex; p++) {
+                    loadPage(p);
+                }
             }
         }
     }
@@ -85,7 +90,7 @@ public abstract class PersistencePagingAdapter<T, VH extends PersistenceAdapter.
     @Override
     public void onBindViewHolder(VH holder, int position) {
         super.onBindViewHolder(holder, position);
-        onLoadMore(position);
+        onLoadBind(position);
     }
 
     @Override

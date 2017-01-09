@@ -59,19 +59,19 @@ public class PersistencePagingAdapterTest extends ApplicationTestCase<Applicatio
         adapter.onBindViewHolder(new ListAdapter.ViewHolder<Object>(new View(getContext())), 5);
         assertEquals(0, lastPageLoad.get());
 
-        adapter.onBindViewHolder(new ListAdapter.ViewHolder<Object>(new View(getContext())), 24);
+        adapter.onBindViewHolder(new ListAdapter.ViewHolder<Object>(new View(getContext())), 25);
         assertEquals(1, lastPageLoad.get());
 
         adapter.reset();
-        adapter.onBindViewHolder(new ListAdapter.ViewHolder<Object>(new View(getContext())), 99);
+        adapter.onBindViewHolder(new ListAdapter.ViewHolder<Object>(new View(getContext())), 100);
         assertEquals(4, lastPageLoad.get());
         adapter.onBindViewHolder(new ListAdapter.ViewHolder<Object>(new View(getContext())), 0);
         assertEquals(4, lastPageLoad.get());
 
         adapter.reset();
-        for (int i = 1; i <= 10 * 25; i += 25) {
-            adapter.onBindViewHolder(new ListAdapter.ViewHolder<Object>(new View(getContext())), i - 1);
-            assertEquals((i - 1) / 25, lastPageLoad.get());
+        for (int i = 0; i <= 10 * 25; i += 25) {
+            adapter.onBindViewHolder(new ListAdapter.ViewHolder<Object>(new View(getContext())), i);
+            assertEquals(i / 25, lastPageLoad.get());
         }
     }
 
