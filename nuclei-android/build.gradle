@@ -1,6 +1,6 @@
 apply plugin: 'com.android.library'
 
-def versionId = "2.1.2"
+def versionId = "2.1.3"
 
 def isTest = false
 List<String> names = gradle.startParameter.taskNames
