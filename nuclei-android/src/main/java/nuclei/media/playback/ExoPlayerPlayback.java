@@ -516,7 +516,7 @@ public class ExoPlayerPlayback extends BasePlayback
 
     private HttpDataSource.Factory buildHttpDataSourceFactory(Context context, boolean useBandwidthMeter) {
         final String userAgent = Util.getUserAgent(context, "NucleiPlayer");
-        return new DefaultHttpDataSourceFactory(userAgent, useBandwidthMeter ? BANDWIDTH_METER : null);
+        return new DefaultHttpDataSourceFactory(userAgent, useBandwidthMeter ? BANDWIDTH_METER : null, 15000, 15000, false);
     }
 
     private DataSource.Factory buildFileDataSourceFactory(boolean useBandwidthMeter) {

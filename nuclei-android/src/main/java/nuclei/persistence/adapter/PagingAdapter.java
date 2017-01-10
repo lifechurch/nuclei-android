@@ -56,8 +56,8 @@ public abstract class PagingAdapter<T, L extends List<T>, VH extends Persistence
     int mNextPageIndex;
     long mPagedListUpdates;
     private int mPageSize;
-    private int mPrevLoadingIndex; // the first item index that will be loading when traversing backwards
-    private int mNextLoadingIndex; // the first item index that will be loading when traversing forwards
+    private int mPrevLoadingPosition; // the first item index that will be loading when traversing backwards
+    private int mNextLoadingPosition; // the first item index that will be loading when traversing forwards
 
     final int mMoreViewType;
     final long mMoreId;
@@ -86,10 +86,10 @@ public abstract class PagingAdapter<T, L extends List<T>, VH extends Persistence
             outState.putBoolean(STATE_HAS_MORE, mHasMore);
             outState.putBoolean(STATE_READY, mReady);
             outState.putInt(STATE_LAST_INDEX, mLastPageIndex);
-            outState.putInt(STATE_NEXT_INDEX, mNextLoadingIndex);
+            outState.putInt(STATE_NEXT_INDEX, mNextLoadingPosition);
             outState.putInt(STATE_PAGE_SIZE, mPageSize);
-            outState.putInt(STATE_PREV_LOADING, mPrevLoadingIndex);
-            outState.putInt(STATE_NEXT_LOADING, mNextLoadingIndex);
+            outState.putInt(STATE_PREV_LOADING, mPrevLoadingPosition);
+            outState.putInt(STATE_NEXT_LOADING, mNextLoadingPosition);
         }
     }
 
@@ -101,8 +101,8 @@ public abstract class PagingAdapter<T, L extends List<T>, VH extends Persistence
             mLastPageIndex = savedInstanceState.getInt(STATE_LAST_INDEX);
             mNextPageIndex = savedInstanceState.getInt(STATE_NEXT_INDEX);
             mPageSize = savedInstanceState.getInt(STATE_PAGE_SIZE);
-            mPrevLoadingIndex = savedInstanceState.getInt(STATE_PREV_LOADING);
-            mNextLoadingIndex = savedInstanceState.getInt(STATE_NEXT_LOADING);
+            mPrevLoadingPosition = savedInstanceState.getInt(STATE_PREV_LOADING);
+            mNextLoadingPosition = savedInstanceState.getInt(STATE_NEXT_LOADING);
         }
     }
 
@@ -155,7 +155,7 @@ public abstract class PagingAdapter<T, L extends List<T>, VH extends Persistence
      * @param list
      * @return
      */
-    protected int getPrevLoadingIndex(L list) {
+    protected int getPrevLoadingPosition(L list) {
         if (list == null || (mHasMore && list.size() == 0))
             return 0;
         return -1;
@@ -167,7 +167,7 @@ public abstract class PagingAdapter<T, L extends List<T>, VH extends Persistence
      * @param list
      * @return
      */
-    protected int getNextLoadingIndex(L list) {
+    protected int getNextLoadingPosition(L list) {
         if (list == null)
             return 0;
         return list.size();
@@ -186,17 +186,17 @@ public abstract class PagingAdapter<T, L extends List<T>, VH extends Persistence
     public void setList(L list) {
         mReady = true;
         mPageSize = getPageSize(list);
-        mPrevLoadingIndex = getPrevLoadingIndex(list);
-        mNextLoadingIndex = getNextLoadingIndex(list);
+        mPrevLoadingPosition = getPrevLoadingPosition(list);
+        mNextLoadingPosition = getNextLoadingPosition(list);
         super.setList(list);
     }
 
     @Override
     public int getItemViewType(int position) {
         if (mHasMore) {
-            if (position == mPrevLoadingIndex || position == mNextLoadingIndex)
+            if (position == mPrevLoadingPosition || position == mNextLoadingPosition)
                 return mMoreViewType;
-            if (mPrevLoadingIndex > 0)
+            if (mPrevLoadingPosition > 0)
                 position--;
         }
         return super.getItemViewType(position);
@@ -213,9 +213,9 @@ public abstract class PagingAdapter<T, L extends List<T>, VH extends Persistence
 
     public T getItem(int position) {
         if (mHasMore) {
-            if (position == mPrevLoadingIndex || position == mNextLoadingIndex)
+            if (position == mPrevLoadingPosition || position == mNextLoadingPosition)
                 return null;
-            if (mPrevLoadingIndex > 0)
+            if (mPrevLoadingPosition > 0)
                 position--;
         }
         return super.getItem(position);
@@ -228,13 +228,13 @@ public abstract class PagingAdapter<T, L extends List<T>, VH extends Persistence
     protected void onLoadMore(int position) {
         if (!mLoading && mReady && mHasMore) {
             if (mPageSize > 0) {
-                LOG.i("onLoadMore");
-                if (position == mPrevLoadingIndex)
-                    loadPage(mPrevLoadingIndex / mPageSize);
+                LOG.d("onLoadMore");
+                if (position == mPrevLoadingPosition)
+                    loadPage(mPrevLoadingPosition / mPageSize);
                 else
-                    loadPage(mNextLoadingIndex / mPageSize);
+                    loadPage(mNextLoadingPosition / mPageSize);
             } else {
-                if (position == mPrevLoadingIndex)
+                if (position == mPrevLoadingPosition)
                     loadPage(Math.max(0, mLastPageIndex - 1));
                 else
                     loadPage(mLastPageIndex + 1);
@@ -279,8 +279,8 @@ public abstract class PagingAdapter<T, L extends List<T>, VH extends Persistence
         mHasMore = hasMore;
         mReady = ready;
         mPageSize = getPageSize(mList);
-        mPrevLoadingIndex = getPrevLoadingIndex(mList);
-        mNextLoadingIndex = getNextLoadingIndex(mList);
+        mPrevLoadingPosition = getPrevLoadingPosition(mList);
+        mNextLoadingPosition = getNextLoadingPosition(mList);
         if (notifyChanged)
             notifyDataSetChanged();
     }
@@ -296,9 +296,9 @@ public abstract class PagingAdapter<T, L extends List<T>, VH extends Persistence
     public int getItemCount() {
         int count = super.getItemCount();
         if (mHasMore) {
-            if (mPrevLoadingIndex > 0)
+            if (mPrevLoadingPosition > 0)
                 count++;
-            if (mNextLoadingIndex == count)
+            if (mNextLoadingPosition == count)
                 count++;
         }
         return count;

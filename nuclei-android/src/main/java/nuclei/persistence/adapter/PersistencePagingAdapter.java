@@ -79,7 +79,7 @@ public abstract class PersistencePagingAdapter<T, VH extends PersistenceAdapter.
         if (mHasMore && mPageSize != -1) {
             final int curPageIndex = position / mPageSize;
             if (curPageIndex >= mNextPageIndex) {
-                LOG.i("onLoadBind");
+                LOG.d("onLoadBind");
                 for (int p = mLastPageIndex + 1; p <= curPageIndex; p++) {
                     loadPage(p);
                 }
@@ -96,6 +96,14 @@ public abstract class PersistencePagingAdapter<T, VH extends PersistenceAdapter.
     @Override
     public void setList(PersistenceList<T> list) {
         mQuery = list.getQuery();
+        if (mPageSize != -1) {
+            int size = list.size();
+            int maxPageIx = size / mPageSize;
+            if (mNextPageIndex > maxPageIx) {
+                mNextPageIndex = maxPageIx;
+                mHasMore = true;
+            }
+        }
         super.setList(list);
     }
 
