@@ -37,6 +37,10 @@ public abstract class PersistenceAdapter<T, VH extends ListAdapter.ViewHolder<T>
     }
 
     @Override
+    public void notifyListSizeChanged() {
+    }
+
+    @Override
     public void setList(PersistenceList<T> list) {
         mQuery = list.getQuery();
         super.setList(list);

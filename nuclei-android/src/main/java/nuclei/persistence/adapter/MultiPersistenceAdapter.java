@@ -45,6 +45,10 @@ public abstract class MultiPersistenceAdapter<T, VH extends MultiPersistenceAdap
     }
 
     @Override
+    public void notifyListSizeChanged() {
+    }
+
+    @Override
     public void setList(PersistenceList<T> list) {
         mMultiList.setList(list.getQuery(), list);
         notifyDataSetChanged();

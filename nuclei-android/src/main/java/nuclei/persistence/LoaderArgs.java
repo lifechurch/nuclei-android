@@ -27,11 +27,14 @@ class LoaderArgs<T> {
     PersistenceList.Listener<T> listener;
 
     void onAvailable(Cursor cursor) {
+        boolean sizeChanged = false;
         if (list == null)
             list = new PersistenceListImpl<>(query, cursor);
-        else
+        else {
+            sizeChanged = cursor != null && list.size() != cursor.getCount();
             list.swapCursor(query, cursor);
-        listener.onAvailable(list);
+        }
+        listener.onAvailable(list, sizeChanged);
     }
 
 }

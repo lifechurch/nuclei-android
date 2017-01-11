@@ -24,6 +24,7 @@ import nuclei.persistence.PersistenceList;
  */
 public interface PersistenceListAdapter<T> {
 
+    void notifyListSizeChanged();
     void setList(PersistenceList<T> list);
 
 }

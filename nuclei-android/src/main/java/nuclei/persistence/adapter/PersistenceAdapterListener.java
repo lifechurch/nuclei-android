@@ -33,10 +33,13 @@ public class PersistenceAdapterListener<T> implements PersistenceList.Listener<T
     }
 
     @Override
-    public void onAvailable(PersistenceList<T> list) {
+    public void onAvailable(PersistenceList<T> list, boolean sizeChanged) {
         PersistenceListAdapter<T> adapter = mAdapter.get();
-        if (adapter != null)
+        if (adapter != null) {
+            if (sizeChanged)
+                adapter.notifyListSizeChanged();
             adapter.setList(list);
+        }
     }
 
 }

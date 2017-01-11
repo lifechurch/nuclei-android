@@ -19,6 +19,8 @@ import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 
+import java.util.List;
+
 import nuclei.persistence.PersistenceList;
 import nuclei.persistence.Query;
 
@@ -35,6 +37,7 @@ public abstract class PersistencePagingAdapter<T, VH extends PersistenceAdapter.
     Query<T> mQuery;
 
     private int mPageSize = -1;
+    private boolean mUpdatePageIndex;
 
     public PersistencePagingAdapter(Context context) {
         super(context);
@@ -59,6 +62,11 @@ public abstract class PersistencePagingAdapter<T, VH extends PersistenceAdapter.
     public void reset() {
         mNextPageIndex = 0;
         mLastPageIndex = -1;
+        mHasMore = true;
+    }
+
+    public void notifyListSizeChanged() {
+        mUpdatePageIndex = true;
     }
 
     @Override
@@ -96,7 +104,8 @@ public abstract class PersistencePagingAdapter<T, VH extends PersistenceAdapter.
     @Override
     public void setList(PersistenceList<T> list) {
         mQuery = list.getQuery();
-        if (mPageSize != -1) {
+        if (mUpdatePageIndex) {
+            mUpdatePageIndex = false;
             int size = list.size();
             int maxPageIx = size / mPageSize;
             if (mNextPageIndex > maxPageIx) {

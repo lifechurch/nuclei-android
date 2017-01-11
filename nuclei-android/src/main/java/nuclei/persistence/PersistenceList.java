@@ -46,7 +46,7 @@ public interface PersistenceList<T> extends List<T>, Closeable {
     }
 
     interface Listener<T> {
-        void onAvailable(PersistenceList<T> list);
+        void onAvailable(PersistenceList<T> list, boolean sizeChanged);
     }
 
 }
