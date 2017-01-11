@@ -42,10 +42,8 @@ import com.google.android.libraries.cast.companionlibrary.cast.callbacks.VideoCa
 import java.lang.ref.WeakReference;
 import java.util.List;
 
-import nuclei.media.playback.CastPlayback;
-import nuclei.media.playback.ExoPlayerPlayback;
-import nuclei.media.playback.FallbackPlayback;
 import nuclei.media.playback.Playback;
+import nuclei.media.playback.PlaybackFactory;
 import nuclei.media.playback.PlaybackManager;
 import nuclei.media.utils.CarHelper;
 import nuclei.logs.Log;
@@ -117,7 +115,7 @@ public class MediaService extends MediaBrowserServiceCompat implements
                 mSessionExtras.putString(EXTRA_CONNECTED_CAST, deviceName);
                 mSession.setExtras(mSessionExtras);
                 // Now we can switch to CastPlayback
-                Playback playback = new CastPlayback();
+                Playback playback = PlaybackFactory.createCastPlayback(MediaService.this);
                 mMediaRouter.setMediaSessionCompat(mSession);
                 mPlaybackManager.switchToPlayback(playback, true);
                 mSession.sendSessionEvent(createCastEvent(deviceName), Bundle.EMPTY);
@@ -140,12 +138,8 @@ public class MediaService extends MediaBrowserServiceCompat implements
             if (mSession != null && mPlaybackManager != null) {
                 mSessionExtras.remove(EXTRA_CONNECTED_CAST);
                 mSession.setExtras(mSessionExtras);
-                Playback playback
-                        = Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN
-                          ? new ExoPlayerPlayback(MediaService.this)
-                          : new FallbackPlayback(MediaService.this);
                 mMediaRouter.setMediaSessionCompat(null);
-                mPlaybackManager.switchToPlayback(playback, false);
+                mPlaybackManager.switchToPlayback(PlaybackFactory.createLocalPlayback(MediaService.this), false);
                 mSession.sendSessionEvent(createCastEvent(""), Bundle.EMPTY);
             }
         }
@@ -193,12 +187,9 @@ public class MediaService extends MediaBrowserServiceCompat implements
         if (casting) {
             mSessionExtras.putString(EXTRA_CONNECTED_CAST, VideoCastManager.getInstance().getDeviceName());
             mMediaRouter.setMediaSessionCompat(mSession);
-            playback = new CastPlayback();
+            playback = PlaybackFactory.createCastPlayback(MediaService.this);
         } else
-            playback =
-                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN
-                    ? new ExoPlayerPlayback(this)
-                    : new FallbackPlayback(this);
+            playback = PlaybackFactory.createLocalPlayback(MediaService.this);
 
         mPlaybackManager = new PlaybackManager(this, playback);
 
