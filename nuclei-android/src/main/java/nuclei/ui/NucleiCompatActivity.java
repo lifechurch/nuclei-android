@@ -65,6 +65,10 @@ public abstract class NucleiCompatActivity extends AppCompatActivity implements 
         return mLoader.newBuilder(query, listener);
     }
 
+    public <T> LoaderQueryBuilder<T> newQueryBuilder(Query<T> query, PersistenceListAdapter<T> adapter) {
+        return newQueryBuilder(query, new PersistenceAdapterListener<T>(adapter));
+    }
+
     @Deprecated
     public <T> int executeQueryWithOrder(Query<T> query, PersistenceList.Listener<T> listener, String orderBy, String...selectionArgs) {
         try {
