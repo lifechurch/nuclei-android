@@ -26,6 +26,7 @@ import nuclei.persistence.LoaderQueryBuilder;
 import nuclei.persistence.PersistenceList;
 import nuclei.persistence.PersistenceLoaderImpl;
 import nuclei.persistence.Query;
+import nuclei.persistence.QueryManager;
 import nuclei.persistence.adapter.PersistenceAdapterListener;
 import nuclei.persistence.adapter.PersistenceListAdapter;
 import nuclei.intent.IntentBuilderActivity;
@@ -38,7 +39,7 @@ import nuclei.logs.Trace;
  * Base Activity with easy hooks for managing PersistenceLists and ContextHandles
  */
 @TargetApi(15)
-public abstract class NucleiActivity extends Activity implements IntentBuilderActivity, NucleiContext {
+public abstract class NucleiActivity extends Activity implements IntentBuilderActivity, NucleiContext, QueryManager {
 
     static final Log LOG = Logs.newLog(NucleiActivity.class);
 
@@ -60,14 +61,18 @@ public abstract class NucleiActivity extends Activity implements IntentBuilderAc
             mLifecycleManager.destroy(destroyable);
     }
 
-    public <T> LoaderQueryBuilder<T> newQueryBuilder(Query<T> query, PersistenceList.Listener<T> listener) {
+    @Override
+    public <T> LoaderQueryBuilder<T> newQuery(Query<T> query, PersistenceList.Listener<T> listener) {
         if (mLoader == null)
             mLoader = PersistenceLoaderImpl.newLoaderManager(this, getLoaderManager());
-        return mLoader.newBuilder(query, listener);
+        return mLoader.newLoaderBuilder(query, listener);
     }
 
-    public <T> LoaderQueryBuilder<T> newQueryBuilder(Query<T> query, PersistenceListAdapter<T> adapter) {
-        return newQueryBuilder(query, new PersistenceAdapterListener<T>(adapter));
+    @Override
+    public <T> LoaderQueryBuilder<T> newQuery(Query<T> query, PersistenceListAdapter<T> adapter) {
+        if (mLoader == null)
+            mLoader = PersistenceLoaderImpl.newLoaderManager(this, getLoaderManager());
+        return mLoader.newLoaderBuilder(query, new PersistenceAdapterListener<T>(adapter));
     }
 
     @Deprecated

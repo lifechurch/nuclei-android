@@ -40,7 +40,7 @@ public class PersistenceLoaderImpl implements LoaderCallbacks<Cursor>, Persisten
         return persistenceLoader;
     }
 
-    public <T> LoaderQueryBuilder<T> newBuilder(Query<T> query, PersistenceList.Listener<T> listener) {
+    public <T> LoaderQueryBuilder<T> newLoaderBuilder(Query<T> query, PersistenceList.Listener<T> listener) {
         return new LoaderQueryBuilder<T>(mContext, query, this, listener);
     }
 

@@ -68,16 +68,11 @@ public class Query<T> {
         this.objectMapper = null;
     }
 
-    @TargetApi(11)
-    public SelectQueryBuilder<T> newSelectBuilder(Context context) {
+    public SelectQueryBuilder<T> newSelect(Context context) {
         return new SelectQueryBuilder<>(context.getApplicationContext(), this);
     }
 
-    public SupportSelectQueryBuilder<T> newSupportSelectBuilder(Context context) {
-        return new SupportSelectQueryBuilder<>(context.getApplicationContext(), this);
-    }
-
-    public UpdateQueryBuilder<T> newUpdateBuilder(Context context) {
+    public UpdateQueryBuilder<T> newUpdate(Context context) {
         return new UpdateQueryBuilder<>(context.getApplicationContext(), this);
     }
 

@@ -26,6 +26,7 @@ import nuclei.persistence.LoaderQueryBuilder;
 import nuclei.persistence.PersistenceList;
 import nuclei.persistence.PersistenceLoaderImpl;
 import nuclei.persistence.Query;
+import nuclei.persistence.QueryManager;
 import nuclei.persistence.adapter.PersistenceAdapterListener;
 import nuclei.persistence.adapter.PersistenceListAdapter;
 import nuclei.task.ContextHandle;
@@ -37,7 +38,7 @@ import nuclei.logs.Trace;
  * Base Fragment with easy hooks for managing PersistenceLists and ContextHandles
  */
 @TargetApi(15)
-public abstract class NucleiFragment extends Fragment implements NucleiContext {
+public abstract class NucleiFragment extends Fragment implements NucleiContext, QueryManager {
 
     static final Log LOG = Logs.newLog(NucleiSupportFragment.class);
 
@@ -64,14 +65,18 @@ public abstract class NucleiFragment extends Fragment implements NucleiContext {
             destroyable.onDestroy();
     }
 
-    public <T> LoaderQueryBuilder<T> newQueryBuilder(Query<T> query, PersistenceList.Listener<T> listener) {
+    @Override
+    public <T> LoaderQueryBuilder<T> newQuery(Query<T> query, PersistenceList.Listener<T> listener) {
         if (mLoader == null)
             mLoader = PersistenceLoaderImpl.newLoaderManager(getActivity(), getLoaderManager());
-        return mLoader.newBuilder(query, listener);
+        return mLoader.newLoaderBuilder(query, listener);
     }
 
-    public <T> LoaderQueryBuilder<T> newQueryBuilder(Query<T> query, PersistenceListAdapter<T> adapter) {
-        return newQueryBuilder(query, new PersistenceAdapterListener<T>(adapter));
+    @Override
+    public <T> LoaderQueryBuilder<T> newQuery(Query<T> query, PersistenceListAdapter<T> adapter) {
+        if (mLoader == null)
+            mLoader = PersistenceLoaderImpl.newLoaderManager(getActivity(), getLoaderManager());
+        return mLoader.newLoaderBuilder(query, new PersistenceAdapterListener<T>(adapter));
     }
 
     @Deprecated

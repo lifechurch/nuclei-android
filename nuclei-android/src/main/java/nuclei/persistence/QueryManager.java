@@ -15,20 +15,12 @@
  */
 package nuclei.persistence;
 
-import android.annotation.TargetApi;
-import android.content.Context;
-import android.database.Cursor;
+import nuclei.persistence.adapter.PersistenceListAdapter;
 
-@TargetApi(11)
-public class SelectQueryBuilder<T> extends QueryBuilder<T> {
+public interface QueryManager {
 
-    SelectQueryBuilder(Context context, Query<T> query) {
-        super(context, query);
-    }
+    <T> LoaderQueryBuilder<T> newQuery(Query<T> query, PersistenceList.Listener<T> listener);
 
-    public Cursor execute() {
-        validate();
-        return query.execute(context.getContentResolver(), args, orderBy);
-    }
+    <T> LoaderQueryBuilder<T> newQuery(Query<T> query, PersistenceListAdapter<T> listener);
 
 }

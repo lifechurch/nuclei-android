@@ -25,6 +25,7 @@ import android.support.v7.app.AppCompatActivity;
 import nuclei.persistence.LoaderQueryBuilder;
 import nuclei.persistence.PersistenceList;
 import nuclei.persistence.Query;
+import nuclei.persistence.QueryManager;
 import nuclei.persistence.SupportPersistenceLoaderImpl;
 import nuclei.persistence.adapter.PersistenceAdapterListener;
 import nuclei.persistence.adapter.PersistenceListAdapter;
@@ -37,7 +38,7 @@ import nuclei.logs.Trace;
 /**
  * Base Compat Activity with easy hooks for managing PersistenceLists and ContextHandles
  */
-public abstract class NucleiCompatActivity extends AppCompatActivity implements IntentBuilderActivity, NucleiContext {
+public abstract class NucleiCompatActivity extends AppCompatActivity implements IntentBuilderActivity, NucleiContext, QueryManager {
 
     static final Log LOG = Logs.newLog(NucleiCompatActivity.class);
 
@@ -59,14 +60,18 @@ public abstract class NucleiCompatActivity extends AppCompatActivity implements 
             destroyable.onDestroy();
     }
 
-    public <T> LoaderQueryBuilder<T> newQueryBuilder(Query<T> query, PersistenceList.Listener<T> listener) {
+    @Override
+    public <T> LoaderQueryBuilder<T> newQuery(Query<T> query, PersistenceList.Listener<T> listener) {
         if (mLoader == null)
             mLoader = SupportPersistenceLoaderImpl.newLoaderManager(this, getSupportLoaderManager());
-        return mLoader.newBuilder(query, listener);
+        return mLoader.newLoaderBuilder(query, listener);
     }
 
-    public <T> LoaderQueryBuilder<T> newQueryBuilder(Query<T> query, PersistenceListAdapter<T> adapter) {
-        return newQueryBuilder(query, new PersistenceAdapterListener<T>(adapter));
+    @Override
+    public <T> LoaderQueryBuilder<T> newQuery(Query<T> query, PersistenceListAdapter<T> adapter) {
+        if (mLoader == null)
+            mLoader = SupportPersistenceLoaderImpl.newLoaderManager(this, getSupportLoaderManager());
+        return mLoader.newLoaderBuilder(query, new PersistenceAdapterListener<T>(adapter));
     }
 
     @Deprecated

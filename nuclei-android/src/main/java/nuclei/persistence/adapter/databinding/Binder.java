@@ -13,22 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nuclei.persistence;
+package nuclei.persistence.adapter.databinding;
 
-import android.annotation.TargetApi;
-import android.content.Context;
-import android.database.Cursor;
+import android.databinding.ViewDataBinding;
+import android.view.LayoutInflater;
+import android.view.ViewGroup;
 
-@TargetApi(11)
-public class SelectQueryBuilder<T> extends QueryBuilder<T> {
+import nuclei.ui.Destroyable;
 
-    SelectQueryBuilder(Context context, Query<T> query) {
-        super(context, query);
-    }
+public interface Binder<T, V extends ViewDataBinding> extends Destroyable {
 
-    public Cursor execute() {
-        validate();
-        return query.execute(context.getContentResolver(), args, orderBy);
-    }
+    boolean hasStableIds();
+
+    long getId(T item);
+
+    void onBind(T item, V binding);
+
+    V newBinding(LayoutInflater inflater, ViewGroup parent, int viewType);
 
 }
