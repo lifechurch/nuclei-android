@@ -20,13 +20,13 @@ import android.databinding.ViewDataBinding;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
-import nuclei.persistence.adapter.PersistenceAdapter;
+import nuclei.persistence.adapter.PersistencePagingAdapter;
 
-public abstract class AbstractPersistenceAdapter<T, V extends ViewDataBinding> extends PersistenceAdapter<T, SimpleViewHolder<T, V>> {
+public abstract class AbstractPersistencePagingAdapter<T, V extends ViewDataBinding> extends PersistencePagingAdapter<T, SimpleViewHolder<T, V>> {
 
-    private Binder<T, V> mBinder;
+    private PagingBinder<T, V> mBinder;
 
-    public AbstractPersistenceAdapter(Context context, Binder<T, V> binder) {
+    public AbstractPersistencePagingAdapter(Context context, PagingBinder<T, V> binder) {
         super(context);
         mBinder = binder;
         setHasStableIds(mBinder.hasStableIds());
@@ -39,8 +39,20 @@ public abstract class AbstractPersistenceAdapter<T, V extends ViewDataBinding> e
     }
 
     @Override
+    protected SimpleViewHolder<T, V> onCreateMoreViewHolder(LayoutInflater inflater, ViewGroup parent, int viewType) {
+        return new SimpleViewHolder<T, V>(mBinder.newLoadingBinding(inflater, parent, viewType));
+    }
+
+    @Override
     protected SimpleViewHolder<T, V> onCreateViewHolder(LayoutInflater inflater, ViewGroup parent, int viewType) {
         return new SimpleViewHolder<T, V>(mBinder, mBinder.newBinding(inflater, parent, viewType));
+    }
+
+    @Override
+    public void onBindViewHolder(SimpleViewHolder<T, V> holder, int position) {
+        if (holder.getItemViewType() == getMoreViewType())
+            mBinder.onLoadingBind(holder.itemView);
+        super.onBindViewHolder(holder, position);
     }
 
     @Override
