@@ -56,7 +56,7 @@ public abstract class PagingAdapter<T, L extends List<T>, VH extends Persistence
     int mNextPageIndex;
     long mPagedListUpdates;
     private int mPageSize;
-    private int mPrevLoadingPosition; // the first item index that will be loading when traversing backwards
+    private int mPrevLoadingPosition = -1; // the first item index that will be loading when traversing backwards
     private int mNextLoadingPosition; // the first item index that will be loading when traversing forwards
 
     final int mMoreViewType;
@@ -156,8 +156,6 @@ public abstract class PagingAdapter<T, L extends List<T>, VH extends Persistence
      * @return
      */
     protected int getPrevLoadingPosition(L list) {
-        if (list == null || (mHasMore && list.size() == 0))
-            return 0;
         return -1;
     }
 
