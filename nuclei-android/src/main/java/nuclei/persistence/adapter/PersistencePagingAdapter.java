@@ -110,6 +110,7 @@ public abstract class PersistencePagingAdapter<T, VH extends PersistenceAdapter.
             int maxPageIx = size / mPageSize;
             if (mNextPageIndex > maxPageIx) {
                 mNextPageIndex = maxPageIx;
+                mLastPageIndex = mNextPageIndex - 1;
                 mHasMore = true;
             }
         }
