@@ -45,6 +45,7 @@ public abstract class PagedList<T> extends AbstractList<T> {
     int mMaxPageIndex = 0;
     final int mMaxPages;
     boolean mMore;
+    int mCurPageIndex;
 
     public PagedList(Context context, int maxPages, int pageSize) {
         mContext = context.getApplicationContext();
@@ -52,6 +53,8 @@ public abstract class PagedList<T> extends AbstractList<T> {
         mPages = new LruCache<Integer, List<T>>(maxPages) {
             @Override
             protected void entryRemoved(boolean evicted, Integer key, List<T> oldValue, List<T> newValue) {
+                if (evicted)
+                    calculatePageIndexes();
                 if (mListener != null)
                     mListener.onPageEvicted(key);
             }
@@ -165,25 +168,25 @@ public abstract class PagedList<T> extends AbstractList<T> {
         return mSize;
     }
 
-    private void calculatePageIndexes(int pageIndex) {
+    private void calculatePageIndexes() {
         int p = mMaxPages / 2;
 
-        mMinPageIndex = pageIndex - p;
-        mMaxPageIndex = pageIndex + p;
+        mMinPageIndex = mCurPageIndex - p;
+        mMaxPageIndex = mCurPageIndex + p;
 
         if (mMinPageIndex < 0) {
             mMaxPageIndex += Math.abs(mMinPageIndex);
             mMinPageIndex = 0;
         }
 
-        for (int i = mMinPageIndex - 1; i <= pageIndex; i++) {
+        for (int i = mMinPageIndex - 1; i <= mCurPageIndex; i++) {
             if (mPages.get(i) == null) {
                 mMinPageIndex = i;
                 break;
             }
         }
 
-        for (int i = mMaxPageIndex + 1; i >= pageIndex; i--) {
+        for (int i = mMaxPageIndex + 1; i >= mCurPageIndex; i--) {
             if (mPages.get(i) == null)
                 mMaxPageIndex = i;
         }
@@ -200,7 +203,8 @@ public abstract class PagedList<T> extends AbstractList<T> {
         if (mListener != null)
             mListener.onPageLoading(pageIndex);
 
-        calculatePageIndexes(pageIndex);
+        mCurPageIndex = pageIndex;
+        calculatePageIndexes();
 
         onLoadPage(mContext, pageIndex);
     }
@@ -255,7 +259,8 @@ public abstract class PagedList<T> extends AbstractList<T> {
         mLoading.remove(pageIndex);
         mSize = size;
         mMore = more;
-        calculatePageIndexes(pageIndex + 1);
+        mCurPageIndex = pageIndex;
+        calculatePageIndexes();
         if (mListener != null)
             mListener.onPageLoaded(pageIndex);
     }

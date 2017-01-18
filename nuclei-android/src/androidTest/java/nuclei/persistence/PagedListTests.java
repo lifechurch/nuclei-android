@@ -25,7 +25,8 @@ public class PagedListTests extends ApplicationTestCase<Application> {
                     numbers.add(i);
                 }
                 index.set(pageIndex);
-                onPageLoaded(pageIndex, numbers, 100, pageIndex < 5);
+                setPageSize(Math.max(numbers.size(), getPageSize()));
+                onPageLoaded(pageIndex, numbers, size() + numbers.size(), pageIndex < 5);
             }
         };
 
