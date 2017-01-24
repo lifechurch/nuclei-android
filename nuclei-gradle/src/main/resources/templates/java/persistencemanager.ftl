@@ -21,7 +21,6 @@ import nuclei.persistence.Query;
 import nuclei.persistence.PersistenceList;
 import nuclei.persistence.PersistenceListImpl;
 import nuclei.persistence.Query.MapperEntity;
-import nuclei.persistence.QueryArgs;
 
 import android.content.ContentProviderOperation;
 import android.content.ContentProviderResult;
@@ -55,7 +54,7 @@ public class Persistence {
         if (query.opType != Query.QUERY_OPERATION_SELECT)
             throw new IllegalArgumentException("Query is not a select");
         orderBy = orderBy == null ? query.orderBy : orderBy;
-        Cursor cursor = query.newSelect().orderBy(orderBy).execute(QueryArgs.newArgs().args(selectionArgs));
+        Cursor cursor = query.newSelect().orderBy(orderBy).execute(Query.args(selectionArgs));
         if (cursor == null)
             return null;
         return new PersistenceListImpl<T>(query, cursor);
@@ -77,7 +76,7 @@ public class Persistence {
 
     @Deprecated
     public static int getCount(Query query, String...selectionArgs) {
-        return query.getCount(QueryArgs.newArgs().args(selectionArgs));
+        return query.newSelect().count(Query.args(selectionArgs));
     }
 
     public static <T> PersistenceList<T> wrap(Query<T> query, Cursor cursor) {
@@ -101,17 +100,17 @@ public class Persistence {
 
     @Deprecated
     public static <T> int update(Query<T> query, T object, String...selectionArgs) {
-        return query.newUpdate().update(QueryArgs.newArgs().args(selectionArgs), object);
+        return query.newUpdate().update(Query.args(selectionArgs), object);
     }
 
     @Deprecated
     public static <T> int update(Query<T> query, ContentValues contentValues, String...selectionArgs) {
-        return query.newUpdate().update(QueryArgs.newArgs().args(selectionArgs), contentValues);
+        return query.newUpdate().update(Query.args(selectionArgs), contentValues);
     }
 
     @Deprecated
     public static <T> int delete(Query<T> query, String...selectionArgs) {
-        return query.newUpdate().delete(QueryArgs.newArgs().args(selectionArgs));
+        return query.newUpdate().delete(Query.args(selectionArgs));
     }
 
     @Deprecated

@@ -40,6 +40,15 @@ public class Query<T> {
             CONTEXT = context.getApplicationContext();
     }
 
+    public static QueryArgs args() {
+        return new QueryArgs();
+    }
+
+    @Deprecated
+    public static QueryArgs args(String...args) {
+        return args().args(args);
+    }
+
     public static ContentProviderResult[] applyBatch(String authority, ArrayList<ContentProviderOperation> ops) throws RemoteException, OperationApplicationException {
         return CONTEXT.getContentResolver().applyBatch(authority, ops);
     }
@@ -151,26 +160,9 @@ public class Query<T> {
         return new android.support.v4.content.CursorLoader(CONTEXT, uri, projection, selection, args, sort);
     }
 
-    public ContentProviderOperation toReplaceOperation(T object) {
-        if (opType != QUERY_OPERATION_INSERT)
-            throw new IllegalArgumentException("Not an insert query");
-        if (contentValuesMapper == null)
-            throw new IllegalArgumentException("Content Values Mapper is null");
-        ContentValues values = contentValuesMapper.map(object);
-        values.put(ContentProviderBase.REPLACE_RECORD, true);
-        return ContentProviderOperation.newInsert(uri)
-                .withValues(values)
-                .build();
-    }
-
-    public ContentProviderOperation toInsertOperation(T object) {
-        if (opType != QUERY_OPERATION_INSERT)
-            throw new IllegalArgumentException("Not an insert query");
-        if (contentValuesMapper == null)
-            throw new IllegalArgumentException("Content Values Mapper is null");
-        return ContentProviderOperation.newInsert(uri)
-                .withValues(contentValuesMapper.map(object))
-                .build();
+    @Deprecated
+    public ContentProviderOperation toUpdateOperation(T object, String...args) {
+        return toUpdateOperation(object, args().args(args));
     }
 
     public ContentProviderOperation toUpdateOperation(T object, QueryArgs args) {
@@ -183,6 +175,11 @@ public class Query<T> {
                 .withSelection(selection, args.args())
                 .withValues(contentValuesMapper.map(object))
                 .build();
+    }
+
+    @Deprecated
+    public ContentProviderOperation toDeleteOperation(String...args) {
+        return toDeleteOperation(args().args(args));
     }
 
     public ContentProviderOperation toDeleteOperation(QueryArgs args) {

@@ -24,11 +24,7 @@ public class QueryArgs {
     private final ArrayList<String> args;
     String orderBy;
 
-    public static QueryArgs newArgs() {
-        return new QueryArgs();
-    }
-
-    private QueryArgs() {
+    QueryArgs() {
         args = new ArrayList<>();
     }
 
@@ -101,7 +97,7 @@ public class QueryArgs {
     }
 
     @Deprecated
-    public QueryArgs args(String[] args) {
+    QueryArgs args(String[] args) {
         this.args.addAll(Arrays.asList(args));
         return this;
     }
