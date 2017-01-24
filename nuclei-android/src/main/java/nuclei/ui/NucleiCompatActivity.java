@@ -16,24 +16,28 @@
 package nuclei.ui;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v7.app.AppCompatActivity;
 
-import nuclei.persistence.LoaderQueryBuilder;
+import nuclei.intent.IntentBuilderActivity;
+import nuclei.logs.Log;
+import nuclei.logs.Logs;
+import nuclei.logs.Trace;
 import nuclei.persistence.PersistenceList;
+import nuclei.persistence.PersistenceObserver;
 import nuclei.persistence.Query;
+import nuclei.persistence.QueryArgs;
 import nuclei.persistence.QueryManager;
 import nuclei.persistence.SupportPersistenceLoaderImpl;
 import nuclei.persistence.adapter.PersistenceAdapterListener;
 import nuclei.persistence.adapter.PersistenceListAdapter;
-import nuclei.intent.IntentBuilderActivity;
 import nuclei.task.ContextHandle;
-import nuclei.logs.Log;
-import nuclei.logs.Logs;
-import nuclei.logs.Trace;
 
 /**
  * Base Compat Activity with easy hooks for managing PersistenceLists and ContextHandles
@@ -45,6 +49,19 @@ public abstract class NucleiCompatActivity extends AppCompatActivity implements 
     private SupportPersistenceLoaderImpl mLoader;
     private ActivityOptionsCompat mOptions;
     private LifecycleManager mLifecycleManager;
+    private Handler mHandler;
+
+    public void registerObserver(Uri uri, PersistenceObserver observer) {
+        if (mHandler == null)
+            mHandler = new Handler(Looper.getMainLooper());
+        registerObserver(uri, mHandler, observer);
+    }
+
+    public void registerObserver(Uri uri, Handler handler, PersistenceObserver observer) {
+        ContentObserverImpl contentObserver = new ContentObserverImpl(handler, this, observer);
+        getContentResolver().registerContentObserver(uri, true, contentObserver);
+        manage(contentObserver);
+    }
 
     protected <T extends Destroyable> T manage(T destroyable) {
         if (mLifecycleManager == null)
@@ -61,24 +78,38 @@ public abstract class NucleiCompatActivity extends AppCompatActivity implements 
     }
 
     @Override
-    public <T> LoaderQueryBuilder<T> newQuery(Query<T> query, PersistenceList.Listener<T> listener) {
+    public <T> int executeQuery(Query<T> query, PersistenceList.Listener<T> listener, QueryArgs args) {
         if (mLoader == null)
-            mLoader = SupportPersistenceLoaderImpl.newLoaderManager(this, getSupportLoaderManager());
-        return mLoader.newLoaderBuilder(query, listener);
+            mLoader = SupportPersistenceLoaderImpl.newLoaderManager(getSupportLoaderManager());
+        return mLoader.newLoaderBuilder(query, listener).execute(args);
     }
 
     @Override
-    public <T> LoaderQueryBuilder<T> newQuery(Query<T> query, PersistenceListAdapter<T> adapter) {
+    public <T> int executeQuery(Query<T> query, PersistenceList.Listener<T> listener) {
         if (mLoader == null)
-            mLoader = SupportPersistenceLoaderImpl.newLoaderManager(this, getSupportLoaderManager());
-        return mLoader.newLoaderBuilder(query, new PersistenceAdapterListener<T>(adapter));
+            mLoader = SupportPersistenceLoaderImpl.newLoaderManager(getSupportLoaderManager());
+        return mLoader.newLoaderBuilder(query, listener).execute();
+    }
+
+    @Override
+    public <T> int executeQuery(Query<T> query, PersistenceListAdapter<T> listener, QueryArgs args) {
+        if (mLoader == null)
+            mLoader = SupportPersistenceLoaderImpl.newLoaderManager(getSupportLoaderManager());
+        return mLoader.newLoaderBuilder(query, new PersistenceAdapterListener<T>(listener)).execute(args);
+    }
+
+    @Override
+    public <T> int executeQuery(Query<T> query, PersistenceListAdapter<T> listener) {
+        if (mLoader == null)
+            mLoader = SupportPersistenceLoaderImpl.newLoaderManager(getSupportLoaderManager());
+        return mLoader.newLoaderBuilder(query, new PersistenceAdapterListener<T>(listener)).execute();
     }
 
     @Deprecated
     public <T> int executeQueryWithOrder(Query<T> query, PersistenceList.Listener<T> listener, String orderBy, String...selectionArgs) {
         try {
             if (mLoader == null)
-                mLoader = SupportPersistenceLoaderImpl.newLoaderManager(this, getSupportLoaderManager());
+                mLoader = SupportPersistenceLoaderImpl.newLoaderManager(getSupportLoaderManager());
             return mLoader.executeWithOrder(query, listener, orderBy, selectionArgs);
         } catch (IllegalStateException err) {
             LOG.wtf("Error executing query", err);
@@ -95,7 +126,7 @@ public abstract class NucleiCompatActivity extends AppCompatActivity implements 
     public <T> int executeQuery(Query<T> query, PersistenceList.Listener<T> listener, String...selectionArgs) {
         try {
             if (mLoader == null)
-                mLoader = SupportPersistenceLoaderImpl.newLoaderManager(this, getSupportLoaderManager());
+                mLoader = SupportPersistenceLoaderImpl.newLoaderManager(getSupportLoaderManager());
             return mLoader.execute(query, listener, selectionArgs);
         } catch (IllegalStateException err) {
             LOG.wtf("Error executing query", err);
@@ -216,6 +247,7 @@ public abstract class NucleiCompatActivity extends AppCompatActivity implements 
         if (mLoader != null)
             mLoader.onDestroy();
         mLoader = null;
+        mHandler = null;
     }
 
 }

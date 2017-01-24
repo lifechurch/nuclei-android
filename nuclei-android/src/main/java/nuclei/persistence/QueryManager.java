@@ -19,8 +19,12 @@ import nuclei.persistence.adapter.PersistenceListAdapter;
 
 public interface QueryManager {
 
-    <T> LoaderQueryBuilder<T> newQuery(Query<T> query, PersistenceList.Listener<T> listener);
+    <T> int executeQuery(Query<T> query, PersistenceList.Listener<T> listener, QueryArgs args);
 
-    <T> LoaderQueryBuilder<T> newQuery(Query<T> query, PersistenceListAdapter<T> listener);
+    <T> int executeQuery(Query<T> query, PersistenceList.Listener<T> listener);
+
+    <T> int executeQuery(Query<T> query, PersistenceListAdapter<T> listener, QueryArgs args);
+
+    <T> int executeQuery(Query<T> query, PersistenceListAdapter<T> listener);
 
 }

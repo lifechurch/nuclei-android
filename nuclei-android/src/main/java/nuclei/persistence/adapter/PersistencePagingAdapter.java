@@ -19,8 +19,6 @@ import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 
-import java.util.List;
-
 import nuclei.persistence.PersistenceList;
 import nuclei.persistence.Query;
 

@@ -17,7 +17,6 @@ package nuclei.persistence;
 
 import android.annotation.TargetApi;
 import android.app.LoaderManager;
-import android.content.Context;
 import android.content.Loader;
 import android.database.Cursor;
 import android.os.Bundle;
@@ -28,20 +27,18 @@ import static android.app.LoaderManager.LoaderCallbacks;
 @TargetApi(11)
 public class PersistenceLoaderImpl implements LoaderCallbacks<Cursor>, PersistenceLoader {
 
-    Context mContext;
     LoaderManager mManager;
     SparseArrayCompat<LoaderArgs> mParams = new SparseArrayCompat<>();
     int mIndex;
 
-    public static PersistenceLoaderImpl newLoaderManager(Context context, LoaderManager manager) {
+    public static PersistenceLoaderImpl newLoaderManager(LoaderManager manager) {
         PersistenceLoaderImpl persistenceLoader = new PersistenceLoaderImpl();
-        persistenceLoader.mContext = context;
         persistenceLoader.mManager = manager;
         return persistenceLoader;
     }
 
     public <T> LoaderQueryBuilder<T> newLoaderBuilder(Query<T> query, PersistenceList.Listener<T> listener) {
-        return new LoaderQueryBuilder<T>(mContext, query, this, listener);
+        return new LoaderQueryBuilder<T>(query, this, listener);
     }
 
     @Deprecated
@@ -96,7 +93,7 @@ public class PersistenceLoaderImpl implements LoaderCallbacks<Cursor>, Persisten
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
         if (mParams != null) {
             LoaderArgs a = mParams.get(id);
-            return a.query.executeLoader(mContext, a.selectionArgs, a.orderBy);
+            return a.query.executeLoader(a.selectionArgs, a.orderBy);
         }
         return null;
     }
@@ -118,7 +115,6 @@ public class PersistenceLoaderImpl implements LoaderCallbacks<Cursor>, Persisten
     }
 
     public void onDestroy() {
-        mContext = null;
         mManager = null;
         mParams = null;
     }

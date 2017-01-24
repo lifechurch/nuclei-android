@@ -1,12 +1,12 @@
 /**
  * Copyright 2016 YouVersion
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,22 +18,26 @@ package nuclei.ui;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.v4.app.ActivityOptionsCompat;
 
-import nuclei.persistence.LoaderQueryBuilder;
-import nuclei.persistence.PersistenceList;
-import nuclei.persistence.PersistenceLoaderImpl;
-import nuclei.persistence.Query;
-import nuclei.persistence.QueryManager;
-import nuclei.persistence.adapter.PersistenceAdapterListener;
-import nuclei.persistence.adapter.PersistenceListAdapter;
 import nuclei.intent.IntentBuilderActivity;
-import nuclei.task.ContextHandle;
 import nuclei.logs.Log;
 import nuclei.logs.Logs;
 import nuclei.logs.Trace;
+import nuclei.persistence.PersistenceList;
+import nuclei.persistence.PersistenceLoaderImpl;
+import nuclei.persistence.PersistenceObserver;
+import nuclei.persistence.Query;
+import nuclei.persistence.QueryArgs;
+import nuclei.persistence.QueryManager;
+import nuclei.persistence.adapter.PersistenceAdapterListener;
+import nuclei.persistence.adapter.PersistenceListAdapter;
+import nuclei.task.ContextHandle;
 
 /**
  * Base Activity with easy hooks for managing PersistenceLists and ContextHandles
@@ -48,6 +52,19 @@ public abstract class NucleiActivity extends Activity implements IntentBuilderAc
     private PersistenceLoaderImpl mLoader;
     private ActivityOptionsCompat mOptions;
     private LifecycleManager mLifecycleManager;
+    private Handler mHandler;
+
+    public void registerObserver(Uri uri, PersistenceObserver observer) {
+        if (mHandler == null)
+            mHandler = new Handler(Looper.getMainLooper());
+        registerObserver(uri, mHandler, observer);
+    }
+
+    public void registerObserver(Uri uri, Handler handler, PersistenceObserver observer) {
+        ContentObserverImpl contentObserver = new ContentObserverImpl(handler, this, observer);
+        getContentResolver().registerContentObserver(uri, true, contentObserver);
+        manage(contentObserver);
+    }
 
     protected <T extends Destroyable> T manage(T destroyable) {
         if (mLifecycleManager == null)
@@ -62,24 +79,38 @@ public abstract class NucleiActivity extends Activity implements IntentBuilderAc
     }
 
     @Override
-    public <T> LoaderQueryBuilder<T> newQuery(Query<T> query, PersistenceList.Listener<T> listener) {
+    public <T> int executeQuery(Query<T> query, PersistenceList.Listener<T> listener, QueryArgs args) {
         if (mLoader == null)
-            mLoader = PersistenceLoaderImpl.newLoaderManager(this, getLoaderManager());
-        return mLoader.newLoaderBuilder(query, listener);
+            mLoader = PersistenceLoaderImpl.newLoaderManager(getLoaderManager());
+        return mLoader.newLoaderBuilder(query, listener).execute(args);
     }
 
     @Override
-    public <T> LoaderQueryBuilder<T> newQuery(Query<T> query, PersistenceListAdapter<T> adapter) {
+    public <T> int executeQuery(Query<T> query, PersistenceList.Listener<T> listener) {
         if (mLoader == null)
-            mLoader = PersistenceLoaderImpl.newLoaderManager(this, getLoaderManager());
-        return mLoader.newLoaderBuilder(query, new PersistenceAdapterListener<T>(adapter));
+            mLoader = PersistenceLoaderImpl.newLoaderManager(getLoaderManager());
+        return mLoader.newLoaderBuilder(query, listener).execute();
+    }
+
+    @Override
+    public <T> int executeQuery(Query<T> query, PersistenceListAdapter<T> listener, QueryArgs args) {
+        if (mLoader == null)
+            mLoader = PersistenceLoaderImpl.newLoaderManager(getLoaderManager());
+        return mLoader.newLoaderBuilder(query, new PersistenceAdapterListener<T>(listener)).execute(args);
+    }
+
+    @Override
+    public <T> int executeQuery(Query<T> query, PersistenceListAdapter<T> listener) {
+        if (mLoader == null)
+            mLoader = PersistenceLoaderImpl.newLoaderManager(getLoaderManager());
+        return mLoader.newLoaderBuilder(query, new PersistenceAdapterListener<T>(listener)).execute();
     }
 
     @Deprecated
-    public <T> int executeQueryWithOrder(Query<T> query, PersistenceList.Listener<T> listener, String orderBy, String...selectionArgs) {
+    public <T> int executeQueryWithOrder(Query<T> query, PersistenceList.Listener<T> listener, String orderBy, String... selectionArgs) {
         try {
             if (mLoader == null)
-                mLoader = PersistenceLoaderImpl.newLoaderManager(this, getLoaderManager());
+                mLoader = PersistenceLoaderImpl.newLoaderManager(getLoaderManager());
             return mLoader.executeWithOrder(query, listener, orderBy, selectionArgs);
         } catch (IllegalStateException err) {
             LOG.wtf("Error executing query", err);
@@ -88,15 +119,15 @@ public abstract class NucleiActivity extends Activity implements IntentBuilderAc
     }
 
     @Deprecated
-    public <T> int executeQueryWithOrder(Query<T> query, PersistenceListAdapter<T> adapter, String orderBy, String...selectionArgs) {
+    public <T> int executeQueryWithOrder(Query<T> query, PersistenceListAdapter<T> adapter, String orderBy, String... selectionArgs) {
         return executeQueryWithOrder(query, new PersistenceAdapterListener<T>(adapter), orderBy, selectionArgs);
     }
 
     @Deprecated
-    public <T> int executeQuery(Query<T> query, PersistenceList.Listener<T> listener, String...selectionArgs) {
+    public <T> int executeQuery(Query<T> query, PersistenceList.Listener<T> listener, String... selectionArgs) {
         try {
             if (mLoader == null)
-                mLoader = PersistenceLoaderImpl.newLoaderManager(this, getLoaderManager());
+                mLoader = PersistenceLoaderImpl.newLoaderManager(getLoaderManager());
             return mLoader.execute(query, listener, selectionArgs);
         } catch (IllegalStateException err) {
             LOG.wtf("Error executing query", err);
@@ -105,18 +136,18 @@ public abstract class NucleiActivity extends Activity implements IntentBuilderAc
     }
 
     @Deprecated
-    public <T> int executeQuery(Query<T> query, PersistenceListAdapter<T> adapter, String...selectionArgs) {
+    public <T> int executeQuery(Query<T> query, PersistenceListAdapter<T> adapter, String... selectionArgs) {
         return executeQuery(query, new PersistenceAdapterListener<T>(adapter), selectionArgs);
     }
 
     @Deprecated
-    public void reexecuteQuery(int id, String...selectionArgs) {
+    public void reexecuteQuery(int id, String... selectionArgs) {
         if (mLoader != null)
             mLoader.reexecute(id, selectionArgs);
     }
 
     @Deprecated
-    public <T> void reexecuteQueryByName(int id, Query<T> query, String...selectionArgs) {
+    public <T> void reexecuteQueryByName(int id, Query<T> query, String... selectionArgs) {
         if (mLoader != null) {
             mLoader.reexecute(id, query, selectionArgs);
         }
@@ -184,7 +215,7 @@ public abstract class NucleiActivity extends Activity implements IntentBuilderAc
 
     /**
      * Get a managed context handle.
-     *
+     * <p>
      * When the context is destroyed, the handle will be released.
      *
      * @return The Context Handle
@@ -215,6 +246,7 @@ public abstract class NucleiActivity extends Activity implements IntentBuilderAc
         if (mLoader != null)
             mLoader.onDestroy();
         mLoader = null;
+        mHandler = null;
     }
 
 }

@@ -15,7 +15,6 @@
  */
 package nuclei.persistence;
 
-import android.content.Context;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.support.v4.app.LoaderManager;
@@ -26,20 +25,18 @@ import static android.support.v4.app.LoaderManager.LoaderCallbacks;
 
 public class SupportPersistenceLoaderImpl implements LoaderCallbacks<Cursor>, PersistenceLoader {
 
-    Context mContext;
     LoaderManager mManager;
     SparseArrayCompat<LoaderArgs> mParams = new SparseArrayCompat<>();
     int mIndex;
 
-    public static SupportPersistenceLoaderImpl newLoaderManager(Context context, LoaderManager manager) {
+    public static SupportPersistenceLoaderImpl newLoaderManager(LoaderManager manager) {
         SupportPersistenceLoaderImpl persistenceLoader = new SupportPersistenceLoaderImpl();
-        persistenceLoader.mContext = context;
         persistenceLoader.mManager = manager;
         return persistenceLoader;
     }
 
     public <T> LoaderQueryBuilder<T> newLoaderBuilder(Query<T> query, PersistenceList.Listener<T> listener) {
-        return new LoaderQueryBuilder<T>(mContext, query, this, listener);
+        return new LoaderQueryBuilder<T>(query, this, listener);
     }
 
     public <T> int execute(Query<T> query, PersistenceList.Listener<T> listener, String...selectionArgs) {
@@ -90,7 +87,7 @@ public class SupportPersistenceLoaderImpl implements LoaderCallbacks<Cursor>, Pe
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
         if (mParams != null) {
             LoaderArgs a = mParams.get(id);
-            return a.query.executeSupportLoader(mContext, a.selectionArgs, a.orderBy);
+            return a.query.executeSupportLoader(a.selectionArgs, a.orderBy);
         }
         return null;
     }
@@ -112,7 +109,6 @@ public class SupportPersistenceLoaderImpl implements LoaderCallbacks<Cursor>, Pe
     }
 
     public void onDestroy() {
-        mContext = null;
         mManager = null;
         mParams = null;
     }

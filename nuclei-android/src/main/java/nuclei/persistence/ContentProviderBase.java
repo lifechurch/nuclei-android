@@ -65,6 +65,7 @@ public abstract class ContentProviderBase extends ContentProvider {
 
     @Override
     public boolean onCreate() {
+        Query.initialize(getContext());
         mDbHelper = onCreateHelper();
         return true;
     }

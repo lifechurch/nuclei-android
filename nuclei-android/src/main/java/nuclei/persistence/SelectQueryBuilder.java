@@ -15,20 +15,64 @@
  */
 package nuclei.persistence;
 
-import android.annotation.TargetApi;
-import android.content.Context;
 import android.database.Cursor;
 
-@TargetApi(11)
 public class SelectQueryBuilder<T> extends QueryBuilder<T> {
 
-    SelectQueryBuilder(Context context, Query<T> query) {
-        super(context, query);
+    private static final String[] COLUMNS_COUNT = new String[]{"count(*) as _id"};
+
+    SelectQueryBuilder(Query<T> query) {
+        super(query);
+    }
+
+    public SelectQueryBuilder<T> orderBy(String orderBy) {
+        this.orderBy = orderBy;
+        return this;
+    }
+
+    public int count() {
+        return count(null);
+    }
+
+    public int count(QueryArgs args) {
+        args(args);
+        Cursor cursor = query.execute(COLUMNS_COUNT, argVals, null);
+        if (cursor == null)
+            return 0;
+        try {
+            if (cursor.moveToNext())
+                return cursor.getInt(0);
+        } finally {
+            cursor.close();
+        }
+        return 0;
+    }
+
+    public T executeOne(QueryArgs args) {
+        Cursor cursor = execute(args);
+        try {
+            if (cursor.moveToFirst()) {
+                T object = query.objectMapper.newObject();
+                query.objectMapper.map(cursor, object);
+                return object;
+            }
+            return null;
+        } finally {
+            cursor.close();
+        }
+    }
+
+    public T executeOne() {
+        return executeOne(null);
+    }
+
+    public Cursor execute(QueryArgs args) {
+        args(args);
+        return query.execute(argVals, orderBy);
     }
 
     public Cursor execute() {
-        validate();
-        return query.execute(context.getContentResolver(), args, orderBy);
+        return execute(null);
     }
 
 }
