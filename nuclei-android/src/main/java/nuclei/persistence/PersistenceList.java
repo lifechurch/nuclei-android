@@ -38,6 +38,8 @@ public interface PersistenceList<T> extends List<T>, Closeable {
 
     void recycle(Query<T> query, T object);
 
+    boolean isClosed();
+
     void close();
 
     interface CursorObjectMapper<T> {

@@ -182,10 +182,14 @@ public abstract class PagingAdapter<T, L extends List<T>, VH extends Persistence
     }
 
     public void setList(L list) {
-        mReady = true;
-        mPageSize = getPageSize(list);
-        mPrevLoadingPosition = getPrevLoadingPosition(list);
-        mNextLoadingPosition = getNextLoadingPosition(list);
+        if (list != null) {
+            mReady = true;
+            mPageSize = getPageSize(list);
+            mPrevLoadingPosition = getPrevLoadingPosition(list);
+            mNextLoadingPosition = getNextLoadingPosition(list);
+        } else {
+            mReady = false;
+        }
         super.setList(list);
     }
 

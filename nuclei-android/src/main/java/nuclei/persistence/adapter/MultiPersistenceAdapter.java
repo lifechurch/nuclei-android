@@ -50,7 +50,12 @@ public abstract class MultiPersistenceAdapter<T, VH extends MultiPersistenceAdap
 
     @Override
     public void setList(PersistenceList<T> list) {
-        mMultiList.setList(list.getQuery(), list);
+        if (list != null) {
+            if (list.isClosed())
+                mMultiList.setList(list.getQuery(), null);
+            else
+                mMultiList.setList(list.getQuery(), list);
+        }
         notifyDataSetChanged();
     }
 

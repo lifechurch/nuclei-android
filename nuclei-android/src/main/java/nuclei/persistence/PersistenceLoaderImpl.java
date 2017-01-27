@@ -15,16 +15,14 @@
  */
 package nuclei.persistence;
 
-import android.annotation.TargetApi;
 import android.app.LoaderManager;
 import android.content.Loader;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.support.v4.util.SparseArrayCompat;
 
-import static android.app.LoaderManager.LoaderCallbacks;
+import android.app.LoaderManager.LoaderCallbacks;
 
-@TargetApi(11)
 public class PersistenceLoaderImpl implements LoaderCallbacks<Cursor>, PersistenceLoader {
 
     LoaderManager mManager;

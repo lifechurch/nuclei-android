@@ -38,7 +38,7 @@ public class PersistenceAdapterListener<T> implements PersistenceList.Listener<T
         if (adapter != null) {
             if (sizeChanged)
                 adapter.notifyListSizeChanged();
-            adapter.setList(list);
+            adapter.setList(list.isClosed() ? null : list);
         }
     }
 

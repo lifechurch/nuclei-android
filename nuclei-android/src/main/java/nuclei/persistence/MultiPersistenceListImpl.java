@@ -35,6 +35,11 @@ public class MultiPersistenceListImpl<T> extends AbstractList<T> implements Pers
         }
     }
 
+    @Override
+    public boolean isClosed() {
+        return false;
+    }
+
     public void setList(Query<T> query, PersistenceList<T> list) {
         QueryList<T> queryList = mListMap.get(query);
         if (queryList != null)

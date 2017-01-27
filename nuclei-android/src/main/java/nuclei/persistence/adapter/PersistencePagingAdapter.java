@@ -101,16 +101,20 @@ public abstract class PersistencePagingAdapter<T, VH extends PersistenceAdapter.
 
     @Override
     public void setList(PersistenceList<T> list) {
-        mQuery = list.getQuery();
-        if (mUpdatePageIndex) {
-            mUpdatePageIndex = false;
-            int size = list.size();
-            int maxPageIx = size / mPageSize;
-            if (mNextPageIndex > maxPageIx) {
-                mNextPageIndex = maxPageIx;
-                mLastPageIndex = mNextPageIndex - 1;
-                mHasMore = true;
+        if (list != null) {
+            mQuery = list.getQuery();
+            if (mUpdatePageIndex) {
+                mUpdatePageIndex = false;
+                int size = list.size();
+                int maxPageIx = size / mPageSize;
+                if (mNextPageIndex > maxPageIx) {
+                    mNextPageIndex = maxPageIx;
+                    mLastPageIndex = mNextPageIndex - 1;
+                    mHasMore = true;
+                }
             }
+        } else {
+            mQuery = null;
         }
         super.setList(list);
     }

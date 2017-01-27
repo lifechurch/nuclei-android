@@ -30,6 +30,10 @@ public class PersistenceListImpl<T> extends AbstractList<T> implements Persisten
     final CursorObjectMapper<T> mObjectMapper;
 
     public PersistenceListImpl(Query<T> query, Cursor cursor) {
+        if (cursor == null)
+            throw new NullPointerException("Cursor cannot be null");
+        if (cursor.isClosed())
+            throw new IllegalArgumentException("Cursor cannot be closed");
         mQuery = query;
         mCursor = cursor;
         mType = query.type;
@@ -59,7 +63,9 @@ public class PersistenceListImpl<T> extends AbstractList<T> implements Persisten
     public T get(int location) {
         if (mCursor == null)
             throw new ArrayIndexOutOfBoundsException("No Cursor");
-        if (!mCursor.moveToPosition(location))
+        if (mCursor.isClosed())
+            throw new ArrayIndexOutOfBoundsException("Cursor is Closed");
+        if (location == -1 || !mCursor.moveToPosition(location))
             throw new ArrayIndexOutOfBoundsException("Invalid position: " + location);
         T object;
         if (mObjectQueue.isEmpty())
@@ -72,7 +78,7 @@ public class PersistenceListImpl<T> extends AbstractList<T> implements Persisten
 
     @Override
     public int size() {
-        if (mCursor == null)
+        if (mCursor == null || mCursor.isClosed())
             return 0;
         return mCursor.getCount();
     }
@@ -87,6 +93,11 @@ public class PersistenceListImpl<T> extends AbstractList<T> implements Persisten
         if (query != mQuery)
             throw new IllegalArgumentException("Invalid object, using different query");
         mObjectQueue.add(object);
+    }
+
+    @Override
+    public boolean isClosed() {
+        return mCursor == null || mCursor.isClosed();
     }
 
     @Override
