@@ -23,6 +23,7 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.PlaybackParams;
 import android.net.wifi.WifiManager;
+import android.os.Build;
 import android.os.PowerManager;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -31,6 +32,8 @@ import android.view.Surface;
 
 import java.io.IOException;
 
+import nuclei.logs.Log;
+import nuclei.logs.Logs;
 import nuclei.media.MediaId;
 import nuclei.media.MediaMetadata;
 import nuclei.media.MediaProvider;
@@ -47,6 +50,8 @@ import static android.media.MediaPlayer.OnSeekCompleteListener;
 public class FallbackPlayback extends BasePlayback implements Playback, AudioManager.OnAudioFocusChangeListener,
         OnCompletionListener, OnErrorListener, OnPreparedListener, OnSeekCompleteListener {
 
+    private static final Log LOG = Logs.newLog(FallbackPlayback.class);
+
     // The volume we set the media player to when we lose audio focus, but are
     // allowed to reduce the volume instead of stopping playback.
     public static final float VOLUME_DUCK = 0.2f;
@@ -58,9 +63,8 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
     // we don't have focus, but can duck (play at a low volume)
     private static final int AUDIO_NO_FOCUS_CAN_DUCK = 1;
     // we have full audio focus
-    private static final int AUDIO_FOCUSED  = 2;
+    private static final int AUDIO_FOCUSED = 2;
 
-    final Context mContext;
     private final WifiManager.WifiLock mWifiLock;
     private int mState;
     private boolean mPlayOnFocusGain;
@@ -70,12 +74,17 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
     private volatile MediaId mCurrentMediaId;
     private volatile MediaMetadata mMetadata;
 
+    private volatile boolean mPrepared;
+
     // Type of audio focus we have:
     private int mAudioFocus = AUDIO_NO_FOCUS_NO_DUCK;
     private final AudioManager mAudioManager;
     private MediaPlayer mMediaPlayer;
     private long mSurfaceId;
     private Surface mSurface;
+    private PlaybackParams mPlaybackParams;
+
+    private MediaService mService;
 
     private final IntentFilter mAudioNoisyIntentFilter =
             new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
@@ -88,17 +97,17 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
                     Intent i = new Intent(context, MediaService.class);
                     i.setAction(MediaService.ACTION_CMD);
                     i.putExtra(MediaService.CMD_NAME, MediaService.CMD_PAUSE);
-                    mContext.startService(i);
+                    mService.startService(i);
                 }
             }
         }
     };
 
-    public FallbackPlayback(Context context) {
-        this.mContext = context;
-        this.mAudioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+    public FallbackPlayback(MediaService service) {
+        mService = service;
+        this.mAudioManager = (AudioManager) mService.getSystemService(Context.AUDIO_SERVICE);
         // Create the Wifi lock (this does not acquire the lock, this just creates it)
-        this.mWifiLock = ((WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE))
+        this.mWifiLock = ((WifiManager) mService.getApplicationContext().getSystemService(Context.WIFI_SERVICE))
                 .createWifiLock(WifiManager.WIFI_MODE_FULL, "uAmp_lock");
         this.mState = PlaybackStateCompat.STATE_NONE;
     }
@@ -152,7 +161,7 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
     }
 
     private boolean isMediaPlayerPlaying() {
-        return mMediaPlayer != null && mMediaPlayer.isPlaying();
+        return mPrepared && mMediaPlayer != null && mMediaPlayer.isPlaying();
     }
 
     @Override
@@ -169,12 +178,12 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
 
     @Override
     protected long internalGetDuration() {
-        return mMediaPlayer == null ? -1 : mMediaPlayer.getDuration();
+        return !mPrepared || mMediaPlayer == null ? -1 : mMediaPlayer.getDuration();
     }
 
     @Override
     protected long internalGetCurrentStreamPosition() {
-        return mMediaPlayer != null ? mMediaPlayer.getCurrentPosition() : mCurrentPosition;
+        return mPrepared && mMediaPlayer != null ? mMediaPlayer.getCurrentPosition() : mCurrentPosition;
     }
 
     @Override
@@ -188,7 +197,7 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
         tryToGetAudioFocus();
         registerAudioNoisyReceiver();
         boolean mediaHasChanged = mCurrentMediaId == null
-            || !TextUtils.equals(metadataCompat.getDescription().getMediaId(), mCurrentMediaId.toString());
+                || !TextUtils.equals(metadataCompat.getDescription().getMediaId(), mCurrentMediaId.toString());
         if (mediaHasChanged) {
             mCurrentPosition = getStartStreamPosition();
             mMetadata = metadataCompat;
@@ -210,7 +219,6 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
 
                 mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
                 mMediaPlayer.setDataSource(source);
-
                 // Starts preparing the media player in the background. When
                 // it's done, it will call our OnPreparedListener (that is,
                 // the onPrepared() method on this class, since we set the
@@ -258,16 +266,18 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
 
     @Override
     public void pause() {
-        if (mState == PlaybackStateCompat.STATE_PLAYING) {
+        if (isPlaying()) {
             // Pause media player and cancel the 'foreground service' state.
-            if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
+            if (isMediaPlayerPlaying()) {
+                mCurrentPosition = getCurrentStreamPosition();
                 mMediaPlayer.pause();
-                mCurrentPosition = mMediaPlayer.getCurrentPosition();
             }
-            // while paused, retain the MediaPlayer but give up audio focus
-            relaxResources(false);
-            giveUpAudioFocus();
         }
+
+        // while paused, retain the MediaPlayer but give up audio focus
+        relaxResources(false);
+        giveUpAudioFocus();
+
         mState = PlaybackStateCompat.STATE_PAUSED;
         if (mCallback != null) {
             mCallback.onPlaybackStatusChanged(mState);
@@ -277,7 +287,7 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
 
     @Override
     protected void internalSeekTo(long position) {
-        if (mMediaPlayer == null) {
+        if (!mPrepared || mMediaPlayer == null) {
             // If we do not have a current media player, simply update the current position
             mCurrentPosition = position;
         } else {
@@ -333,7 +343,7 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
             return;
         mSurfaceId = surfaceId;
         mSurface = surface;
-        if (mMediaPlayer != null)
+        if (mPrepared && mMediaPlayer != null)
             mMediaPlayer.setSurface(surface);
     }
 
@@ -372,6 +382,8 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
      * you are sure this is the case.
      */
     private void configMediaPlayerState() {
+        if (!mPrepared)
+            return;
         if (mAudioFocus == AUDIO_NO_FOCUS_NO_DUCK) {
             // If we don't have audio focus and can't duck, we have to pause,
             if (mState == PlaybackStateCompat.STATE_PLAYING) {
@@ -387,18 +399,24 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
             }
             // If we were playing when we lost focus, we need to resume playing.
             if (mPlayOnFocusGain) {
-                if (mMediaPlayer != null && !mMediaPlayer.isPlaying()) {
-                    if (mCurrentPosition == mMediaPlayer.getCurrentPosition()) {
-                        mMediaPlayer.start();
-                        mState = PlaybackStateCompat.STATE_PLAYING;
+                if (mMediaPlayer != null) {
+                    if (!mMediaPlayer.isPlaying()) {
+                        if (mCurrentPosition == mMediaPlayer.getCurrentPosition()) {
+                            mState = PlaybackStateCompat.STATE_PLAYING;
+                            mMediaPlayer.start();
+                        } else {
+                            mState = PlaybackStateCompat.STATE_BUFFERING;
+                            mMediaPlayer.seekTo((int) mCurrentPosition);
+                        }
                     } else {
-                        mMediaPlayer.seekTo((int) mCurrentPosition);
-                        mState = PlaybackStateCompat.STATE_BUFFERING;
+                        mState = PlaybackStateCompat.STATE_PLAYING;
                     }
                 }
                 mPlayOnFocusGain = false;
             }
         }
+        if (mState == PlaybackStateCompat.STATE_PLAYING)
+            mIllegalStateRetries = 0;
         if (mCallback != null) {
             mCallback.onPlaybackStatusChanged(mState);
         }
@@ -442,7 +460,8 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
     public void onSeekComplete(MediaPlayer mp) {
         mCurrentPosition = mp.getCurrentPosition();
         if (mState == PlaybackStateCompat.STATE_BUFFERING) {
-            mMediaPlayer.start();
+            if (!mMediaPlayer.isPlaying())
+                mMediaPlayer.start();
             mState = PlaybackStateCompat.STATE_PLAYING;
         }
         if (mCallback != null) {
@@ -459,6 +478,7 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
     public void onCompletion(MediaPlayer player) {
         // The media player finished playing the current song, so we go ahead
         // and start the next.
+        mIllegalStateRetries = 0;
         if (mCallback != null) {
             mCallback.onCompletion();
         }
@@ -471,10 +491,16 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
      */
     @Override
     public void onPrepared(MediaPlayer player) {
+        mPrepared = true;
         // The media player is done preparing. That means we can start playing if we
         // have audio focus.
         if (mSurface != null && mSurface.isValid())
             player.setSurface(mSurface);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (mPlaybackParams != null)
+                player.setPlaybackParams(mPlaybackParams);
+        }
 
         if (mMediaPlayer != null && mMetadata != null && mMetadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION) != mMediaPlayer.getDuration()) {
             mMetadata.setDuration(getDuration());
@@ -485,6 +511,8 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
         configMediaPlayerState();
     }
 
+    int mIllegalStateRetries;
+
     /**
      * Called when there's an error playing media. When this happens, the media
      * player goes to the Error state. We warn the user about the error and
@@ -494,7 +522,21 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
      */
     @Override
     public boolean onError(MediaPlayer mp, int what, int extra) {
+        LOG.e("onError", new Exception("MediaPlayer error " + what + " (" + extra + ")"));
+
+        final int maxRetries = 4;
+        if (mIllegalStateRetries < maxRetries) {
+            mIllegalStateRetries++;
+            pause();
+            relaxResources(true);
+            if (mMetadata != null) {
+                play(mMetadata);
+                return true;
+            }
+        }
+
         if (mCallback != null) {
+            stop(true);
             mCallback.onError(new Exception("MediaPlayer error " + what + " (" + extra + ")"));
         }
         return true; // true indicates we handled the error
@@ -506,13 +548,14 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
      * already exists.
      */
     private void createMediaPlayerIfNeeded() {
+        mPrepared = false;
         if (mMediaPlayer == null) {
             mMediaPlayer = new MediaPlayer();
 
             // Make sure the media player will acquire a wake-lock while
             // playing. If we don't do that, the CPU might go to sleep while the
             // song is playing, causing playback to stop.
-            mMediaPlayer.setWakeMode(mContext.getApplicationContext(),
+            mMediaPlayer.setWakeMode(mService.getApplicationContext(),
                     PowerManager.PARTIAL_WAKE_LOCK);
 
             // we want the media player to notify us when it's ready preparing,
@@ -531,11 +574,14 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
      * "foreground service" status, the wake locks and possibly the MediaPlayer.
      *
      * @param releaseMediaPlayer Indicates whether the Media Player should also
-     *            be released or not
+     *                           be released or not
      */
     private void relaxResources(boolean releaseMediaPlayer) {
+        mService.stopForeground(true);
+
         // stop and release the Media Player, if it's available
         if (releaseMediaPlayer && mMediaPlayer != null) {
+            mPrepared = false;
             mMediaPlayer.reset();
             mMediaPlayer.release();
             mMediaPlayer = null;
@@ -549,20 +595,33 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
 
     private void registerAudioNoisyReceiver() {
         if (!mAudioNoisyReceiverRegistered) {
-            mContext.registerReceiver(mAudioNoisyReceiver, mAudioNoisyIntentFilter);
+            mService.registerReceiver(mAudioNoisyReceiver, mAudioNoisyIntentFilter);
             mAudioNoisyReceiverRegistered = true;
         }
     }
 
     private void unregisterAudioNoisyReceiver() {
         if (mAudioNoisyReceiverRegistered) {
-            mContext.unregisterReceiver(mAudioNoisyReceiver);
+            mService.unregisterReceiver(mAudioNoisyReceiver);
             mAudioNoisyReceiverRegistered = false;
         }
     }
 
     @Override
     public void setPlaybackParams(PlaybackParams playbackParams) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (mMediaPlayer == null || !mPrepared) {
+                mPlaybackParams = playbackParams;
+            } else {
+                mMediaPlayer.setPlaybackParams(playbackParams);
 
+                if (mState != PlaybackStateCompat.STATE_PLAYING && mMediaPlayer.isPlaying()) {
+                    mState = PlaybackStateCompat.STATE_PLAYING;
+                    if (mCallback != null) {
+                        mCallback.onPlaybackStatusChanged(mState);
+                    }
+                }
+            }
+        }
     }
 }
