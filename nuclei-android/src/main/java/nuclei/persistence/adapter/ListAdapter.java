@@ -94,8 +94,10 @@ public abstract class ListAdapter<T, L extends List<T>, VH extends ListAdapter.V
     @Override
     public void onDestroy() {
         mList = null;
+        mListUpdates++;
         mContext = null;
         mInflater = null;
+        notifyDataSetChanged();
     }
 
     public static class ViewHolder<T> extends RecyclerView.ViewHolder {
