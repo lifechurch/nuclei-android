@@ -202,7 +202,7 @@ public class MediaService extends MediaBrowserServiceCompat implements
         CarHelper.setSlotReservationFlags(mSessionExtras, true, true, true);
         mSession.setExtras(mSessionExtras);
 
-        mPlaybackManager.updatePlaybackState(null);
+        mPlaybackManager.updatePlaybackState(null, true);
 
         registerCarConnectionReceiver();
     }

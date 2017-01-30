@@ -235,9 +235,9 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
                     mCallback.onPlaybackStatusChanged(mState);
                 }
 
-            } catch (IOException ex) {
+            } catch (Exception ex) {
                 if (mCallback != null) {
-                    mCallback.onError(ex);
+                    mCallback.onError(ex, true);
                 }
             }
         }
@@ -537,7 +537,7 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
 
         if (mCallback != null) {
             stop(true);
-            mCallback.onError(new Exception("MediaPlayer error " + what + " (" + extra + ")"));
+            mCallback.onError(new Exception("MediaPlayer error " + what + " (" + extra + ")"), true);
         }
         return true; // true indicates we handled the error
     }

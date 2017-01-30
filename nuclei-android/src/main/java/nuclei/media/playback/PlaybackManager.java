@@ -154,7 +154,7 @@ public class PlaybackManager implements Playback.Callback {
         final MediaMetadata metadata = mPlayback.getCurrentMetadata();
         if (metadata != null)
             metadata.setTimingSeeked(false);
-        updatePlaybackState(withError);
+        updatePlaybackState(withError, true);
     }
 
     /**
@@ -162,7 +162,7 @@ public class PlaybackManager implements Playback.Callback {
      *
      * @param error if not null, error message to present to the user.
      */
-    public void updatePlaybackState(Exception error) {
+    public void updatePlaybackState(Exception error, boolean canPause) {
         long position = PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN;
         if (mPlayback != null && mPlayback.isConnected()) {
             position = mPlayback.getCurrentStreamPosition();
@@ -191,7 +191,7 @@ public class PlaybackManager implements Playback.Callback {
                 if (mPlayback.isPlaying()) {
                     mPlayback.setState(lastState);
                     state = lastState;
-                } else {
+                } else if (canPause) {
                     mPlayback.pause();
                 }
             }
@@ -265,12 +265,12 @@ public class PlaybackManager implements Playback.Callback {
 
     @Override
     public void onPlaybackStatusChanged(int state) {
-        updatePlaybackState(null);
+        updatePlaybackState(null, true);
     }
 
     @Override
-    public void onError(Exception error) {
-        updatePlaybackState(error);
+    public void onError(Exception error, boolean canPause) {
+        updatePlaybackState(error, canPause);
     }
 
     @Override
@@ -484,7 +484,7 @@ public class PlaybackManager implements Playback.Callback {
                         @Override
                         public void onResult(final String mediaId) {
                             if (mediaId == null)
-                                updatePlaybackState(new Exception("Could not find music"));
+                                updatePlaybackState(new Exception("Could not find media"), true);
                             else {
                                 final MediaId id = MediaProvider.getInstance().getMediaId(mediaId);
                                 MediaProvider.getInstance()

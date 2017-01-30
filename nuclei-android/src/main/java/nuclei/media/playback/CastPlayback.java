@@ -218,7 +218,7 @@ public class CastPlayback extends BasePlayback implements Playback {
         } catch (TransientNetworkDisconnectionException | NoConnectionException
                 | JSONException | IllegalArgumentException e) {
             if (mCallback != null) {
-                mCallback.onError(e);
+                mCallback.onError(e, true);
             }
         }
     }
@@ -253,7 +253,7 @@ public class CastPlayback extends BasePlayback implements Playback {
             }
         } catch (JSONException | CastException | TransientNetworkDisconnectionException | NoConnectionException | IllegalArgumentException e) {
             if (mCallback != null) {
-                mCallback.onError(e);
+                mCallback.onError(e, false);
             }
         }
     }
@@ -262,7 +262,7 @@ public class CastPlayback extends BasePlayback implements Playback {
     protected void internalSeekTo(long position) {
         if (mCurrentMediaId == null) {
             if (mCallback != null) {
-                mCallback.onError(new Exception("seekTo cannot be calling in the absence of mediaId."));
+                mCallback.onError(new Exception("seekTo cannot be calling in the absence of mediaId."), true);
             }
             return;
         }
@@ -276,7 +276,7 @@ public class CastPlayback extends BasePlayback implements Playback {
             }
         } catch (TransientNetworkDisconnectionException | NoConnectionException | JSONException | IllegalArgumentException e) {
             if (mCallback != null) {
-                mCallback.onError(e);
+                mCallback.onError(e, true);
             }
         }
     }
@@ -404,7 +404,7 @@ public class CastPlayback extends BasePlayback implements Playback {
             }
         } catch (TransientNetworkDisconnectionException | NoConnectionException | JSONException e) {
             if (mCallback != null) {
-                mCallback.onError(e);
+                mCallback.onError(e, true);
             }
         }
     }
@@ -419,7 +419,7 @@ public class CastPlayback extends BasePlayback implements Playback {
                 switch (idleReason) {
                     case MediaStatus.IDLE_REASON_ERROR:
                         if (mCallback != null)
-                            mCallback.onError(new Exception("Error: " + idleReason));
+                            mCallback.onError(new Exception("Error: " + idleReason), true);
                         break;
                     case MediaStatus.IDLE_REASON_INTERRUPTED:
                     case MediaStatus.IDLE_REASON_CANCELED:

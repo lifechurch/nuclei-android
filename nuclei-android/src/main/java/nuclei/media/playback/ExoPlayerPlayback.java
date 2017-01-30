@@ -717,7 +717,7 @@ public class ExoPlayerPlayback extends BasePlayback
         do {
             if (err instanceof IOException) {
                 if (mCallback != null) {
-                    mCallback.onError(e);
+                    mCallback.onError(e, false);
                     long pos = getCurrentStreamPosition();
                     stop(true);
                     mCurrentPosition = pos;
@@ -729,7 +729,7 @@ public class ExoPlayerPlayback extends BasePlayback
 
         if (mCallback != null) {
             stop(true);
-            mCallback.onError(e);
+            mCallback.onError(e, false);
         }
     }
 
