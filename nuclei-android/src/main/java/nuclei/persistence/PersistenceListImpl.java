@@ -53,6 +53,8 @@ public class PersistenceListImpl<T> extends AbstractList<T> implements Persisten
 
     @Override
     public void swapCursor(Query<T> query, Cursor cursor) {
+        if (query == null)
+            throw new NullPointerException("Query cannot be null");
         mQuery = query;
         if (mCursor != null && mCursor != cursor)
             mCursor.close();
@@ -90,6 +92,8 @@ public class PersistenceListImpl<T> extends AbstractList<T> implements Persisten
 
     @Override
     public void recycle(Query<T> query, T object) {
+        if (mQuery == null)
+            return;
         if (query != mQuery)
             throw new IllegalArgumentException("Invalid object, using different query");
         mObjectQueue.add(object);
