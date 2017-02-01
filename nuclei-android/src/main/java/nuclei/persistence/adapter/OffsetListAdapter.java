@@ -129,57 +129,67 @@ public abstract class OffsetListAdapter<T, VH extends ListAdapter.ViewHolder<T>>
     @Override
     public void setHasStableIds(boolean hasStableIds) {
         super.setHasStableIds(hasStableIds);
-        mOriginalAdapter.setHasStableIds(hasStableIds);
+        if (mOriginalAdapter != null)
+            mOriginalAdapter.setHasStableIds(hasStableIds);
     }
 
     @Override
     public long getItemId(int position) {
         int originalPos = getOriginalPosition(position);
-        if (originalPos != -1 && mOriginalAdapter.getItemCount() > originalPos)
+        if (originalPos != -1 && mOriginalAdapter != null && mOriginalAdapter.getItemCount() > originalPos)
             return mOriginalAdapter.getItemId(originalPos);
         return super.getItemId(position);
     }
 
     @Override
     public void onViewRecycled(VH holder) {
-        mOriginalAdapter.onViewRecycled(holder);
+        if (mOriginalAdapter != null && !isOffsetViewType(holder.getItemViewType()))
+            mOriginalAdapter.onViewRecycled(holder);
     }
 
     @Override
     public boolean onFailedToRecycleView(VH holder) {
+        if (mOriginalAdapter == null || isOffsetViewType(holder.getItemViewType()))
+            return false;
         return mOriginalAdapter.onFailedToRecycleView(holder);
     }
 
     @Override
     public void onViewAttachedToWindow(VH holder) {
-        mOriginalAdapter.onViewAttachedToWindow(holder);
+        if (mOriginalAdapter != null && !isOffsetViewType(holder.getItemViewType()))
+            mOriginalAdapter.onViewAttachedToWindow(holder);
     }
 
     @Override
     public void onViewDetachedFromWindow(VH holder) {
-        mOriginalAdapter.onViewDetachedFromWindow(holder);
+        if (mOriginalAdapter != null && !isOffsetViewType(holder.getItemViewType()))
+            mOriginalAdapter.onViewDetachedFromWindow(holder);
     }
 
     @Override
     public void registerAdapterDataObserver(RecyclerView.AdapterDataObserver observer) {
         super.registerAdapterDataObserver(observer);
-        mOriginalAdapter.registerAdapterDataObserver(observer);
+        if (mOriginalAdapter != null)
+            mOriginalAdapter.registerAdapterDataObserver(observer);
     }
 
     @Override
     public void unregisterAdapterDataObserver(RecyclerView.AdapterDataObserver observer) {
         super.unregisterAdapterDataObserver(observer);
-        mOriginalAdapter.unregisterAdapterDataObserver(observer);
+        if (mOriginalAdapter != null)
+            mOriginalAdapter.unregisterAdapterDataObserver(observer);
     }
 
     @Override
     public void onAttachedToRecyclerView(RecyclerView recyclerView) {
-        mOriginalAdapter.onAttachedToRecyclerView(recyclerView);
+        if (mOriginalAdapter != null)
+            mOriginalAdapter.onAttachedToRecyclerView(recyclerView);
     }
 
     @Override
     public void onDetachedFromRecyclerView(RecyclerView recyclerView) {
-        mOriginalAdapter.onDetachedFromRecyclerView(recyclerView);
+        if (mOriginalAdapter != null)
+            mOriginalAdapter.onDetachedFromRecyclerView(recyclerView);
     }
 
     /**
@@ -229,6 +239,8 @@ public abstract class OffsetListAdapter<T, VH extends ListAdapter.ViewHolder<T>>
 
     @Override
     public int getItemCount() {
+        if (mOriginalAdapter == null)
+            return 0;
         return mOriginalAdapter.getItemCount() + mItems.size();
     }
 
@@ -239,6 +251,7 @@ public abstract class OffsetListAdapter<T, VH extends ListAdapter.ViewHolder<T>>
         mObserver = null;
         mInflater = null;
         mOriginalAdapter = null;
+        notifyDataSetChanged();
     }
 
     class Observer extends RecyclerView.AdapterDataObserver {
