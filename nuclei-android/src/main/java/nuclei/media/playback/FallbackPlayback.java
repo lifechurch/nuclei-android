@@ -617,9 +617,9 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
 
                 if (mState != PlaybackStateCompat.STATE_PLAYING && mMediaPlayer.isPlaying()) {
                     mState = PlaybackStateCompat.STATE_PLAYING;
-                    if (mCallback != null) {
-                        mCallback.onPlaybackStatusChanged(mState);
-                    }
+                }
+                if (mCallback != null) {
+                    mCallback.onPlaybackStatusChanged(mState);
                 }
             }
         }

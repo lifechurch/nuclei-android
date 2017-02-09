@@ -269,7 +269,8 @@ public class MediaInterface implements Destroyable {
             if (event.startsWith(MediaService.EVENT_TIMER)) {
                 mCallbacks.onTimerChanged(this, MediaService.getTimerFromEvent(event));
             } else if (event.startsWith(MediaService.EVENT_SPEED)) {
-                mCallbacks.onSpeedChanged(this, MediaService.getSpeedFromEvent(event));
+                float speed = MediaService.getSpeedFromEvent(event);
+                mCallbacks.onSpeedChanged(this, speed);
             } else if (event.startsWith(MediaService.EVENT_CAST)) {
                 mCallbacks.onCasting(this, MediaService.getCastFromEvent(event));
             }

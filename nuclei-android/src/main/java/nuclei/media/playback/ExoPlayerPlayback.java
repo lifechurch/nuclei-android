@@ -798,9 +798,10 @@ public class ExoPlayerPlayback extends BasePlayback
     @Override
     public void setPlaybackParams(PlaybackParams playbackParams) {
         mPlaybackParams = playbackParams;
-        if (mMediaPlayer != null) {
+        if (mMediaPlayer != null)
             mMediaPlayer.setPlaybackParams(mPlaybackParams);
-        }
+        if (mCallback != null)
+            mCallback.onPlaybackStatusChanged(mState);
     }
 
 }

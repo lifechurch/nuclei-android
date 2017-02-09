@@ -467,6 +467,8 @@ public class CastPlayback extends BasePlayback implements Playback {
 
     @Override
     public void setPlaybackParams(PlaybackParams playbackParams) {
+        if (mCallback != null)
+            mCallback.onPlaybackStatusChanged(mState);
     }
 
 }

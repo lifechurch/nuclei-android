@@ -15,6 +15,8 @@
  */
 package nuclei.media;
 
+import android.os.Build;
+import android.os.SystemClock;
 import android.support.annotation.Nullable;
 import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.MediaMetadataCompat;
@@ -119,7 +121,38 @@ public class MediaPlayerController implements MediaController.MediaPlayerControl
     @Override
     public int getCurrentPosition() {
         if (isEquals()) {
-            return (int) mMediaControls.getPlaybackState().getPosition();
+            PlaybackStateCompat state = mMediaControls.getPlaybackState();
+            if (state != null) {
+                // KJB: NOTE: Pulled from media compat library
+                //            For some reason, it seems, that only API 21 doesn't do something equivalent
+                //            of this.  weird.
+                //            Just to be safe, since this is important, doing it here.
+                //            It's a little redundant... but, I don't see how this would hurt anything
+                //            if it were executed twice (so long as getLastPositionUpdateTime is correct)
+                //      TODO: revisit this after support library 25.1.1
+                try {
+                    if ((state.getState() == PlaybackStateCompat.STATE_PLAYING
+                            || state.getState() == PlaybackStateCompat.STATE_FAST_FORWARDING
+                            || state.getState() == PlaybackStateCompat.STATE_REWINDING)) {
+                        final long updateTime = state.getLastPositionUpdateTime();
+                        final long currentTime = SystemClock.elapsedRealtime();
+                        if (updateTime > 0) {
+                            final float speed = state.getPlaybackSpeed();
+                            final long duration = getDuration();
+                            long position = (long) (speed * (currentTime - updateTime)) + state.getPosition();
+                            if (duration >= 0 && position > duration) {
+                                position = duration;
+                            } else if (position < 0) {
+                                position = 0;
+                            }
+                            return (int) position;
+                        }
+                    }
+                } catch (Exception err) { // because weird things happen sometimes :(
+                    LOG.e("Error calculating latest position", err);
+                }
+                return (int) state.getPosition();
+            }
         }
         return -1;
     }
