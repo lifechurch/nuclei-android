@@ -42,17 +42,17 @@ public abstract class PagedListAdapter<T, VH extends ListAdapter.ViewHolder<T>>
     }
 
     @Override
-    protected int getPrevLoadingPosition(PagedList<T> list) {
+    protected int getPrevLoadingPosition(int pageSize, PagedList<T> list) {
         if (list == null)
             return -1;
-        return list.mMinPageIndex * list.mPageSize;
+        return list.mMinPageIndex * pageSize;
     }
 
     @Override
-    protected int getNextLoadingPosition(PagedList<T> list) {
+    protected int getNextLoadingPosition(int pageSize, PagedList<T> list) {
         if (list == null)
             return 0;
-        return list.mMaxPageIndex * list.mPageSize;
+        return list.mMaxPageIndex * pageSize;
     }
 
     @Override

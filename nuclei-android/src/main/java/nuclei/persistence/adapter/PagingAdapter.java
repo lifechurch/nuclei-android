@@ -155,7 +155,7 @@ public abstract class PagingAdapter<T, L extends List<T>, VH extends Persistence
      * @param list
      * @return
      */
-    protected int getPrevLoadingPosition(L list) {
+    protected int getPrevLoadingPosition(int pageSize, L list) {
         return -1;
     }
 
@@ -165,7 +165,7 @@ public abstract class PagingAdapter<T, L extends List<T>, VH extends Persistence
      * @param list
      * @return
      */
-    protected int getNextLoadingPosition(L list) {
+    protected int getNextLoadingPosition(int pageSize, L list) {
         if (list == null)
             return 0;
         return list.size();
@@ -185,8 +185,8 @@ public abstract class PagingAdapter<T, L extends List<T>, VH extends Persistence
         if (list != null) {
             mReady = true;
             mPageSize = getPageSize(list);
-            mPrevLoadingPosition = getPrevLoadingPosition(list);
-            mNextLoadingPosition = getNextLoadingPosition(list);
+            mPrevLoadingPosition = getPrevLoadingPosition(mPageSize, list);
+            mNextLoadingPosition = getNextLoadingPosition(mPageSize, list);
         } else {
             mReady = false;
         }
@@ -229,19 +229,28 @@ public abstract class PagingAdapter<T, L extends List<T>, VH extends Persistence
      */
     protected void onLoadMore(int position) {
         if (!mLoading && mReady && mHasMore) {
+            int nextPageIx;
             if (mPageSize > 0) {
                 LOG.d("onLoadMore");
                 if (position == mPrevLoadingPosition)
-                    loadPage(mPrevLoadingPosition / mPageSize);
+                    nextPageIx = mPrevLoadingPosition / mPageSize;
                 else
-                    loadPage(mNextLoadingPosition / mPageSize);
+                    nextPageIx = mNextLoadingPosition / mPageSize;
             } else {
                 if (position == mPrevLoadingPosition)
-                    loadPage(Math.max(0, mLastPageIndex - 1));
+                    nextPageIx = Math.max(0, mLastPageIndex - 1);
                 else
-                    loadPage(mLastPageIndex + 1);
+                    nextPageIx = mLastPageIndex + 1;
+            }
+            if (nextPageIx != mLastPageIndex) {
+                loadPage(nextPageIx);
+            } else {
+                onAlreadyLoaded(nextPageIx);
             }
         }
+    }
+
+    protected void onAlreadyLoaded(int pageIndex) {
     }
 
     @Override
@@ -281,8 +290,8 @@ public abstract class PagingAdapter<T, L extends List<T>, VH extends Persistence
         mHasMore = hasMore;
         mReady = ready;
         mPageSize = getPageSize(mList);
-        mPrevLoadingPosition = getPrevLoadingPosition(mList);
-        mNextLoadingPosition = getNextLoadingPosition(mList);
+        mPrevLoadingPosition = getPrevLoadingPosition(mPageSize, mList);
+        mNextLoadingPosition = getNextLoadingPosition(mPageSize, mList);
         if (notifyChanged)
             notifyDataSetChanged();
     }
