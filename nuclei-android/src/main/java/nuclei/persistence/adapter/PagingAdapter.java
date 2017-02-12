@@ -292,7 +292,7 @@ public abstract class PagingAdapter<T, L extends List<T>, VH extends Persistence
         mPageSize = getPageSize(mList);
         mPrevLoadingPosition = getPrevLoadingPosition(mPageSize, mList);
         mNextLoadingPosition = getNextLoadingPosition(mPageSize, mList);
-        if (notifyChanged)
+        if (notifyChanged || !hasMore)
             notifyDataSetChanged();
     }
 
