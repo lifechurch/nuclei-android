@@ -34,7 +34,9 @@ public class DefaultCallback implements MediaInterface.MediaInterfaceCallback {
     private final TextView timer;
     private final SeekBar seekBar;
     private final ImageView next;
+    private final ImageView fastForward;
     private final ImageView previous;
+    private final ImageView rewind;
 
     PlayerControlsView mView;
     private OnConnectedListener mConnectedListener;
@@ -49,8 +51,10 @@ public class DefaultCallback implements MediaInterface.MediaInterfaceCallback {
         speed = (TextView) view.findViewById(R.id.btn_speed);
         timer = (TextView) view.findViewById(R.id.btn_timer);
         seekBar = (SeekBar) view.findViewById(R.id.progress);
+        fastForward = (ImageView) view.findViewById(R.id.btn_fastforward);
         next = (ImageView) view.findViewById(R.id.btn_next);
         previous = (ImageView) view.findViewById(R.id.btn_previous);
+        rewind = (ImageView) view.findViewById(R.id.btn_rewind);
         if (seekBar != null) {
             seekBar.setOnSeekBarChangeListener(mSeekListener);
             seekBar.setMax(MediaInterface.ProgressHandler.MAX_PROGRESS);
@@ -173,7 +177,7 @@ public class DefaultCallback implements MediaInterface.MediaInterfaceCallback {
     public void onStateChanged(nuclei.media.MediaInterface mediaInterface, PlaybackStateCompat state) {
         if (mView == null)
             return;
-        onHandleState(mView, next, previous, state);
+        onHandleState(mView, rewind, fastForward, next, previous, state);
     }
 
     @Override
@@ -244,9 +248,19 @@ public class DefaultCallback implements MediaInterface.MediaInterfaceCallback {
         }
     }
 
-    public static void onHandleState(View view, ImageView next, ImageView previous, PlaybackStateCompat state) {
+    public static void onHandleState(View view, ImageView fastForward, ImageView rewind, ImageView next, ImageView previous, PlaybackStateCompat state) {
         int enabled = ViewUtil.getThemeAttrColor(view.getContext(), android.R.attr.textColorPrimary);
         int disabled = ViewUtil.getThemeAttrColor(view.getContext(), android.R.attr.textColorSecondary);
+        if (fastForward != null)
+            fastForward.setColorFilter(state != null && (state.getActions() & PlaybackStateCompat.ACTION_FAST_FORWARD)
+                    == PlaybackStateCompat.ACTION_FAST_FORWARD
+                    ? enabled
+                    : disabled, PorterDuff.Mode.SRC_ATOP);
+        if (rewind != null)
+            rewind.setColorFilter(state != null && (state.getActions() & PlaybackStateCompat.ACTION_REWIND)
+                    == PlaybackStateCompat.ACTION_REWIND
+                    ? enabled
+                    : disabled, PorterDuff.Mode.SRC_ATOP);
         if (next != null)
             next.setColorFilter(state != null && (state.getActions() & PlaybackStateCompat.ACTION_SKIP_TO_NEXT)
                     == PlaybackStateCompat.ACTION_SKIP_TO_NEXT

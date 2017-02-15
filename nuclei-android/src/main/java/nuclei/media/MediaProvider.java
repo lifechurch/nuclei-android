@@ -218,6 +218,16 @@ public abstract class MediaProvider {
         result.sendResult(Collections.<MediaBrowserCompat.MediaItem>emptyList());
     }
 
+    private static final int THIRY_SECOND = 30000;
+
+    public long getFastForwardPosition(Playback playback, long currentPosition) {
+        return currentPosition + THIRY_SECOND;
+    }
+
+    public long getRewindPosition(Playback playback, long currentPosition) {
+        return currentPosition - THIRY_SECOND;
+    }
+
     public abstract void onPlaybackStart(Playback playback, MediaId id);
 
     public abstract void onPlaybackPause(Playback playback, MediaId id);

@@ -150,8 +150,8 @@ public class PlayerControlsView extends FrameLayout {
 
         ImageView previous = (ImageView) view.findViewById(R.id.btn_previous);
         ImageView next = (ImageView) view.findViewById(R.id.btn_next);
-        View rewind = view.findViewById(R.id.btn_rewind);
-        View fastforward = view.findViewById(R.id.btn_fastforward);
+        ImageView rewind = (ImageView) view.findViewById(R.id.btn_rewind);
+        ImageView fastforward = (ImageView) view.findViewById(R.id.btn_fastforward);
 
         if (previous != null) {
             previous.setOnClickListener(listener);
@@ -173,7 +173,7 @@ public class PlayerControlsView extends FrameLayout {
             fastforward.setVisibility(hasFastforward ? VISIBLE : GONE);
         }
 
-        DefaultCallback.onHandleState(this, next, previous, null);
+        DefaultCallback.onHandleState(this, fastforward, rewind, next, previous, null);
 
         TextView speed = ((TextView) view.findViewById(R.id.btn_speed));
         if (speed != null) {

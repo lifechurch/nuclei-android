@@ -337,6 +337,22 @@ public class MediaService extends MediaBrowserServiceCompat implements
     }
 
     @Override
+    public long getFastForwardPosition(MediaId mediaId, long currentPosition) {
+        Playback playback = mPlaybackManager.getPlayback();
+        if (playback != null)
+            return MediaProvider.getInstance().getFastForwardPosition(playback, currentPosition);
+        return currentPosition;
+    }
+
+    @Override
+    public long getRewindPosition(MediaId mediaId, long currentPosition) {
+        Playback playback = mPlaybackManager.getPlayback();
+        if (playback != null)
+            return MediaProvider.getInstance().getRewindPosition(playback, currentPosition);
+        return currentPosition;
+    }
+
+    @Override
     public void onPlaybackNext(MediaId id) {
         Playback playback = mPlaybackManager.getPlayback();
         if (playback != null)

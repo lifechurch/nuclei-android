@@ -46,7 +46,6 @@ public class PlaybackManager implements Playback.Callback {
     static final Log LOG = Logs.newLog(PlaybackManager.class);
 
     public static final int ONE_SECOND = 1000;
-    public static final int THIRY_SECOND = 30000;
 
     public static final int FIVE_MINUTES = 300000;
     public static final int TEN_MINUTES = 600000;
@@ -524,7 +523,7 @@ public class PlaybackManager implements Playback.Callback {
         @Override
         public void onFastForward() {
             final long current = mPlayback.getCurrentStreamPosition();
-            final long position = current + THIRY_SECOND;
+            final long position = mServiceCallback.getFastForwardPosition(mPlayback.getCurrentMediaId(), current);
             mPlayback.seekTo(position);
             mServiceCallback.onPlaybackSeekTo(mPlayback.getCurrentMediaId(), current, position);
         }
@@ -532,7 +531,7 @@ public class PlaybackManager implements Playback.Callback {
         @Override
         public void onRewind() {
             final long current = mPlayback.getCurrentStreamPosition();
-            final long position = Math.max(0, current - THIRY_SECOND);
+            final long position = Math.max(0, mServiceCallback.getRewindPosition(mPlayback.getCurrentMediaId(), current));
             mPlayback.seekTo(position);
             mServiceCallback.onPlaybackSeekTo(mPlayback.getCurrentMediaId(), current, position);
         }
@@ -618,6 +617,10 @@ public class PlaybackManager implements Playback.Callback {
     public interface PlaybackServiceCallback {
 
         float getAudioSpeed();
+
+        long getFastForwardPosition(MediaId mediaId, long currentPosition);
+
+        long getRewindPosition(MediaId mediaId, long currentPosition);
 
         void onQueue(Queue queue);
 
