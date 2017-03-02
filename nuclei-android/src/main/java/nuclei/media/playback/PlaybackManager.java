@@ -64,6 +64,7 @@ public class PlaybackManager implements Playback.Callback {
     long mTimer = -1;
     final PlaybackHandler mHandler = new PlaybackHandler(this);
     Queue mQueue;
+    boolean mAutoContinue;
 
     public PlaybackManager(PlaybackServiceCallback serviceCallback, Playback playback) {
         mServiceCallback = serviceCallback;
@@ -75,6 +76,36 @@ public class PlaybackManager implements Playback.Callback {
 
     public Playback getPlayback() {
         return mPlayback;
+    }
+
+    public boolean isAutoContinue() {
+        return mAutoContinue;
+    }
+
+    public void setAutoContinue(boolean autoContinue) {
+        mAutoContinue = autoContinue;
+        if (mAutoContinue) {
+            onContinue();
+        }
+    }
+
+    private void onContinue() {
+        if (mQueue != null) {
+            if ((mQueue.hasNext() || mQueue.getNextQueue() != null) && mMediaSessionCallback != null) {
+                if (mAutoContinue) {
+                    if (mPlayback.getTiming() != null)
+                        mPlayback.temporaryStop();
+                    mMediaSessionCallback.onSkipToNext();
+                }
+            } else {
+                mQueue = null;
+                mServiceCallback.onQueue(null);
+                handleStopRequest(null);
+            }
+        } else {
+            // If skipping was not possible, we stop and release the resources:
+            handleStopRequest(null);
+        }
     }
 
     public MediaSessionCompat.Callback getMediaSessionCallback() {
@@ -246,19 +277,10 @@ public class PlaybackManager implements Playback.Callback {
     @Override
     public void onCompletion() {
         mServiceCallback.onCompletion();
-        if (mQueue != null) {
-            if ((mQueue.hasNext() || mQueue.getNextQueue() != null) && mMediaSessionCallback != null) {
-                if (mPlayback.getTiming() != null)
-                    mPlayback.temporaryStop();
-                mMediaSessionCallback.onSkipToNext();
-            } else {
-                mQueue = null;
-                mServiceCallback.onQueue(null);
-                handleStopRequest(null);
-            }
+        if (mAutoContinue) {
+            onContinue();
         } else {
-            // If skipping was not possible, we stop and release the resources:
-            handleStopRequest(null);
+            mPlayback.temporaryStop();
         }
     }
 
@@ -607,6 +629,10 @@ public class PlaybackManager implements Playback.Callback {
                         mHandler.sendEmptyMessageDelayed(TIMER_COUNTDOWN, ONE_SECOND);
                     mServiceCallback.onTimerCount(mTimer);
                     break;
+                case MediaService.ACTION_SET_AUTO_CONTINUE:
+                    final boolean autoContinue = extras.getBoolean(MediaService.EXTRA_AUTO_CONTINUE);
+                    mServiceCallback.onAutoContinueSet(autoContinue);
+                    break;
                 default:
                     break;
             }
@@ -625,6 +651,8 @@ public class PlaybackManager implements Playback.Callback {
         void onQueue(Queue queue);
 
         void onSpeedSet(float speed);
+
+        void onAutoContinueSet(boolean autoContinue);
 
         void onPlaybackPrepare(MediaId mediaId);
 

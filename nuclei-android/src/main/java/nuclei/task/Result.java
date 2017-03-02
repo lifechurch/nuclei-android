@@ -78,11 +78,13 @@ public class Result<T> {
      * @return The result
      */
     public T get() {
-        if (!mDataSet)
-            throw new IllegalStateException("Result Not Ready");
-        if (mException != null)
-            throw new RuntimeException(mException);
-        return mData;
+        synchronized (this) {
+            if (!mDataSet)
+                throw new IllegalStateException("Result Not Ready");
+            if (mException != null)
+                throw new RuntimeException(mException);
+            return mData;
+        }
     }
 
     /**

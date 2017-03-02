@@ -182,8 +182,8 @@ public class MediaInterface implements Destroyable {
             mMediaControls.registerCallback(mMediaCallback);
 
             if (mFragmentActivity != null) {
-                //MediaControllerCompat.setMediaController(mFragmentActivity, mMediaControls);
-                mFragmentActivity.setSupportMediaController(mMediaControls);
+                MediaControllerCompat.setMediaController(mFragmentActivity, mMediaControls);
+                //mFragmentActivity.setSupportMediaController(mMediaControls);
             } else if (mLActivity != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
                 setMediaControllerL();
 
@@ -292,6 +292,24 @@ public class MediaInterface implements Destroyable {
             if (duration > 0)
                 mCallbacks.setTimeTotal(this, duration);
         }
+    }
+
+    public void setSpeed(float speed) {
+        Bundle args = new Bundle();
+        args.putFloat(MediaService.EXTRA_SPEED, speed);
+        mMediaControls.getTransportControls().sendCustomAction(MediaService.ACTION_SET_SPEED, args);
+    }
+
+    public void setTimer(long timer) {
+        Bundle args = new Bundle();
+        args.putLong(MediaService.EXTRA_TIMER, timer);
+        mMediaControls.getTransportControls().sendCustomAction(MediaService.ACTION_SET_TIMER, args);
+    }
+
+    public void setAutoContinue(boolean autoContinue) {
+        Bundle args = new Bundle();
+        args.putBoolean(MediaService.EXTRA_AUTO_CONTINUE, autoContinue);
+        mMediaControls.getTransportControls().sendCustomAction(MediaService.ACTION_SET_AUTO_CONTINUE, args);
     }
 
     public interface MediaInterfaceCallback {

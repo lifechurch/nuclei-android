@@ -22,7 +22,6 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -55,6 +54,7 @@ public class MediaService extends MediaBrowserServiceCompat implements
     static final Log LOG = Logs.newLog(MediaService.class);
 
     public static final String EVENT_TIMER = "nuclei.TIMER_CHANGE.";
+    public static final String EVENT_AUTO_CONTINUE = "nuclei.AUTO_CONTINUE.";
     public static final String EVENT_SPEED = "nuclei.SPEED_CHANGE.";
     public static final String EVENT_CAST = "nuclei.CAST.";
 
@@ -65,10 +65,12 @@ public class MediaService extends MediaBrowserServiceCompat implements
     public static final String EXTRA_SURFACE = "nuclei.SURFACE";
     public static final String EXTRA_SPEED = "nuclei.SPEED";
     public static final String EXTRA_TIMER = "nuclei.TIMER";
+    public static final String EXTRA_AUTO_CONTINUE = "nuclei.AUTO_CONTINUE";
 
     public static final String ACTION_SET_SURFACE = "nuclei.ACTION_SET_SURFACE";
     public static final String ACTION_SET_SPEED = "nuclei.ACTION_SET_SPEED";
     public static final String ACTION_SET_TIMER = "nuclei.ACTION_SET_TIMER";
+    public static final String ACTION_SET_AUTO_CONTINUE = "nuclei.ACTION_SET_AUTO_CONTINUE";
 
     // The action of the incoming Intent indicating that it contains a command
     // to be executed (see {@link #onStartCommand})
@@ -288,6 +290,14 @@ public class MediaService extends MediaBrowserServiceCompat implements
     }
 
     @Override
+    public void onAutoContinueSet(boolean autoContinue) {
+        mPlaybackManager.setAutoContinue(autoContinue);
+        mSessionExtras.putBoolean(EXTRA_AUTO_CONTINUE, autoContinue);
+        mSession.setExtras(mSessionExtras);
+        mSession.sendSessionEvent(createAutoContinueEvent(autoContinue), Bundle.EMPTY);
+    }
+
+    @Override
     public void onPlaybackPrepare(final MediaId id) {
     }
 
@@ -459,6 +469,14 @@ public class MediaService extends MediaBrowserServiceCompat implements
     }
 
     // KJB: NOTE: As of writing this not all platforms will receive bundle data, so, we fake it
+    public static String createAutoContinueEvent(boolean autoContinue) {
+        return EVENT_AUTO_CONTINUE + autoContinue;
+    }
+
+    public static boolean getAutoContinueFromEvent(String eventName) {
+        return Boolean.valueOf(eventName.substring(EVENT_AUTO_CONTINUE.length()));
+    }
+
     public static String createTimerEvent(long timer) {
         return EVENT_TIMER + timer;
     }

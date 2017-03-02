@@ -204,11 +204,7 @@ public class PlayerControlsView extends FrameLayout {
                     final float speed = ResourceProvider.getInstance().getSpeed(text);
                     MediaProvider.getInstance().setAudioSpeed(speed);
                     if (mMediaInterface != null) {
-                        Bundle args = new Bundle();
-                        args.putFloat(MediaService.EXTRA_SPEED, speed);
-                        mMediaInterface.getMediaController()
-                                .getTransportControls()
-                                .sendCustomAction(MediaService.ACTION_SET_SPEED, args);
+                        mMediaInterface.setSpeed(speed);
                     }
                 }
                 menu.dismiss();
@@ -271,10 +267,7 @@ public class PlayerControlsView extends FrameLayout {
                         break;
                 }
                 if (mMediaInterface != null) {
-                    Bundle args = new Bundle();
-                    args.putLong(MediaService.EXTRA_TIMER, timer);
-                    mMediaInterface.getMediaController()
-                            .getTransportControls().sendCustomAction(MediaService.ACTION_SET_TIMER, args);
+                    mMediaInterface.setTimer(timer);
                 }
                 menu.dismiss();
                 menu.setOnItemClickListener(null);

@@ -17,11 +17,9 @@ package nuclei.task.http;
 
 import android.app.Application;
 import android.support.annotation.VisibleForTesting;
-import android.util.Log;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -32,7 +30,6 @@ import nuclei.task.cache.SimpleCache;
 import nuclei.task.Task;
 import nuclei.task.TaskPool;
 import okhttp3.OkHttpClient;
-import okhttp3.OkUrlFactory;
 
 /**
  * Utility Class to handle setup and management of a single OkHttpClient instance and
@@ -45,7 +42,6 @@ public final class Http {
     private static final long MAX_CACHE_SIZE = 10 * 1024 * 1024;
     private static OkHttpClient sClient;
     static SimpleCache sCache;
-    private static OkUrlFactory sUrlFactory;
     private static TaskPool sHttpPool;
 
     private Http() {
@@ -67,15 +63,8 @@ public final class Http {
         OkHttpClient client = new OkHttpClient.Builder()
                 .cache(new okhttp3.Cache(new File(application.getCacheDir(), "neuron-http"), MAX_CACHE_SIZE))
                 .build();
-        OkUrlFactory factory = new OkUrlFactory(client);
-        try {
-            URL.setURLStreamHandlerFactory(factory);
-        } catch (Throwable err) {
-            if (!"factory already defined".equals(err.getMessage()))
-                LOG.i("Error setting stream handler", err);
-        }
         SimpleCache cache = new SimpleCache(new File(application.getCacheDir(), "neuron-object"), MAX_CACHE_SIZE);
-        initialize(application, client, cache, factory, builder);
+        initialize(application, client, cache, builder);
     }
 
     /**
@@ -84,12 +73,10 @@ public final class Http {
     public static void initialize(Application application,
                                   OkHttpClient client,
                                   SimpleCache cache,
-                                  OkUrlFactory factory,
                                   HttpPoolBuilder builder) {
         if (sHttpPool != null)
             throw new IllegalStateException("Already initialized");
         sClient = client;
-        sUrlFactory = factory;
         sHttpPool = builder == null ? TaskPool.newBuilder(TaskPool.HTTP_POOL).build() : builder.build();
         sCache = cache;
     }
@@ -100,7 +87,6 @@ public final class Http {
             sHttpPool.shutdown();
         sHttpPool = null;
         sClient = null;
-        sUrlFactory = null;
         if (sCache != null)
             try {
                 sCache.flush();
@@ -118,11 +104,6 @@ public final class Http {
      */
     public static OkHttpClient getClient() {
         return sClient;
-    }
-
-    @Deprecated
-    public static OkUrlFactory getUrlFactory() {
-        return sUrlFactory;
     }
 
     /**
