@@ -65,6 +65,7 @@ public class PlaybackManager implements Playback.Callback {
     final PlaybackHandler mHandler = new PlaybackHandler(this);
     Queue mQueue;
     boolean mAutoContinue;
+    boolean mPendingAutoContinue;
 
     public PlaybackManager(PlaybackServiceCallback serviceCallback, Playback playback) {
         mServiceCallback = serviceCallback;
@@ -84,12 +85,13 @@ public class PlaybackManager implements Playback.Callback {
 
     public void setAutoContinue(boolean autoContinue) {
         mAutoContinue = autoContinue;
-        if (mAutoContinue) {
+        if (mAutoContinue && mPendingAutoContinue) {
             onContinue();
         }
     }
 
     private void onContinue() {
+        mPendingAutoContinue = false;
         if (mQueue != null) {
             if ((mQueue.hasNext() || mQueue.getNextQueue() != null) && mMediaSessionCallback != null) {
                 if (mAutoContinue) {
@@ -113,6 +115,7 @@ public class PlaybackManager implements Playback.Callback {
     }
 
     public void handlePrepareRequest() {
+        mPendingAutoContinue = false;
         if (mMediaMetadata != null) {
             final MediaId id = MediaProvider.getInstance().getMediaId(mMediaMetadata.getDescription().getMediaId());
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -137,6 +140,7 @@ public class PlaybackManager implements Playback.Callback {
     }
 
     public void handlePlayRequest() {
+        mPendingAutoContinue = false;
         if (mMediaMetadata != null) {
             final MediaId id = MediaProvider.getInstance().getMediaId(mMediaMetadata.getDescription().getMediaId());
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -170,6 +174,7 @@ public class PlaybackManager implements Playback.Callback {
     }
 
     public void handlePauseRequest() {
+        mPendingAutoContinue = false;
         if (mPlayback.isPlaying()) {
             mPlayback.pause();
             final MediaId mediaId = mPlayback.getCurrentMediaId();
@@ -178,6 +183,7 @@ public class PlaybackManager implements Playback.Callback {
     }
 
     public void handleStopRequest(Exception withError) {
+        mPendingAutoContinue = false;
         mPlayback.stop(true);
         final MediaId mediaId = mPlayback.getCurrentMediaId();
         mServiceCallback.onPlaybackStop(mediaId);
@@ -280,6 +286,7 @@ public class PlaybackManager implements Playback.Callback {
         if (mAutoContinue) {
             onContinue();
         } else {
+            mPendingAutoContinue = true;
             mPlayback.temporaryStop();
         }
     }

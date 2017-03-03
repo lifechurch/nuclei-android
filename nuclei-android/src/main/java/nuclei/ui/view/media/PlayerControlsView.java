@@ -19,11 +19,9 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.os.Build;
-import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
-import android.support.v4.media.session.MediaControllerCompat;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -40,7 +38,6 @@ import io.nuclei.R;
 import nuclei.media.MediaId;
 import nuclei.media.MediaInterface;
 import nuclei.media.MediaProvider;
-import nuclei.media.MediaService;
 import nuclei.media.ResourceProvider;
 import nuclei.media.playback.PlaybackManager;
 import nuclei.ui.util.ViewUtil;
@@ -130,16 +127,15 @@ public class PlayerControlsView extends FrameLayout {
                     } else if (v.getId() == R.id.btn_timer) {
                         onTimerSelected(v);
                     } else if (mMediaInterface.getMediaController() != null) {
-                        MediaControllerCompat.TransportControls controls = mMediaInterface.getMediaController().getTransportControls();
-                        if (controls != null) {
+                        if (mMediaInterface.getPlayerController() != null) {
                             if (v.getId() == R.id.btn_previous)
-                                controls.skipToPrevious();
+                                mMediaInterface.getPlayerController().skipToPrevious();
                             else if (v.getId() == R.id.btn_next)
-                                controls.skipToNext();
+                                mMediaInterface.getPlayerController().skipToNext();
                             else if (v.getId() == R.id.btn_rewind)
-                                controls.rewind();
+                                mMediaInterface.getPlayerController().rewind();
                             else if (v.getId() == R.id.btn_fastforward)
-                                controls.fastForward();
+                                mMediaInterface.getPlayerController().fastForward();
                         }
                     }
                 }

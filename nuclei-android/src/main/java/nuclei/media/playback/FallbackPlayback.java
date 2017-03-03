@@ -30,8 +30,6 @@ import android.support.v4.media.session.PlaybackStateCompat;
 import android.text.TextUtils;
 import android.view.Surface;
 
-import java.io.IOException;
-
 import nuclei.logs.Log;
 import nuclei.logs.Logs;
 import nuclei.media.MediaId;
@@ -287,10 +285,8 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
 
     @Override
     protected void internalSeekTo(long position) {
-        if (!mPrepared || mMediaPlayer == null) {
-            // If we do not have a current media player, simply update the current position
-            mCurrentPosition = position;
-        } else {
+        mCurrentPosition = position;
+        if (mPrepared && mMediaPlayer != null) {
             if (mMediaPlayer.isPlaying()) {
                 mState = PlaybackStateCompat.STATE_BUFFERING;
             }

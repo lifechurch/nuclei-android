@@ -340,9 +340,8 @@ public class ExoPlayerPlayback extends BasePlayback
     protected void internalSeekTo(long position) {
         if (LOG.isLoggable(Log.INFO))
             LOG.d("internalSeekTo");
+        mCurrentPosition = position;
         if (mMediaPlayer == null) {
-            // If we do not have a current media player, simply update the current position
-            mCurrentPosition = position;
             if (mCallback != null) {
                 mCallback.onPlaybackStatusChanged(mState);
             }

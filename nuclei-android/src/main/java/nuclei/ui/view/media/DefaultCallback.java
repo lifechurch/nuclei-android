@@ -2,6 +2,7 @@ package nuclei.ui.view.media;
 
 import android.graphics.PorterDuff;
 import android.support.v4.media.MediaMetadataCompat;
+import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.view.View;
 import android.widget.ImageView;
@@ -65,11 +66,21 @@ public class DefaultCallback implements MediaInterface.MediaInterfaceCallback {
     boolean mDragging;
     final SeekBar.OnSeekBarChangeListener mSeekListener = new SeekBar.OnSeekBarChangeListener() {
 
+        int mNextPosition;
+        boolean mWasPlaying;
+
         @Override
         public void onStartTrackingTouch(SeekBar bar) {
             mDragging = true;
             if (mHandler != null)
                 mHandler.stop();
+            if (mView != null && mView.mMediaInterface != null) {
+                MediaPlayerController controller = mView.mMediaInterface.getPlayerController();
+                if (controller != null) {
+                    mWasPlaying = controller.isPlaying();
+                    controller.pause();
+                }
+            }
         }
 
         @Override
@@ -77,19 +88,28 @@ public class DefaultCallback implements MediaInterface.MediaInterfaceCallback {
             if (!fromuser) {
                 return;
             }
-            if (mView == null || mView.mMediaInterface == null)
-                return;
-            MediaInterface mediaInterface = mView.mMediaInterface;
-            MediaPlayerController controller = mediaInterface.getPlayerController();
-            long duration = controller.getDuration();
-            long newPosition = (duration * progress) / PlaybackManager.ONE_SECOND;
-            controller.seekTo((int) newPosition);
-            newPosition = PlaybackManager.ONE_SECOND * newPosition / duration;
-            setPosition(mediaInterface, MediaInterface.ProgressHandler.MAX_PROGRESS, newPosition, -1);
+            mNextPosition = progress;
         }
 
         @Override
         public void onStopTrackingTouch(SeekBar bar) {
+            if (mView != null && mView.mMediaInterface != null && mNextPosition > 0) {
+                MediaInterface mediaInterface = mView.mMediaInterface;
+                MediaPlayerController controller = mediaInterface.getPlayerController();
+                if (controller != null) {
+                    long duration = controller.getDuration();
+                    long newPosition = (duration * mNextPosition) / PlaybackManager.ONE_SECOND;
+                    controller.seekTo((int) newPosition);
+                }
+                mNextPosition = -1;
+            }
+            if (mWasPlaying && mView != null && mView.mMediaInterface != null) {
+                MediaInterface mediaInterface = mView.mMediaInterface;
+                MediaPlayerController controller = mediaInterface.getPlayerController();
+                if (controller != null)
+                    controller.start();
+                mWasPlaying = false;
+            }
             mDragging = false;
             if (mHandler != null)
                 mHandler.start();
@@ -107,6 +127,36 @@ public class DefaultCallback implements MediaInterface.MediaInterfaceCallback {
         if (mHandler == null)
             mHandler = new MediaInterface.ProgressHandler(mediaInterface);
         mHandler.start();
+    }
+
+    @Override
+    public boolean onPlay(String currentMediaId, String id, MediaPlayerController controller, MediaControllerCompat.TransportControls controls) {
+        return false;
+    }
+
+    @Override
+    public boolean onPause(MediaPlayerController controller, MediaControllerCompat.TransportControls controls) {
+        return false;
+    }
+
+    @Override
+    public boolean onSkipNext(MediaPlayerController controller, MediaControllerCompat.TransportControls controls) {
+        return false;
+    }
+
+    @Override
+    public boolean onSkipPrevious(MediaPlayerController controller, MediaControllerCompat.TransportControls controls) {
+        return false;
+    }
+
+    @Override
+    public boolean onFastForward(MediaPlayerController controller, MediaControllerCompat.TransportControls controls) {
+        return false;
+    }
+
+    @Override
+    public boolean onRewind(MediaPlayerController controller, MediaControllerCompat.TransportControls controls) {
+        return false;
     }
 
     @Override
@@ -211,7 +261,7 @@ public class DefaultCallback implements MediaInterface.MediaInterfaceCallback {
 
     @Override
     public void setPosition(nuclei.media.MediaInterface mediaInterface, long max, long position, long secondaryPosition) {
-        if (seekBar != null) {
+        if (seekBar != null && !mDragging) {
             seekBar.setMax((int) max);
             seekBar.setProgress((int) position);
             if (secondaryPosition != -1)

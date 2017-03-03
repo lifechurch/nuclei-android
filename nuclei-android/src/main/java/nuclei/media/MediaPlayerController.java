@@ -15,7 +15,6 @@
  */
 package nuclei.media;
 
-import android.os.Build;
 import android.os.SystemClock;
 import android.support.annotation.Nullable;
 import android.support.v4.media.MediaDescriptionCompat;
@@ -35,7 +34,6 @@ public class MediaPlayerController implements MediaController.MediaPlayerControl
     private MediaInterface.MediaInterfaceCallback mCallbacks;
     private MediaControllerCompat mMediaControls;
     private boolean mStartWhenReady;
-
 
     public MediaPlayerController(MediaId mediaId) {
         mMediaId = mediaId;
@@ -69,6 +67,38 @@ public class MediaPlayerController implements MediaController.MediaPlayerControl
         return isEquals(mMediaControls, mMediaId);
     }
 
+    public void skipToNext() {
+        if (mCallbacks != null && mMediaControls != null
+                    && mCallbacks.onSkipNext(this,  mMediaControls.getTransportControls()))
+            return;
+        if (mMediaControls != null)
+            mMediaControls.getTransportControls().skipToNext();
+    }
+
+    public void skipToPrevious() {
+        if (mCallbacks != null && mMediaControls != null
+                && mCallbacks.onSkipPrevious(this, mMediaControls.getTransportControls()))
+            return;
+        if (mMediaControls != null)
+            mMediaControls.getTransportControls().skipToPrevious();
+    }
+
+    public void fastForward() {
+        if (mCallbacks != null && mMediaControls != null
+                    && mCallbacks.onFastForward(this, mMediaControls.getTransportControls()))
+            return;
+        if (mMediaControls != null)
+            mMediaControls.getTransportControls().fastForward();
+    }
+
+    public void rewind() {
+        if (mCallbacks != null && mMediaControls != null
+                && mCallbacks.onRewind(this, mMediaControls.getTransportControls()))
+            return;
+        if (mMediaControls != null)
+            mMediaControls.getTransportControls().rewind();
+    }
+
     @Override
     public void start() {
         if (mMediaId == null)
@@ -86,6 +116,10 @@ public class MediaPlayerController implements MediaController.MediaPlayerControl
                 }
             }
             final String id = mMediaId.toString();
+            if (mCallbacks != null && mCallbacks.onPlay(currentMediaId, id, this, mMediaControls.getTransportControls()))
+                return;
+            if (mCallbacks != null)
+                mCallbacks.onPlaying(this);
             if (currentMediaId != null && currentMediaId.equals(id)
                     && mMediaControls.getPlaybackState().getState() == PlaybackStateCompat.STATE_PAUSED) {
                 mMediaControls.getTransportControls().play();
@@ -99,10 +133,14 @@ public class MediaPlayerController implements MediaController.MediaPlayerControl
 
     @Override
     public void pause() {
-        if (mCallbacks != null)
-            mCallbacks.onPaused(this);
-        if (mMediaControls != null)
+        if (mCallbacks != null && mMediaControls != null
+                && mCallbacks.onPause(this, mMediaControls.getTransportControls()))
+            return;
+        if (mMediaControls != null) {
+            if (mCallbacks != null)
+                mCallbacks.onPaused(this);
             mMediaControls.getTransportControls().pause();
+        }
     }
 
     @Override
