@@ -79,8 +79,10 @@ public abstract class Task<T> implements Runnable {
                     if (!resultSet)
                         throw new IllegalStateException("onComplete and onException not called, one is required");
                 } catch (Exception err) {
+                    LOG.e("unhandled exception", err);
                     onException(err);
                 } catch (Throwable err) {
+                    LOG.e("unhandled throwable", err);
                     onException(new Exception(err));
                 }
             } else {
