@@ -24,9 +24,11 @@ import android.support.v4.util.Pools;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -62,6 +64,12 @@ public final class TaskPool implements Handler.Callback {
 
     static final Map<String, TaskPool> TASK_POOLS = new ConcurrentHashMap<>();
 
+    static TaskPoolListener LISTENER;
+
+    public static void setListener(TaskPoolListener listener) {
+        LISTENER = listener;
+    }
+
     private final Pools.SimplePool<TaskRunnable> taskRunnablePool;
     final Pools.SimplePool<Queue<TaskRunnable>> taskQueues;
     final Handler handler;
@@ -69,6 +77,8 @@ public final class TaskPool implements Handler.Callback {
 
     private final String name;
     final List<TaskInterceptor> interceptors;
+
+    private TaskListener listener;
 
     TaskPool(Looper mainLooper, final String name, int maxThreads, List<TaskInterceptor> interceptors) {
         this.name = name;
@@ -87,10 +97,17 @@ public final class TaskPool implements Handler.Callback {
                 return new Thread(r, name + " #" + mCount.incrementAndGet());
             }
         });
+
+        if (LISTENER != null)
+            LISTENER.onCreated(this);
     }
 
     public String getName() {
         return name;
+    }
+
+    public void setListener(TaskListener listener) {
+        this.listener = listener;
     }
 
     public static int getAllRunningCount() {
@@ -107,6 +124,18 @@ public final class TaskPool implements Handler.Callback {
             count += pool.getPendingCount();
         }
         return count;
+    }
+
+    public static void setAllListener(TaskListener listener) {
+        for (TaskPool pool : TASK_POOLS.values()) {
+            pool.setListener(listener);
+        }
+    }
+
+    public Set<String> getRunningIds() {
+        synchronized (runningIds) {
+            return new HashSet<>(runningIds.keySet());
+        }
     }
 
     public int getRunningCount() {
@@ -235,11 +264,15 @@ public final class TaskPool implements Handler.Callback {
     public void shutdown() {
         poolExecutor.shutdown();
         TASK_POOLS.remove(name);
+        if (LISTENER != null)
+            LISTENER.onShutdown(this);
     }
 
     public void shutdownNow() {
         poolExecutor.shutdownNow();
         TASK_POOLS.remove(name);
+        if (LISTENER != null)
+            LISTENER.onShutdown(this);
     }
 
     public static Builder newBuilder(String name) {
@@ -363,6 +396,8 @@ public final class TaskPool implements Handler.Callback {
                     return;
                 }
                 runningIds.put(taskId, task);
+                if (listener != null)
+                    listener.onStart(task);
             }
             long start = System.currentTimeMillis();
             if (interceptors != null) {
@@ -371,9 +406,19 @@ public final class TaskPool implements Handler.Callback {
                     if (intercepted != task) {
                         if (intercepted != null) {
                             task.onIntercepted(intercepted);
+                            Task oldTask = task;
                             task = intercepted;
+                            synchronized (runningIds) {
+                                runningIds.put(taskId, task);
+                                if (listener != null)
+                                    listener.onIntercepted(oldTask, task);
+                            }
                         } else {
                             task.onDiscarded(this);
+                            synchronized (runningIds) {
+                                if (listener != null)
+                                    listener.onDiscard(task);
+                            }
                             task = null;
                             break;
                         }
@@ -381,7 +426,14 @@ public final class TaskPool implements Handler.Callback {
                 }
             }
             if (task != null) {
-                task.run();
+                try {
+                    task.run();
+                } finally {
+                    synchronized (runningIds) {
+                        if (listener != null)
+                            listener.onFinish(task);
+                    }
+                }
                 if (LOG.isLoggable(Log.INFO)) {
                     LOG.i("Took " + (System.currentTimeMillis() - start)
                             + "ms to run, " + (System.currentTimeMillis() - this.start) + "ms total to execute (" + logKey + ")");
