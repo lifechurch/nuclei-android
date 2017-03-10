@@ -64,7 +64,7 @@ public class PlaybackManager implements Playback.Callback {
     long mTimer = -1;
     final PlaybackHandler mHandler = new PlaybackHandler(this);
     Queue mQueue;
-    boolean mAutoContinue;
+    boolean mAutoContinue = true;
     boolean mPendingAutoContinue;
 
     public PlaybackManager(PlaybackServiceCallback serviceCallback, Playback playback) {
