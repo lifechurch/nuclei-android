@@ -20,7 +20,6 @@ public class PlaybackFactory {
         return INSTANCE.onCreateCastPlayback(service);
     }
 
-
     protected Playback onCreateCastPlayback(MediaService service) {
         return new CastPlayback();
     }

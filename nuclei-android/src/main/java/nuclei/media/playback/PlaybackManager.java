@@ -214,12 +214,13 @@ public class PlaybackManager implements Playback.Callback {
         if (error != null) {
             mHandler.removeMessages(TIMER_COUNTDOWN);
             mHandler.removeMessages(TIMER_TIMING);
+            int errorCode = ResourceProvider.getInstance().getExceptionCode(error);
             String message = ResourceProvider.getInstance().getExceptionMessage(error);
             if (message == null)
                 message = error.getMessage();
             // Error states are really only supposed to be used for errors that cause playback to
             // stop unexpectedly and persist until the user takes action to fix it.
-            stateBuilder.setErrorMessage(message);
+            stateBuilder.setErrorMessage(errorCode, message);
             state = PlaybackStateCompat.STATE_ERROR;
             if (mPlayback != null) {
                 int lastState = state;
