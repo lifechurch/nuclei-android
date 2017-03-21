@@ -323,6 +323,8 @@ public class MediaInterface implements Destroyable {
         boolean onFastForward(MediaPlayerController controller, MediaControllerCompat.TransportControls controls);
         boolean onRewind(MediaPlayerController controller, MediaControllerCompat.TransportControls controls);
 
+        int getNextPosition(int nextPosition);
+
         void onLoading(MediaPlayerController controller);
 
         void onLoaded(MediaPlayerController controller);
