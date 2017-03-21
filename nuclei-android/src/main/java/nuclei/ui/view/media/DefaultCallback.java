@@ -97,10 +97,10 @@ public class DefaultCallback implements MediaInterface.MediaInterfaceCallback {
                 MediaInterface mediaInterface = mView.mMediaInterface;
                 MediaPlayerController controller = mediaInterface.getPlayerController();
                 if (controller != null) {
-                    int nextPosition = getNextPosition(mNextPosition);
                     long duration = controller.getDuration();
-                    long newPosition = (duration * nextPosition) / PlaybackManager.ONE_SECOND;
-                    controller.seekTo((int) newPosition);
+                    long nextPosition = (duration * mNextPosition) / PlaybackManager.ONE_SECOND;
+                    nextPosition = getNextPosition(nextPosition);
+                    controller.seekTo((int) nextPosition);
                 }
                 mNextPosition = -1;
             }
@@ -131,7 +131,7 @@ public class DefaultCallback implements MediaInterface.MediaInterfaceCallback {
     }
 
     @Override
-    public int getNextPosition(int nextPosition) {
+    public long getNextPosition(long nextPosition) {
         return nextPosition;
     }
 
