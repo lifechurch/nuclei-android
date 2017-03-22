@@ -20,6 +20,7 @@ import nuclei.notifications.persistence.Persistence;
 import nuclei.persistence.PersistenceList;
 import nuclei.persistence.Query;
 import nuclei.task.TaskScheduler;
+import nuclei.task.Tasks;
 
 public abstract class NotificationManager {
 
@@ -209,12 +210,16 @@ public abstract class NotificationManager {
     }
 
     private void rebuild() {
-        TaskScheduler.Builder builder = TaskScheduler.newBuilder(new NotificationTask(), TaskScheduler.TASK_ONE_OFF);
-        onPrepareTaskScheduler(builder);
-        builder.setUpdateCurrent(true)
-                .setPersisted(true)
-                .build()
-                .schedule(CONTEXT);
+        if (TaskScheduler.supportsScheduling()) {
+            TaskScheduler.Builder builder = TaskScheduler.newBuilder(new NotificationTask(), TaskScheduler.TASK_ONE_OFF);
+            onPrepareTaskScheduler(builder);
+            builder.setUpdateCurrent(true)
+                    .setPersisted(true)
+                    .build()
+                    .schedule(CONTEXT);
+        } else {
+            Tasks.executeNow(new NotificationTask());
+        }
     }
 
     public void show() {
