@@ -46,6 +46,16 @@
             </intent-filter>
         </receiver>
 
+        <service android:name="nuclei.notifications.NotificationIntentService" />
+        <provider
+            android:name="nuclei.notifications.providers.NucleiContentProvider"
+            android:authorities="nuclei"
+            android:enabled="true"
+            android:exported="false"
+            android:syncable="false">
+            <grant-uri-permission android:pathPattern=".*"/>
+        </provider>
+
     </application>
 
 </manifest>

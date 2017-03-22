@@ -326,13 +326,9 @@ public final class TaskScheduler {
             return this;
         }
 
-        public Builder setWindowStartDelaySeconds(long windowStartDelaySeconds) {
+        public Builder setWindowDelay(long windowStartDelaySeconds, long windowEndDelaySeconds) {
             mWindowStartDelaySeconds = windowStartDelaySeconds;
             mWindowStartDelaySecondsSet = true;
-            return this;
-        }
-
-        public Builder setWindowEndDelaySeconds(long windowEndDelaySeconds) {
             mWindowEndDelaySeconds = windowEndDelaySeconds;
             mWindowEndDelaySecondsSet = true;
             return this;

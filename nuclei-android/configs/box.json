@@ -1,0 +1,63 @@
+{
+  "defaultPackage": "nuclei.notifications",
+  "authority": "nuclei",
+  "databaseName": "nuclei.box.db",
+  "type": "db",
+  "versions": [
+    {
+      "entities": [
+        {
+          "name": "NotificationMessage",
+          "render": false,
+          "properties": [
+            { "name": "id", "type": "INTEGER" },
+            { "name": "tag", "type": "TEXT" },
+            { "name": "url", "type": "TEXT" },
+            { "name": "groupKey", "type": "TEXT" },
+            { "name": "sortOrder", "type": "INTEGER" }
+          ],
+          "queries": {
+            "select": [
+              { "id": "ByGroup", "selection": "groupKey = ?", "orderBy": "sortOrder asc" },
+              { "id": "All", "selection": null, "orderBy": "groupKey, sortOrder asc" },
+              { "id": "ByClientId", "selection": "_id = ?" }
+            ],
+            "update": [
+              { "id": "ByClientId", "selection": "_id = ?" }
+            ],
+            "delete": [
+              { "id": "All", "selection": null },
+              { "id": "ByClientId", "selection": "_id = ?" }
+            ]
+          }
+        },
+        {
+          "name": "NotificationData",
+          "render": true,
+          "properties": [
+            { "name": "messageClientId", "type": "LONG" },
+            { "name": "dataKey", "type": "TEXT" },
+            { "name": "valInt", "type": "INTEGER", "nullable": true },
+            { "name": "valLong", "type": "LONG", "nullable": true },
+            { "name": "valDouble", "type": "DOUBLE", "nullable": true },
+            { "name": "valBoolean", "type": "BOOLEAN", "nullable": true },
+            { "name": "valString", "type": "TEXT", "nullable": true }
+          ],
+          "queries": {
+            "select": [
+              { "id": "ByMessageId", "selection": "messageClientId = ?" },
+              { "id": "ByClientId", "selection": "_id = ?" }
+            ],
+            "update": [
+              { "id": "ByClientId", "selection": "_id = ?" }
+            ],
+            "delete": [
+              { "id": "ByMessageId", "selection": "messageClientId = ?" },
+              { "id": "ByClientId", "selection": "_id = ?" }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

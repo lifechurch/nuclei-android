@@ -75,4 +75,12 @@ public class SelectQueryBuilder<T> extends QueryBuilder<T> {
         return execute(null);
     }
 
+    public PersistenceList<T> executeList(QueryArgs args) {
+        return new PersistenceListImpl<>(query, execute(args));
+    }
+
+    public PersistenceList<T> executeList() {
+        return new PersistenceListImpl<>(query, execute());
+    }
+
 }
