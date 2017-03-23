@@ -22,8 +22,7 @@ public abstract class NotificationBuilder {
         NotificationCompat.WearableExtender extender = new NotificationCompat.WearableExtender();
 
         Intent intent = new Intent(context, NotificationIntentService.class);
-        intent.putExtra(NotificationIntentService.EXTRA_CLEAR_ALL, true);
-        intent.putExtra(NotificationIntentService.EXTRA_GROUP_KEY, group);
+        manager.setCancelAll(intent, group);
         intent.setData(Uri.parse("nuclei://notifications?_g=" + group));
         PendingIntent pendingIntent = PendingIntent.getService(context, getDeleteIntentRequestId(), intent, PendingIntent.FLAG_CANCEL_CURRENT);
 
@@ -49,8 +48,7 @@ public abstract class NotificationBuilder {
         NotificationCompat.WearableExtender extender = new NotificationCompat.WearableExtender();
 
         Intent intent = new Intent(context, NotificationIntentService.class);
-        intent.putExtra(NotificationIntentService.EXTRA_CLEAR_ID, message._id);
-        intent.putExtra(NotificationIntentService.EXTRA_GROUP_KEY, message.groupKey);
+        manager.setCancelMessage(intent, message);
         intent.setData(Uri.parse("nuclei://notifications?_id=" + message._id + "&_g=" + message.groupKey));
         PendingIntent pendingIntent = PendingIntent.getService(context, getDeleteIntentRequestId(), intent, PendingIntent.FLAG_CANCEL_CURRENT);
 

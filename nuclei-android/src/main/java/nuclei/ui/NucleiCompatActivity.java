@@ -29,6 +29,7 @@ import nuclei.intent.IntentBuilderActivity;
 import nuclei.logs.Log;
 import nuclei.logs.Logs;
 import nuclei.logs.Trace;
+import nuclei.notifications.NotificationManager;
 import nuclei.persistence.PersistenceList;
 import nuclei.persistence.PersistenceObserver;
 import nuclei.persistence.Query;
@@ -186,6 +187,10 @@ public abstract class NucleiCompatActivity extends AppCompatActivity implements 
             mTrace = new Trace();
             mTrace.onCreate(getClass());
         }
+
+        NotificationManager manager = NotificationManager.getInstance();
+        if (manager != null)
+            manager.dismiss(getIntent());
     }
 
     protected void trace(String message) {

@@ -186,9 +186,10 @@ public abstract class NucleiActivity extends Activity implements IntentBuilderAc
             mTrace = new Trace();
             mTrace.onCreate(getClass());
         }
+
         NotificationManager manager = NotificationManager.getInstance();
         if (manager != null)
-            manager.autoDismiss(getIntent());
+            manager.dismiss(getIntent());
     }
 
     protected void trace(String message) {

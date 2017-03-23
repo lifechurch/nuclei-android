@@ -19,6 +19,7 @@ import nuclei.notifications.model.NotificationMessage;
 import nuclei.notifications.persistence.Persistence;
 import nuclei.persistence.PersistenceList;
 import nuclei.persistence.Query;
+import nuclei.task.Task;
 import nuclei.task.TaskScheduler;
 import nuclei.task.Tasks;
 
@@ -271,21 +272,82 @@ public abstract class NotificationManager {
         return tag;
     }
 
+    public void setAutoDismiss(Bundle args, String tag, int id) {
+        args.putString(AUTO_DISMISS_TAG, tag);
+        args.putInt(AUTO_DISMISS_ID, id);
+    }
+
+    public void setAutoDismiss(Intent intent, String tag, int id) {
+        intent.putExtra(AUTO_DISMISS_TAG, tag);
+        intent.putExtra(AUTO_DISMISS_ID, id);
+    }
+
     public void setAutoDismiss(Bundle args, String group, NotificationMessage message) {
         if (message == null) {
-            args.putString(AUTO_DISMISS_TAG, getTag(group));
-            args.putInt(AUTO_DISMISS_ID, getId(group));
+            setAutoDismiss(args, getTag(group), getId(group));
         } else {
-            args.putString(AUTO_DISMISS_TAG, getTag(message));
-            args.putInt(AUTO_DISMISS_ID, message.id);
+            setAutoDismiss(args, getTag(message), message.id);
         }
     }
 
-    public void autoDismiss(Intent intent) {
-        if (intent != null && intent.hasExtra(AUTO_DISMISS_TAG) && intent.hasExtra(AUTO_DISMISS_ID)) {
-            final String tag = intent.getStringExtra(AUTO_DISMISS_TAG);
-            final int id = intent.getIntExtra(AUTO_DISMISS_ID, 0);
-            NotificationManagerCompat.from(CONTEXT).cancel(tag, id);
+    public void setAutoDismiss(Intent intent, String group, NotificationMessage message) {
+        if (message == null) {
+            setAutoDismiss(intent, getTag(group), getId(group));
+        } else {
+            setAutoDismiss(intent, getTag(message), message.id);
+        }
+    }
+
+    public void setCancelAll(Intent intent, String group) {
+        intent.putExtra(NotificationIntentService.EXTRA_CLEAR_ALL, true);
+        intent.putExtra(NotificationIntentService.EXTRA_GROUP_KEY, group);
+    }
+
+    public void setCancelMessage(Intent intent, NotificationMessage message) {
+        intent.putExtra(NotificationIntentService.EXTRA_CLEAR_ID, message._id);
+        intent.putExtra(NotificationIntentService.EXTRA_GROUP_KEY, message.groupKey);
+    }
+
+    public void dismiss(Intent intent) {
+        if (intent != null) {
+            if (intent.hasExtra(NotificationIntentService.EXTRA_CLEAR_ID)) {
+                final long clearId = intent.getLongExtra(NotificationIntentService.EXTRA_CLEAR_ID, -1);
+                if (clearId > -1)
+                    Tasks.execute(new Task<Object>() {
+                        @Override
+                        public String getId() {
+                            return "auto-dismiss";
+                        }
+
+                        @Override
+                        public void run(Context context) {
+                            NotificationMessage message = NotificationManager.getInstance().getMessage(clearId);
+                            NotificationManager.getInstance().removeMessage(message);
+                            onComplete();
+                        }
+                    });
+            } else if (intent.hasExtra(NotificationIntentService.EXTRA_CLEAR_ALL)) {
+                final String groupKey = intent.hasExtra(NotificationIntentService.EXTRA_GROUP_KEY)
+                        ? intent.getStringExtra(NotificationIntentService.EXTRA_GROUP_KEY)
+                        : "";
+                Tasks.execute(new Task<Object>() {
+                    @Override
+                    public String getId() {
+                        return "auto-dismiss";
+                    }
+
+                    @Override
+                    public void run(Context context) {
+                        NotificationManager.getInstance().removeMessages(groupKey);
+                        onComplete();
+                    }
+                });
+            }
+            if (intent.hasExtra(AUTO_DISMISS_TAG) && intent.hasExtra(AUTO_DISMISS_ID)) {
+                final String tag = intent.getStringExtra(AUTO_DISMISS_TAG);
+                final int id = intent.getIntExtra(AUTO_DISMISS_ID, 0);
+                NotificationManagerCompat.from(CONTEXT).cancel(tag, id);
+            }
         }
     }
 
