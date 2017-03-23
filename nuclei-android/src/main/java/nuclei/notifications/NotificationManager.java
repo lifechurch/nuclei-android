@@ -27,6 +27,9 @@ public abstract class NotificationManager {
     private static Context CONTEXT;
     private static NotificationManager INSTANCE;
 
+    static final String AUTO_DISMISS_TAG = "_nuclei_auto_dismiss_tag_";
+    static final String AUTO_DISMISS_ID = "_nuclei_auto_dismiss_id_";
+
     public static void initialize(Context context, NotificationManager instance) {
         CONTEXT = context.getApplicationContext();
         INSTANCE = instance;
@@ -266,6 +269,24 @@ public abstract class NotificationManager {
         if (message.id == 0)
             tag += "_" + message._id;
         return tag;
+    }
+
+    public void setAutoDismiss(Bundle args, String group, NotificationMessage message) {
+        if (message == null) {
+            args.putString(AUTO_DISMISS_TAG, getTag(group));
+            args.putInt(AUTO_DISMISS_ID, getId(group));
+        } else {
+            args.putString(AUTO_DISMISS_TAG, getTag(message));
+            args.putInt(AUTO_DISMISS_ID, message.id);
+        }
+    }
+
+    public void autoDismiss(Intent intent) {
+        if (intent != null && intent.hasExtra(AUTO_DISMISS_TAG) && intent.hasExtra(AUTO_DISMISS_ID)) {
+            final String tag = intent.getStringExtra(AUTO_DISMISS_TAG);
+            final int id = intent.getIntExtra(AUTO_DISMISS_ID, 0);
+            NotificationManagerCompat.from(CONTEXT).cancel(tag, id);
+        }
     }
 
 }
