@@ -238,12 +238,12 @@ public abstract class NotificationManager {
                 onShow(managerCompat, group, null, notification);
                 for (int m = 0, mSize = messages.size(); m < mSize; m++) {
                     NotificationMessage message = messages.get(m);
-                    notification = builder.buildNotification(CONTEXT, this, message);
+                    notification = builder.buildNotification(CONTEXT, this, message, messages);
                     onShow(managerCompat, group, message, notification);
                 }
             } else {
                 NotificationMessage message = messages.get(0);
-                Notification notification = builder.buildNotification(CONTEXT, this, message);
+                Notification notification = builder.buildNotification(CONTEXT, this, message, messages);
                 onShow(managerCompat, message.groupKey, message, notification);
             }
         }
