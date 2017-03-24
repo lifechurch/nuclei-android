@@ -147,6 +147,7 @@ public abstract class NotificationManager {
         List<NotificationMessage> messages = getMessages(group);
         ArrayList<ContentProviderOperation> ops = new ArrayList<>();
         NotificationManagerCompat managerCompat = NotificationManagerCompat.from(CONTEXT);
+        managerCompat.cancel(getTag(group), getId(group));
         for (int i = 0, len = messages.size(); i < len; i++) {
             NotificationMessage message = messages.get(i);
             ops.add(NotificationMessage.DELETE_BYCLIENTID.toDeleteOperation(Query.args().arg(message._id)));
@@ -232,8 +233,8 @@ public abstract class NotificationManager {
         ArrayMap<String, List<NotificationMessage>> messagesByGroup = getMessagesByGroup();
         for (int i = 0, size = messagesByGroup.size(); i < size; i++) {
             List<NotificationMessage> messages = messagesByGroup.valueAt(i);
+            String group = messagesByGroup.keyAt(i);
             if (messages.size() > 1) {
-                String group = messagesByGroup.keyAt(i);
                 Notification notification = builder.buildSummary(CONTEXT, this, group, messages);
                 onShow(managerCompat, group, null, notification);
                 for (int m = 0, mSize = messages.size(); m < mSize; m++) {
@@ -242,6 +243,7 @@ public abstract class NotificationManager {
                     onShow(managerCompat, group, message, notification);
                 }
             } else {
+                managerCompat.cancel(getTag(group), getId(group)); // ensure no summary notification
                 NotificationMessage message = messages.get(0);
                 Notification notification = builder.buildNotification(CONTEXT, this, message, messages);
                 onShow(managerCompat, message.groupKey, message, notification);
@@ -252,9 +254,8 @@ public abstract class NotificationManager {
     protected void onShow(NotificationManagerCompat managerCompat, String group, NotificationMessage message, Notification notification) {
         if (message == null)
             managerCompat.notify(getTag(group), getId(group), notification);
-        else {
+        else
             managerCompat.notify(getTag(message), message.id, notification);
-        }
     }
 
     protected int getId(String group) {
