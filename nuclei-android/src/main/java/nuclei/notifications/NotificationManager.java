@@ -147,23 +147,32 @@ public abstract class NotificationManager {
         List<NotificationMessage> messages = getMessages(group);
         ArrayList<ContentProviderOperation> ops = new ArrayList<>();
         NotificationManagerCompat managerCompat = NotificationManagerCompat.from(CONTEXT);
-        managerCompat.cancel(getTag(group), getId(group));
         for (int i = 0, len = messages.size(); i < len; i++) {
             NotificationMessage message = messages.get(i);
             ops.add(NotificationMessage.DELETE_BYCLIENTID.toDeleteOperation(Query.args().arg(message._id)));
             ops.add(NotificationData.DELETE_BYMESSAGEID.toDeleteOperation(Query.args().arg(message._id)));
-            managerCompat.cancel(getTag(message), message.id);
         }
         try {
             Persistence.applyBatch(ops);
         } catch (Exception err) {
             throw new RuntimeException(err);
         }
+        for (int i = 0, len = messages.size(); i < len; i++) {
+            NotificationMessage message = messages.get(i);
+            managerCompat.cancel(getTag(message), message.id);
+        }
+        managerCompat.cancel(getTag(group), getId(group));
     }
 
     public void removeMessage(NotificationMessage message) {
-        NotificationMessage.DELETE_BYCLIENTID.newUpdate().delete(Query.args().arg(message._id));
-        NotificationData.DELETE_BYMESSAGEID.newUpdate().delete(Query.args().arg(message._id));
+        ArrayList<ContentProviderOperation> ops = new ArrayList<>();
+        ops.add(NotificationMessage.DELETE_BYCLIENTID.toDeleteOperation(Query.args().arg(message._id)));
+        ops.add(NotificationData.DELETE_BYMESSAGEID.toDeleteOperation(Query.args().arg(message._id)));
+        try {
+            Persistence.applyBatch(ops);
+        } catch (Exception err) {
+            throw new RuntimeException(err);
+        }
         NotificationManagerCompat.from(CONTEXT).cancel(getTag(message), message.id);
 
         if (getMessageCount(message.groupKey) == 1) {
@@ -228,25 +237,25 @@ public abstract class NotificationManager {
     }
 
     public void show() {
-        NotificationManagerCompat managerCompat = NotificationManagerCompat.from(CONTEXT);
-        NotificationBuilder builder = getBuilder();
-        ArrayMap<String, List<NotificationMessage>> messagesByGroup = getMessagesByGroup();
+        final NotificationManagerCompat managerCompat = NotificationManagerCompat.from(CONTEXT);
+        final NotificationBuilder builder = getBuilder();
+        final ArrayMap<String, List<NotificationMessage>> messagesByGroup = getMessagesByGroup();
         for (int i = 0, size = messagesByGroup.size(); i < size; i++) {
-            List<NotificationMessage> messages = messagesByGroup.valueAt(i);
-            String group = messagesByGroup.keyAt(i);
+            final List<NotificationMessage> messages = messagesByGroup.valueAt(i);
+            final String group = messagesByGroup.keyAt(i);
             if (messages.size() > 1) {
                 Notification notification = builder.buildSummary(CONTEXT, this, group, messages);
                 onShow(managerCompat, group, null, notification);
                 for (int m = 0, mSize = messages.size(); m < mSize; m++) {
-                    NotificationMessage message = messages.get(m);
+                    final NotificationMessage message = messages.get(m);
                     notification = builder.buildNotification(CONTEXT, this, message, messages);
                     onShow(managerCompat, group, message, notification);
                 }
             } else {
-                managerCompat.cancel(getTag(group), getId(group)); // ensure no summary notification
-                NotificationMessage message = messages.get(0);
-                Notification notification = builder.buildNotification(CONTEXT, this, message, messages);
+                final NotificationMessage message = messages.get(0);
+                final Notification notification = builder.buildNotification(CONTEXT, this, message, messages);
                 onShow(managerCompat, message.groupKey, message, notification);
+                managerCompat.cancel(getTag(group), getId(group)); // ensure no summary notification
             }
         }
     }
