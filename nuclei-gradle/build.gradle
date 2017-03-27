@@ -1,5 +1,5 @@
 group 'nuclei.gradle'
-version '2.2.4-beta1'
+version '2.2.4-beta2'
 
 apply plugin: 'maven'
 apply plugin: 'java'

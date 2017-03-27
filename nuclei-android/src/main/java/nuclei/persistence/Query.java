@@ -54,7 +54,7 @@ public class Query<T> {
     }
 
     public final String id;
-    public final Uri uri;
+    public final PersistenceUri uri;
     public final Class<T> type;
     public final int opType;
 
@@ -65,7 +65,7 @@ public class Query<T> {
     public final PersistenceList.CursorObjectMapper<T> objectMapper;
     public final ContentValuesMapper<T> contentValuesMapper;
 
-    public Query(String id, int opType, Uri uri, Class<T> type, PersistenceList.CursorObjectMapper<T> objectMapper, int placeholders, String selection, String orderBy, String...projection) {
+    public Query(String id, int opType, PersistenceUri uri, Class<T> type, PersistenceList.CursorObjectMapper<T> objectMapper, int placeholders, String selection, String orderBy, String...projection) {
         this.id = id;
         this.opType = opType;
         this.uri = uri;
@@ -78,7 +78,7 @@ public class Query<T> {
         this.contentValuesMapper = null;
     }
 
-    public Query(String id, int opType, Uri uri, Class<T> type, ContentValuesMapper<T> contentValuesMapper, int placeholders, String selection) {
+    public Query(String id, int opType, PersistenceUri uri, Class<T> type, ContentValuesMapper<T> contentValuesMapper, int placeholders, String selection) {
         this.id = id;
         this.opType = opType;
         this.uri = uri;
@@ -106,7 +106,7 @@ public class Query<T> {
             throw new IllegalArgumentException("Not an update query");
         if (args != null && placeholders != args.length)
             throw new IllegalArgumentException("Invalid selection args");
-        return CONTEXT.getContentResolver().update(uri, values, selection, args);
+        return CONTEXT.getContentResolver().update(uri.toUri(), values, selection, args);
     }
 
     int update(T value, String[] args) {
@@ -117,7 +117,7 @@ public class Query<T> {
         if (args != null && placeholders != args.length)
             throw new IllegalArgumentException("Invalid selection args");
         ContentValues values = contentValuesMapper.map(value);
-        return CONTEXT.getContentResolver().update(uri, values, selection, args);
+        return CONTEXT.getContentResolver().update(uri.toUri(), values, selection, args);
     }
 
     int delete(String[] args) {
@@ -125,7 +125,7 @@ public class Query<T> {
             throw new IllegalArgumentException("Not a delete query");
         if (args != null && placeholders != args.length)
             throw new IllegalArgumentException("Invalid selection args");
-        return CONTEXT.getContentResolver().delete(uri, selection, args);
+        return CONTEXT.getContentResolver().delete(uri.toUri(), selection, args);
     }
 
     Cursor execute(String[] args, String sort) {
@@ -133,7 +133,7 @@ public class Query<T> {
             throw new IllegalArgumentException("Not a select query");
         if (args != null && placeholders != args.length)
             throw new IllegalArgumentException("Invalid selection args");
-        return CONTEXT.getContentResolver().query(uri, projection, selection, args, sort);
+        return CONTEXT.getContentResolver().query(uri.toUri(), projection, selection, args, sort);
     }
 
     Cursor execute(String[] projection, String[] args, String sort) {
@@ -141,7 +141,7 @@ public class Query<T> {
             throw new IllegalArgumentException("Not a select query");
         if (args != null && placeholders != args.length)
             throw new IllegalArgumentException("Invalid selection args");
-        return CONTEXT.getContentResolver().query(uri, projection, selection, args, sort);
+        return CONTEXT.getContentResolver().query(uri.toUri(), projection, selection, args, sort);
     }
 
     android.content.CursorLoader executeLoader(String[] args, String sort) {
@@ -149,7 +149,7 @@ public class Query<T> {
             throw new IllegalArgumentException("Not a select query");
         if (args != null && placeholders != args.length)
             throw new IllegalArgumentException("Invalid selection args");
-        return new android.content.CursorLoader(CONTEXT, uri, projection, selection, args, sort);
+        return new android.content.CursorLoader(CONTEXT, uri.toUri(), projection, selection, args, sort);
     }
 
     android.support.v4.content.CursorLoader executeSupportLoader(String[] args, String sort) {
@@ -157,7 +157,7 @@ public class Query<T> {
             throw new IllegalArgumentException("Not a select query");
         if (args != null && placeholders != args.length)
             throw new IllegalArgumentException("Invalid selection args");
-        return new android.support.v4.content.CursorLoader(CONTEXT, uri, projection, selection, args, sort);
+        return new android.support.v4.content.CursorLoader(CONTEXT, uri.toUri(), projection, selection, args, sort);
     }
 
     @Deprecated
@@ -171,7 +171,7 @@ public class Query<T> {
         if (contentValuesMapper == null)
             throw new IllegalArgumentException("Content Values Mapper is null");
         args.validate(this);
-        return ContentProviderOperation.newUpdate(uri)
+        return ContentProviderOperation.newUpdate(uri.toUri())
                 .withSelection(selection, args.args())
                 .withValues(contentValuesMapper.map(object))
                 .build();
@@ -186,7 +186,7 @@ public class Query<T> {
         if (opType != QUERY_OPERATION_DELETE)
             throw new IllegalArgumentException("Not a delete query");
         args.validate(this);
-        return ContentProviderOperation.newDelete(uri)
+        return ContentProviderOperation.newDelete(uri.toUri())
                 .withSelection(selection, args.args())
                 .build();
     }
@@ -197,10 +197,10 @@ public class Query<T> {
 
     public static class MapperEntity<T> {
 
-        public final Uri uri;
+        public final PersistenceUri uri;
         public final ContentValuesMapper<T> mapper;
 
-        public MapperEntity(Uri uri, ContentValuesMapper<T> mapper) {
+        public MapperEntity(PersistenceUri uri, ContentValuesMapper<T> mapper) {
             this.uri = uri;
             this.mapper = mapper;
         }
@@ -218,7 +218,7 @@ public class Query<T> {
                 contentValues[i] = mapper.map(object[i]);
                 contentValues[i].put(nuclei.persistence.ContentProviderBase.REPLACE_RECORD, true);
             }
-            return CONTEXT.getContentResolver().bulkInsert(uri, contentValues);
+            return CONTEXT.getContentResolver().bulkInsert(uri.toUri(), contentValues);
         }
 
         public Uri insert(T object) {
@@ -227,7 +227,7 @@ public class Query<T> {
         }
 
         public Uri insert(ContentValues contentValues) {
-            return CONTEXT.getContentResolver().insert(uri, contentValues);
+            return CONTEXT.getContentResolver().insert(uri.toUri(), contentValues);
         }
 
         public int insert(T[] object) {
@@ -236,17 +236,17 @@ public class Query<T> {
             for (int i = 0; i < len; i++) {
                 contentValues[i] = mapper.map(object[i]);
             }
-            return CONTEXT.getContentResolver().bulkInsert(uri, contentValues);
+            return CONTEXT.getContentResolver().bulkInsert(uri.toUri(), contentValues);
         }
 
         public ContentProviderOperation toInsertOperation(T object) {
-            return ContentProviderOperation.newInsert(uri)
+            return ContentProviderOperation.newInsert(uri.toUri())
                     .withValues(mapper.map(object))
                     .build();
         }
 
         public ContentProviderOperation toReplaceOperation(T object) {
-            return ContentProviderOperation.newInsert(uri)
+            return ContentProviderOperation.newInsert(uri.toUri())
                     .withValues(mapper.map(object))
                     .withValue(ContentProviderBase.REPLACE_RECORD, true)
                     .build();

@@ -20,6 +20,7 @@ package ${packageName};
 import android.net.Uri;
 import android.provider.BaseColumns;
 import nuclei.persistence.Query;
+import nuclei.persistence.PersistenceUri;
 import nuclei.persistence.Query.MapperEntity;
 
 public final class Schemas {
@@ -34,8 +35,7 @@ public final class Schemas {
         String CONTENT_TYPE = "${model.contentType}";
         String CONTENT_ITEM_TYPE = "${model.contentItemType}";
 
-        Uri CONTENT_URI = Uri.parse("content://${authority}/${model.name}");
-        Uri CONTENT_ID_URI_BASE = Uri.parse("content://${authority}/${model.name}/");
+        PersistenceUri CONTENT_URI = new PersistenceUri("${authority}", "/${model.name}");
 
         <#list model.selectQueries as query>
         String QUERY_${query.upperCaseName} = "SELECT_${model.name}_${query.name}";

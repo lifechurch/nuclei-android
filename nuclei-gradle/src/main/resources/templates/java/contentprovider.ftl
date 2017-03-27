@@ -67,12 +67,12 @@ public class NucleiContentProvider extends ContentProviderBase {
         <#assign i = 0><#list models as model>
         sUriMatcher.addURI(authority, "${model.name}", ${i});
         sUriMatcher.addURI(authority, "${model.name}/#", ${i + 1});
+        Schemas.${model.name}.CONTENT_URI.setAuthority(sToken, authority);
         <#assign i = i + 2></#list>
     }
 
     @Override
     protected SQLiteOpenHelper onCreateHelper() {
-        setAuthority(sAuthority);
         return new NucleiDbHelper(getContext());
     }
 

@@ -57,6 +57,7 @@ public abstract class ContentProviderBase extends ContentProvider {
 
     private static final int SLEEP_AFTER_YIELD_DELAY = 4000;
     private static final int MAX_OPERATIONS_PER_YIELD_POINT = 500;
+    protected static final Token sToken = new Token();
 
     private final ThreadLocal<Boolean> mApplyingBatch = new ThreadLocal<>();
     private final Set<Uri> mChangedUris = new HashSet<>();
@@ -344,4 +345,7 @@ public abstract class ContentProviderBase extends ContentProvider {
         );
     }
 
+    protected static class Token {
+
+    }
 }
