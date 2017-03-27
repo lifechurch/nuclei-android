@@ -272,7 +272,7 @@ public abstract class ContentProviderBase extends ContentProvider {
     protected Uri insert(SQLiteDatabase database, Uri uri, String tableName, ContentValues values) {
         if (values.containsKey(REPLACE_RECORD)) {
             values.remove(REPLACE_RECORD);
-            long rowId = database.replace(
+            long rowId = database.replaceOrThrow(
                     tableName,
                     "_id", // A hack, SQLite sets this column value to null if values is empty.
                     values
@@ -280,7 +280,7 @@ public abstract class ContentProviderBase extends ContentProvider {
             if (rowId > 0)
                 return ContentUris.withAppendedId(uri, rowId);
         } else {
-            long rowId = database.insert(
+            long rowId = database.insertOrThrow(
                     tableName,
                     "_id", // A hack, SQLite sets this column value to null if values is empty.
                     values
