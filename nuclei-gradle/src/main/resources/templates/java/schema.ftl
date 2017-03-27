@@ -24,7 +24,7 @@ import nuclei.persistence.Query.MapperEntity;
 
 public final class Schemas {
 
-    public static final String AUTHORITY = "${authority}";
+    public static final String DEFAULT_AUTHORITY = "${authority}";
 
     <#list models as model>
     public interface ${model.name} extends BaseColumns {

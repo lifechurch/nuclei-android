@@ -17,6 +17,8 @@
 -->
 package ${package}.persistence;
 
+import ${package}.providers.NucleiContentProvider;
+
 import nuclei.persistence.Query;
 import nuclei.persistence.PersistenceList;
 import nuclei.persistence.PersistenceListImpl;
@@ -133,7 +135,7 @@ public class Persistence {
     }
 
     public static ContentProviderResult[] applyBatch(ArrayList<ContentProviderOperation> ops) throws RemoteException, OperationApplicationException {
-        return Query.applyBatch(Schemas.AUTHORITY, ops);
+        return Query.applyBatch(NucleiContentProvider.getAuthority(), ops);
     }
 
 }

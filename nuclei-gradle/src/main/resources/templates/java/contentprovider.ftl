@@ -47,17 +47,32 @@ public class NucleiContentProvider extends ContentProviderBase {
     private static final int MAX_OPERATIONS_PER_YIELD_POINT = 500;
 
     private static UriMatcher sUriMatcher;
+    private static String sAuthority;
 
     static {
+        setAuthority(Schemas.DEFAULT_AUTHORITY);
+    }
+
+    public static String getAuthority() {
+        return sAuthority;
+    }
+
+    public static void setAuthority(String authority) {
+        if (authority == null)
+            throw new NullPointerException();
+        if (sAuthority != null && sAuthority.equals(authority))
+            return;
+        sAuthority = authority;
         sUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
         <#assign i = 0><#list models as model>
-        sUriMatcher.addURI(Schemas.AUTHORITY, "${model.name}", ${i});
-        sUriMatcher.addURI(Schemas.AUTHORITY, "${model.name}/#", ${i + 1});
+        sUriMatcher.addURI(authority, "${model.name}", ${i});
+        sUriMatcher.addURI(authority, "${model.name}/#", ${i + 1});
         <#assign i = i + 2></#list>
     }
 
     @Override
     protected SQLiteOpenHelper onCreateHelper() {
+        setAuthority(sAuthority);
         return new NucleiDbHelper(getContext());
     }
 

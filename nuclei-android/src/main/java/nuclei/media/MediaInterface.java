@@ -389,7 +389,8 @@ public class MediaInterface implements Destroyable {
                         final int percent = mediaInterface.getPlayerController().getBufferPercentage();
                         mediaInterface.mCallbacks.setPosition(mediaInterface, MAX_PROGRESS, currentPos, percent * 10);
                         mediaInterface.mCallbacks.setTimePlayed(mediaInterface, position);
-                        sendEmptyMessageDelayed(SHOW_PROGRESS, PlaybackManager.ONE_SECOND - (position % PlaybackManager.ONE_SECOND));
+                        //sendEmptyMessageDelayed(SHOW_PROGRESS, PlaybackManager.ONE_SECOND - (position % PlaybackManager.ONE_SECOND));
+                        sendEmptyMessageDelayed(SHOW_PROGRESS, PlaybackManager.ONE_SECOND);
                     }
                     break;
                 }
