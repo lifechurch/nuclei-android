@@ -151,12 +151,21 @@ public abstract class NotificationManager {
             NotificationMessage message = messages.get(i);
             ops.add(NotificationMessage.DELETE_BYCLIENTID.toDeleteOperation(Query.args().arg(message._id)));
             ops.add(NotificationData.DELETE_BYMESSAGEID.toDeleteOperation(Query.args().arg(message._id)));
+            if (ops.size() > 100) {
+                try {
+                    Persistence.applyBatch(ops);
+                    ops.clear();
+                } catch (Exception err) {
+                    throw new RuntimeException(err);
+                }
+            }
         }
-        try {
-            Persistence.applyBatch(ops);
-        } catch (Exception err) {
-            throw new RuntimeException(err);
-        }
+        if (ops.size() > 0)
+            try {
+                Persistence.applyBatch(ops);
+            } catch (Exception err) {
+                throw new RuntimeException(err);
+            }
         for (int i = 0, len = messages.size(); i < len; i++) {
             NotificationMessage message = messages.get(i);
             managerCompat.cancel(getTag(message), message.id);
