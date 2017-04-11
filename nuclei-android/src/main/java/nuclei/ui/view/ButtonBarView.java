@@ -323,6 +323,8 @@ public class ButtonBarView extends FrameLayout {
             item.view.setOnClickListener(listener);
 
             item.imageView = (ImageView) item.view.findViewById(R.id.image);
+            if (item.textId != 0)
+                item.imageView.setContentDescription(getResources().getString(item.textId));
             item.imageView.setImageResource(item.imageId);
             item.imageView.setColorFilter(mUnselectedTint, PorterDuff.Mode.SRC_ATOP);
 
