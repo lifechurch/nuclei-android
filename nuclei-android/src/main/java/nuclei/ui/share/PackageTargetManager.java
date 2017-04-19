@@ -1,12 +1,12 @@
 /**
  * Copyright 2016 YouVersion
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -74,6 +74,7 @@ public abstract class PackageTargetManager implements Parcelable {
     protected String mText;
     protected String mUrl;
     protected String mEmail;
+    protected String mSms;
     protected String mSubject;
     protected File mFile;
     protected Uri mUri;
@@ -87,6 +88,7 @@ public abstract class PackageTargetManager implements Parcelable {
         mFacebookId = in.readString();
         mText = in.readString();
         mUrl = in.readString();
+        mSms = in.readString();
         mEmail = in.readString();
         mSubject = in.readString();
         mFile = (File) in.readSerializable();
@@ -96,10 +98,11 @@ public abstract class PackageTargetManager implements Parcelable {
     /**
      * Initialize the target manager from the builder
      */
-    protected void initialize(String text, Uri uri, String url, String email, String subject, File file) {
+    protected void initialize(String text, Uri uri, String url, String sms, String email, String subject, File file) {
         mText = text;
         mUri = uri;
         mUrl = url;
+        mSms = sms;
         mEmail = email;
         mSubject = subject;
         mFile = file;
@@ -186,7 +189,7 @@ public abstract class PackageTargetManager implements Parcelable {
      * Create an intent without knowing which package has been chosen
      */
     public Intent onCreateIntent(Context context, String authority) {
-        Intent intent = new Intent(TextUtils.isEmpty(mEmail) ? Intent.ACTION_SEND : Intent.ACTION_SENDTO);
+        Intent intent = new Intent(TextUtils.isEmpty(mEmail) && TextUtils.isEmpty(mSms) ? Intent.ACTION_SEND : Intent.ACTION_SENDTO);
         onSetDefault(context, null, authority, intent, mText);
         return intent;
     }
@@ -207,7 +210,7 @@ public abstract class PackageTargetManager implements Parcelable {
         else if (mText != null && mUrl != null)
             text += '\n' + mUrl;
 
-        Intent intent = new Intent(TextUtils.isEmpty(mEmail) ? Intent.ACTION_SEND : Intent.ACTION_SENDTO);
+        Intent intent = new Intent(TextUtils.isEmpty(mEmail) && TextUtils.isEmpty(mSms) ? Intent.ACTION_SEND : Intent.ACTION_SENDTO);
         intent.setComponent(new ComponentName(info.activityInfo.packageName, info.activityInfo.name));
         intent.setPackage(info.activityInfo.packageName);
 
@@ -230,7 +233,6 @@ public abstract class PackageTargetManager implements Parcelable {
                     intent = onExternalStorage(activity, info.activityInfo.packageName, authority, intent, permissionRequestCode, false);
                 break;
         }
-
         return intent;
     }
 
@@ -309,6 +311,13 @@ public abstract class PackageTargetManager implements Parcelable {
         if (!TextUtils.isEmpty(mEmail)) {
             intent.putExtra(Intent.EXTRA_EMAIL, new String[]{mEmail});
             intent.setData(Uri.parse("mailto:"));
+        } else if (!TextUtils.isEmpty(mSms)) {
+            //if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
+                intent.putExtra("sms_body", text);
+                intent.putExtra("address", mSms);
+                intent.putExtra(Intent.EXTRA_PHONE_NUMBER, new String[]{mSms});
+            //}
+            intent.setData(Uri.parse("smsto:" + mSms));
         }
     }
 
@@ -373,6 +382,7 @@ public abstract class PackageTargetManager implements Parcelable {
         dest.writeString(mFacebookId);
         dest.writeString(mText);
         dest.writeString(mUrl);
+        dest.writeString(mSms);
         dest.writeString(mEmail);
         dest.writeString(mSubject);
         dest.writeSerializable(mFile);

@@ -44,6 +44,7 @@ public final class ShareIntent {
 
     final String mText;
     final String mUrl;
+    final String mSms;
     final String mEmail;
     final String mSubject;
     final File mFile;
@@ -54,6 +55,7 @@ public final class ShareIntent {
     ShareIntent(Builder builder) {
         mText = builder.mText;
         mUri = builder.mUri;
+        mSms = builder.mSms;
         mEmail = builder.mEmail;
         mSubject = builder.mSubject;
         mUrl = builder.mUrl;
@@ -67,6 +69,7 @@ public final class ShareIntent {
         builder.mText = mText;
         builder.mUri = mUri;
         builder.mUrl = mUrl;
+        builder.mSms = mSms;
         builder.mEmail = mEmail;
         builder.mSubject = mSubject;
         builder.mFile = mFile;
@@ -135,7 +138,7 @@ public final class ShareIntent {
             else
                 manager = mDefaultTargetManager;
         }
-        manager.initialize(mText, mUri, mUrl, mEmail, mSubject, mFile);
+        manager.initialize(mText, mUri, mUrl, mSms, mEmail, mSubject, mFile);
         manager.mFacebookId = facebookId;
         Intent intent = manager.onCreateIntent(activity, authority, info, permissionRequestCode);
         if (intent != null)
@@ -171,7 +174,7 @@ public final class ShareIntent {
             else
                 manager = mDefaultTargetManager;
         }
-        manager.initialize(mText, mUri, mUrl, mEmail, mSubject, mFile);
+        manager.initialize(mText, mUri, mUrl, mSms, mEmail, mSubject, mFile);
         manager.mFacebookId = facebookId;
         Intent intent = manager.onCreateIntent(fragment.getActivity(), authority, info, permissionRequestCode);
         if (intent != null)
@@ -195,7 +198,7 @@ public final class ShareIntent {
         if (TextUtils.isEmpty(authority))
             Log.w(TAG, MISSING_CONFIG);
         PackageTargetManager manager = mDefaultTargetManager == null ? new DefaultPackageTargetManager() : mDefaultTargetManager;
-        manager.initialize(mText, mUri, mUrl, mEmail, mSubject, mFile);
+        manager.initialize(mText, mUri, mUrl, mSms, mEmail, mSubject, mFile);
         return manager.onCreateIntent(context, authority);
     }
 
@@ -203,6 +206,7 @@ public final class ShareIntent {
 
         String mText;
         String mEmail;
+        String mSms;
         String mSubject;
         String mUrl;
         File mFile;
@@ -217,6 +221,7 @@ public final class ShareIntent {
             mText = in.readString();
             mUrl = in.readString();
             mEmail = in.readString();
+            mSms = in.readString();
             mSubject = in.readString();
             mFile = (File) in.readSerializable();
             mUri = in.readParcelable(getClass().getClassLoader());
@@ -273,6 +278,11 @@ public final class ShareIntent {
             return this;
         }
 
+        public Builder sms(String sms) {
+            mSms = sms;
+            return this;
+        }
+
         public Builder subject(String subject) {
             mSubject = subject;
             return this;
@@ -297,6 +307,7 @@ public final class ShareIntent {
             dest.writeString(mText);
             dest.writeString(mUrl);
             dest.writeString(mEmail);
+            dest.writeString(mSms);
             dest.writeString(mSubject);
             dest.writeSerializable(mFile);
             dest.writeParcelable(mUri, 0);
