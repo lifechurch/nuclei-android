@@ -202,7 +202,11 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
             mCurrentMediaId = MediaProvider.getInstance().getMediaId(metadataCompat.getDescription().getMediaId());
         }
 
-        if (mState == PlaybackStateCompat.STATE_PAUSED && !mediaHasChanged && mMediaPlayer != null) {
+        if (mState == PlaybackStateCompat.STATE_PLAYING && !mediaHasChanged && mMediaPlayer != null && mMediaPlayer.isPlaying()) {
+            if (mCallback != null) {
+                mCallback.onPlaybackStatusChanged(mState);
+            }
+        } else if (mState == PlaybackStateCompat.STATE_PAUSED && !mediaHasChanged && mMediaPlayer != null) {
             configMediaPlayerState();
         } else {
             mState = PlaybackStateCompat.STATE_STOPPED;
