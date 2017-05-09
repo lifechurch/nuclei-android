@@ -27,7 +27,7 @@ import java.util.List;
  */
 public class Result<T> {
 
-    final List<Callback<T>> mCallbacks = new ArrayList<>(1);
+    final List<SimpleCallback<T>> mCallbacks = new ArrayList<>(1);
 
     T mData;
     Exception mException;
@@ -257,15 +257,20 @@ public class Result<T> {
             mDataSet = true;
             mFromCache = fromCache;
             boolean released = mContextHandle != null && mContextHandle.get() == null;
-            for (Callback<T> callback : mCallbacks) {
-                callback.setResult(this);
-                if (released) {
-                    callback.onContextReleased(data, mObjectHandle);
+            for (SimpleCallback<T> cb : mCallbacks) {
+                if (cb instanceof Callback) {
+                    Callback<T> callback = (Callback<T>) cb;
+                    callback.setResult(this);
+                    if (released) {
+                        callback.onContextReleased(data, mObjectHandle);
+                    } else {
+                        if (fromCache)
+                            callback.onCacheResult(data, mObjectHandle);
+                        else
+                            callback.onResult(data, mObjectHandle);
+                    }
                 } else {
-                    if (fromCache)
-                        callback.onCacheResult(data, mObjectHandle);
-                    else
-                        callback.onResult(data, mObjectHandle);
+                    cb.onResult(data, null, mObjectHandle);
                 }
             }
             mObjectHandle = null;
@@ -296,12 +301,17 @@ public class Result<T> {
             mDataSet = true;
             mException = err;
             boolean released = mContextHandle != null && mContextHandle.get() == null;
-            for (Callback<T> callback : mCallbacks) {
-                callback.setResult(this);
-                if (released)
-                    callback.onContextReleased(mException, mObjectHandle);
-                else
-                    callback.onException(mException, mObjectHandle);
+            for (SimpleCallback<T> cb : mCallbacks) {
+                if (cb instanceof Callback) {
+                    Callback<T> callback = (Callback<T>) cb;
+                    callback.setResult(this);
+                    if (released)
+                        callback.onContextReleased(mException, mObjectHandle);
+                    else
+                        callback.onException(mException, mObjectHandle);
+                } else {
+                    cb.onResult(result, err, mObjectHandle);
+                }
             }
             mObjectHandle = null;
             mCallbacks.clear();
@@ -346,12 +356,18 @@ public class Result<T> {
         return this;
     }
 
+    public interface SimpleCallback<T> {
+
+        void onResult(T result, Exception err, Object handle);
+
+    }
+
     /**
      * A callback interface
      *
      * @param <T>
      */
-    public interface Callback<T> {
+    public interface Callback<T> extends SimpleCallback<T> {
 
         Result<T> getResult();
 
@@ -413,6 +429,14 @@ public class Result<T> {
         @Override
         public void onResult(T result, Object handle) {
             onResult(result);
+        }
+
+        @Override
+        public void onResult(T result, Exception err, Object handle) {
+            if (err != null)
+                onException(err);
+            if (result != null)
+                onResult(result, handle);
         }
 
         @Override
