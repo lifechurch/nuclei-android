@@ -206,7 +206,7 @@ public class Result<T> {
      * @param callback The callback
      * @return The Result
      */
-    public Result<T> addCallback(Callback<T> callback) {
+    public Result<T> addCallback(SimpleCallback<T> callback) {
         return addCallback(callback, null);
     }
 
@@ -217,14 +217,19 @@ public class Result<T> {
      * @param handle The handle to be delivered to the context
      * @return The Result
      */
-    public Result<T> addCallback(Callback<T> callback, Object handle) {
+    public Result<T> addCallback(SimpleCallback<T> callback, Object handle) {
         synchronized (this) {
             if (mDataSet) {
-                callback.setResult(this);
-                if (mException != null)
-                    callback.onException(mException, handle);
-                else
-                    callback.onResult(mData, handle);
+                if (callback instanceof Callback) {
+                    Callback<T> cb = (Callback<T>) callback;
+                    cb.setResult(this);
+                    if (mException != null)
+                        cb.onException(mException, handle);
+                    else
+                        cb.onResult(mData, handle);
+                } else {
+                    callback.onResult(mData, mException, handle);
+                }
                 notifyAll();
             } else {
                 mObjectHandle = handle;
@@ -262,15 +267,15 @@ public class Result<T> {
                     Callback<T> callback = (Callback<T>) cb;
                     callback.setResult(this);
                     if (released) {
-                        callback.onContextReleased(data, mObjectHandle);
+                        callback.onContextReleased(mData, mObjectHandle);
                     } else {
                         if (fromCache)
-                            callback.onCacheResult(data, mObjectHandle);
+                            callback.onCacheResult(mData, mObjectHandle);
                         else
-                            callback.onResult(data, mObjectHandle);
+                            callback.onResult(mData, mObjectHandle);
                     }
                 } else {
-                    cb.onResult(data, null, mObjectHandle);
+                    cb.onResult(mData, mException, mObjectHandle);
                 }
             }
             mObjectHandle = null;
@@ -279,7 +284,7 @@ public class Result<T> {
         }
         synchronized (this) {
             if (mForwardTo != null)
-                mForwardTo.onResult(data, fromCache);
+                mForwardTo.onResult(mData, fromCache);
         }
     }
 
@@ -310,7 +315,7 @@ public class Result<T> {
                     else
                         callback.onException(mException, mObjectHandle);
                 } else {
-                    cb.onResult(result, err, mObjectHandle);
+                    cb.onResult(mData, mException, mObjectHandle);
                 }
             }
             mObjectHandle = null;
