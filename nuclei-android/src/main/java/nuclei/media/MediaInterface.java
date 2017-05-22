@@ -118,6 +118,11 @@ public class MediaInterface implements Destroyable {
         }
     }
 
+    public void cancelAutoHide() {
+        if (mHandler != null)
+            mHandler.removeMessages(ProgressHandler.AUTO_HIDE);
+    }
+
     public void setSurface(Surface surface) {
         if (mMediaControls != null) {
             final Bundle args = new Bundle();

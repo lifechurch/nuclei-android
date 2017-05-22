@@ -304,6 +304,21 @@ public class PlayerControlsView extends FrameLayout {
         return super.isShown();
     }
 
+    public boolean isAutoHide() {
+        return mAutoHide;
+    }
+
+    public void setAutoHide(boolean autoHide) {
+        mAutoHide = autoHide;
+        if (mAutoHide) {
+            if (mMediaInterface != null)
+                mMediaInterface.autoHide();
+        } else {
+            if (mMediaInterface != null)
+                mMediaInterface.cancelAutoHide();
+        }
+    }
+
     public void show() {
         if (getChildCount() > 0)
             getChildAt(0).setVisibility(VISIBLE);
