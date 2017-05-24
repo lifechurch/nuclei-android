@@ -8,8 +8,7 @@ import android.view.ViewGroup;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import nuclei.persistence.adapter.ListAdapter;
-import nuclei.persistence.adapter.PersistencePagingAdapter;
+import nuclei.adapter.ListAdapter;
 
 public class PersistencePagingAdapterTest extends ApplicationTestCase<Application> {
     public PersistencePagingAdapterTest() {

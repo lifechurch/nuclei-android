@@ -13,8 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nuclei.persistence.adapter;
+package nuclei.adapter;
 
+import android.arch.lifecycle.Lifecycle;
+import android.arch.lifecycle.LifecycleObserver;
+import android.arch.lifecycle.OnLifecycleEvent;
 import android.content.Context;
 import android.support.v4.util.SparseArrayCompat;
 import android.support.v7.widget.RecyclerView;
@@ -24,8 +27,6 @@ import android.view.ViewGroup;
 import java.util.Arrays;
 import java.util.List;
 
-import nuclei.ui.Destroyable;
-
 /**
  * A list adapter for putting items at certain offsets.  This adapter will wrap another adapter and manage
  * the placement of it's items within the items of the wrapped adapter.
@@ -34,7 +35,7 @@ import nuclei.ui.Destroyable;
  * @param <T>
  * @param <VH>
  */
-public abstract class OffsetListAdapter<T, VH extends ListAdapter.ViewHolder<T>> extends RecyclerView.Adapter<VH> implements Destroyable {
+public abstract class OffsetListAdapter<T, VH extends ListAdapter.ViewHolder<T>> extends RecyclerView.Adapter<VH> implements LifecycleObserver {
 
     private RecyclerView.Adapter<VH> mOriginalAdapter;
     private SparseArrayCompat<T> mItems;
@@ -244,7 +245,7 @@ public abstract class OffsetListAdapter<T, VH extends ListAdapter.ViewHolder<T>>
         return mOriginalAdapter.getItemCount() + mItems.size();
     }
 
-    @Override
+    @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
     public void onDestroy() {
         if (mOriginalAdapter != null)
             mOriginalAdapter.unregisterAdapterDataObserver(mObserver);

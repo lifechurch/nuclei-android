@@ -22,12 +22,16 @@ import android.support.v4.content.ContextCompat;
 
 import java.io.File;
 
-import nuclei.task.ContextHandle;
-
 public final class Logs {
 
     public static boolean TRACE = false;
     public static boolean EXTRA = false;
+
+    private static Context CONTEXT;
+
+    public static void initialize(Context context) {
+        CONTEXT = context.getApplicationContext();
+    }
 
     private Logs() {
     }
@@ -40,12 +44,11 @@ public final class Logs {
     }
 
     protected static File newLogFile() {
-        Context context = ContextHandle.getApplicationHandle().get();
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        if (ContextCompat.checkSelfPermission(CONTEXT, Manifest.permission.WRITE_EXTERNAL_STORAGE)
             == PackageManager.PERMISSION_GRANTED) {
-            return new File(context.getExternalFilesDir(null), "info.log");
+            return new File(CONTEXT.getExternalFilesDir(null), "info.log");
         }
-        return new File(context.getFilesDir(), "info.log");
+        return new File(CONTEXT.getFilesDir(), "info.log");
     }
 
 }

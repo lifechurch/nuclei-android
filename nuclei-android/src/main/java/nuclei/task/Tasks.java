@@ -32,6 +32,7 @@ public final class Tasks {
 
     public static void initialize(Application application) {
         sDefault = TaskPool.newBuilder(TaskPool.DEFAULT_POOL).build();
+        TaskPool.initialize(application);
     }
 
     public static TaskPool get() {
@@ -44,10 +45,6 @@ public final class Tasks {
 
     public static <T> Result<T> execute(Task<T> task) {
         return sDefault.execute(task);
-    }
-
-    public static <T> Result<T> execute(ContextHandle handle, Task<T> task) {
-        return sDefault.execute(handle, task);
     }
 
     public static <T> T executeNow(Task<T> task) {

@@ -37,7 +37,6 @@ public abstract class Task<T> implements Runnable {
     private static final AtomicInteger sJobId = new AtomicInteger(1);
 
     private TaskPool pool;
-    private ContextHandle handle;
     private Result<T> result;
     private T taskResult;
     private Exception taskException;
@@ -72,21 +71,16 @@ public abstract class Task<T> implements Runnable {
                 onException(new InterruptedException());
                 return;
             }
-            Context context = handle.get();
-            if (context != null) {
-                try {
-                    run(context);
-                    if (!resultSet)
-                        throw new IllegalStateException("onComplete and onException not called, one is required");
-                } catch (Exception err) {
-                    LOG.e("unhandled exception", err);
-                    onException(err);
-                } catch (Throwable err) {
-                    LOG.e("unhandled throwable", err);
-                    onException(new Exception(err));
-                }
-            } else {
-                LOG.i("Context Handle is released, not running task");
+            try {
+                run(TaskPool.CONTEXT);
+                if (!resultSet)
+                    throw new IllegalStateException("onComplete and onException not called, one is required");
+            } catch (Exception err) {
+                LOG.e("unhandled exception", err);
+                onException(err);
+            } catch (Throwable err) {
+                LOG.e("unhandled throwable", err);
+                onException(new Exception(err));
             }
         } finally {
             currentThread = null;
@@ -173,7 +167,6 @@ public abstract class Task<T> implements Runnable {
     protected final void onIntercepted(Task task) {
         LOG.i("Intercepted " + getLogKey() + " by " + task.getId());
         task.result = result;
-        task.handle = handle;
         onDetach();
         onIntercepted();
     }
@@ -209,13 +202,8 @@ public abstract class Task<T> implements Runnable {
         if (runnable == null)
             throw new NullPointerException("TaskRunnable can't be null");
         runnable.task = null;
-        Context context = handle.get();
-        if (context != null) {
-            if (!resultSet)
-                throw new IllegalStateException("Result not set");
-        } else {
-            LOG.i("ContextHandle is released, there may not be any results to deliver");
-        }
+        if (!resultSet)
+            throw new IllegalStateException("Result not set");
         if (taskException != null) {
             if (taskResult != null)
                 result.onExceptionWithResult(taskException, taskResult, fromCache);
@@ -248,7 +236,6 @@ public abstract class Task<T> implements Runnable {
         taskResult = null;
         taskException = null;
         fromCache = false;
-        handle = null;
         pool = null;
     }
 
@@ -257,19 +244,12 @@ public abstract class Task<T> implements Runnable {
      *
      * @hide
      */
-    protected final Result<T> attach(TaskPool pool, ContextHandle handle) {
+    protected final Result<T> attach(TaskPool pool) {
         if (this.pool != null)
             throw new IllegalStateException("Already attached");
-        if (this.handle != null)
-            throw new IllegalStateException("ContextHandle already set");
-        if (handle == null)
-            handle = ContextHandle.getApplicationHandle();
         this.pool = pool;
-        this.handle = handle;
         if (this.result == null)
             this.result = new Result<>();
-        if (handle != null)
-            this.result.withHandle(handle);
         return this.result;
     }
 

@@ -56,7 +56,7 @@ public class TaskGcmService extends GcmTaskService {
             task.deserialize(map);
             if (task.isRunning())
                 return GcmNetworkManager.RESULT_RESCHEDULE;
-            task.attach(null, ContextHandle.getApplicationHandle());
+            task.attach(null);
             task.run();
             task.deliverResult(this);
             return GcmNetworkManager.RESULT_SUCCESS;

@@ -73,7 +73,7 @@ public final class TaskScheduler {
     public static boolean supportsScheduling() {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP || GoogleApiAvailability
                 .getInstance()
-                .isGooglePlayServicesAvailable(ContextHandle.getApplicationHandle().get()) == ConnectionResult.SUCCESS;
+                .isGooglePlayServicesAvailable(TaskPool.CONTEXT) == ConnectionResult.SUCCESS;
     }
 
     TaskScheduler(Builder builder) {

@@ -13,15 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nuclei.intent;
+package nuclei.adapter;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+import android.content.Context;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.RetentionPolicy.SOURCE;
+import java.util.List;
 
-@Retention(SOURCE)
-@Target(FIELD)
-public @interface BindingProperty {
+/**
+ * An simple adapter that expects to be backed by any type of list.
+ */
+public abstract class SimpleListAdapter<T, VH extends ListAdapter.ViewHolder<T>>
+        extends ListAdapter<T, List<T>, VH> {
+
+    public SimpleListAdapter(Context context) {
+        super(context);
+    }
+
 }

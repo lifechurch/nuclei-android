@@ -13,8 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nuclei.persistence.adapter;
+package nuclei.adapter;
 
+import android.arch.lifecycle.Lifecycle;
+import android.arch.lifecycle.LifecycleObserver;
+import android.arch.lifecycle.OnLifecycleEvent;
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -22,8 +25,6 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import java.util.List;
-
-import nuclei.ui.Destroyable;
 
 /**
  * Base List Adapter
@@ -33,7 +34,7 @@ import nuclei.ui.Destroyable;
  * @param <VH> The type of ViewHolder
  */
 public abstract class ListAdapter<T, L extends List<T>, VH extends ListAdapter.ViewHolder<T>>
-        extends RecyclerView.Adapter<VH> implements Destroyable {
+        extends RecyclerView.Adapter<VH> implements LifecycleObserver {
 
     Context mContext;
     LayoutInflater mInflater;
@@ -91,7 +92,7 @@ public abstract class ListAdapter<T, L extends List<T>, VH extends ListAdapter.V
         return mList == null ? 0 : mList.size();
     }
 
-    @Override
+    @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
     public void onDestroy() {
         mList = null;
         mListUpdates++;

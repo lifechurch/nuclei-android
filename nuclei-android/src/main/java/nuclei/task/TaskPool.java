@@ -15,6 +15,7 @@
  */
 package nuclei.task;
 
+import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -65,6 +66,11 @@ public final class TaskPool implements Handler.Callback {
     static final Map<String, TaskPool> TASK_POOLS = new ConcurrentHashMap<>();
 
     static TaskPoolListener LISTENER;
+    static Context CONTEXT;
+
+    public static void initialize(Context context) {
+        CONTEXT = context.getApplicationContext();
+    }
 
     public static void setListener(TaskPoolListener listener) {
         LISTENER = listener;
@@ -217,7 +223,7 @@ public final class TaskPool implements Handler.Callback {
         if (LOG.isLoggable(Log.INFO))
             LOG.i("Running task NOW (" + logKey + ")");
         long start = System.currentTimeMillis();
-        Result<T> result = task.attach(this, null);
+        Result<T> result = task.attach(this);
         task.run();
         if (LOG.isLoggable(Log.INFO)) {
             LOG.i("Took " + (System.currentTimeMillis() - start)
@@ -228,11 +234,7 @@ public final class TaskPool implements Handler.Callback {
     }
 
     public <T> Result<T> execute(Task<T> task) {
-        return execute(null, task);
-    }
-
-    public <T> Result<T> execute(ContextHandle handle, Task<T> task) {
-        Result<T> result = task.attach(this, handle);
+        Result<T> result = task.attach(this);
         if (handler.getLooper() != Looper.myLooper()) {
             handler.obtainMessage(MESSAGE_QUEUE, task).sendToTarget();
             return result;

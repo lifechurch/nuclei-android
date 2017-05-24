@@ -16,10 +16,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.nuclei.test.R;
-import nuclei.persistence.adapter.ListAdapter;
-import nuclei.persistence.adapter.OffsetListAdapter;
-import nuclei.persistence.adapter.PagedList;
-import nuclei.persistence.adapter.PagedListAdapter;
+import nuclei.adapter.ListAdapter;
+import nuclei.adapter.OffsetListAdapter;
+import nuclei.adapter.PagedList;
+import nuclei.adapter.PagedListAdapter;
 import nuclei.task.Result;
 import nuclei.task.TaskRunnable;
 import nuclei.task.Tasks;

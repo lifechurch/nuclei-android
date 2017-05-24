@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import nuclei.persistence.adapter.PagedList;
+import nuclei.adapter.PagedList;
 
 public class PagedListTests extends ApplicationTestCase<Application> {
     public PagedListTests() {

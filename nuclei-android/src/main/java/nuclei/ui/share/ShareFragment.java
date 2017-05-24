@@ -37,10 +37,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.nuclei.R;
-import nuclei.task.ContextHandle;
 import nuclei.logs.Log;
 import nuclei.logs.Logs;
-import nuclei.ui.ContextViewOnClickListener;
 
 public class ShareFragment extends BottomSheetDialogFragment {
 
@@ -48,27 +46,12 @@ public class ShareFragment extends BottomSheetDialogFragment {
     static final int REQUEST_CODE = 101;
     static final int PERMISSION_REQUEST_CODE = 102;
 
-    private ContextHandle mHandle;
-
     RecyclerView mTargetsView;
     TargetsAdapter mAdapter;
     Intent mShareIntent;
     ShareIntent mManager;
     ResolveInfo mInfo;
     boolean mShareSuccess;
-
-    /**
-     * Get a managed context handle.
-     *
-     * When the context is destroyed, the handle will be released.
-     *
-     * @return The Context Handle
-     */
-    public ContextHandle getContextHandle() {
-        if (mHandle == null)
-            mHandle = ContextHandle.obtain(getActivity());
-        return mHandle;
-    }
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -190,9 +173,6 @@ public class ShareFragment extends BottomSheetDialogFragment {
         mAdapter = null;
         mManager = null;
         mShareIntent = null;
-        if (mHandle != null)
-            mHandle.release();
-        mHandle = null;
     }
 
     class TargetViewHolder extends RecyclerView.ViewHolder {
@@ -206,9 +186,9 @@ public class ShareFragment extends BottomSheetDialogFragment {
             icon = (ImageView) itemView.findViewById(R.id.icon);
             label = (TextView) itemView.findViewById(R.id.label);
 
-            itemView.setOnClickListener(new ContextViewOnClickListener(getContextHandle()) {
+            itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
-                public void onClick(Context context, View v) {
+                public void onClick(View v) {
                     mInfo = info;
                     if (getParentFragment() instanceof OnShareListener) {
                         mShareIntent = mManager.startActivityForResult(ShareFragment.this, info, REQUEST_CODE, PERMISSION_REQUEST_CODE);
@@ -219,7 +199,7 @@ public class ShareFragment extends BottomSheetDialogFragment {
                         if (mShareIntent != null)
                             ((OnShareListener) getActivity()).onShareStart(mShareIntent);
                     } else
-                        mShareIntent = mManager.startActivityForResult((Activity) context, info, REQUEST_CODE, PERMISSION_REQUEST_CODE);
+                        mShareIntent = mManager.startActivityForResult(getActivity(), info, REQUEST_CODE, PERMISSION_REQUEST_CODE);
                 }
             });
         }

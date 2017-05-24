@@ -26,7 +26,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import nuclei.task.ContextHandle;
 import nuclei.task.Result;
 import nuclei.task.http.Http;
 import nuclei.task.http.HttpException;
@@ -78,12 +77,12 @@ public class ShareUtil {
         return new File(directory, System.currentTimeMillis() + "_" + name);
     }
 
-    public static Result<File> downloadImageToShare(final ContextHandle handle, String url) {
+    public static Result<File> downloadImageToShare(Context context, String url) {
         Uri uri = Uri.parse(url);
-        return downloadImageToShare(handle, url, uri.getLastPathSegment());
+        return downloadImageToShare(context, url, uri.getLastPathSegment());
     }
 
-    public static Result<File> downloadImageToShare(final ContextHandle handle, String url, final String name) {
+    public static Result<File> downloadImageToShare(final Context context, String url, final String name) {
         final Result<File> pending = new Result<>();
         Request request = new Request.Builder()
                 .url(url)
@@ -92,18 +91,11 @@ public class ShareUtil {
                 .newCall(request).enqueue(new Callback() {
                     @Override
                     public void onFailure(Call call, final IOException e) {
-                        Context context = handle.get();
                         onException(pending, context, e);
                     }
 
                     @Override
                     public void onResponse(Call call, Response response) throws IOException {
-                        Context context = handle.get();
-                        if (context == null) {
-                            response.body().close();
-                            pending.onException(new Exception("Handle Detached"));
-                            return;
-                        }
                         if (!response.isSuccessful()) {
                             onException(pending, context, new HttpException(response.message(), response.code()));
                             return;

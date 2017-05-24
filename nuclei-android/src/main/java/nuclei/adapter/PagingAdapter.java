@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nuclei.persistence.adapter;
+package nuclei.adapter;
 
 import android.content.Context;
 import android.os.Bundle;
@@ -33,7 +33,7 @@ import nuclei.logs.Logs;
  * @param <L>
  * @param <VH>
  */
-public abstract class PagingAdapter<T, L extends List<T>, VH extends PersistenceAdapter.ViewHolder<T>>
+public abstract class PagingAdapter<T, L extends List<T>, VH extends ListAdapter.ViewHolder<T>>
         extends ListAdapter<T, L, VH> {
 
     static final Log LOG = Logs.newLog(PagingAdapter.class);

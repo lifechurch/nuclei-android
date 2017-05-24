@@ -18,6 +18,9 @@ package nuclei.media;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.SearchManager;
+import android.arch.lifecycle.Lifecycle;
+import android.arch.lifecycle.LifecycleObserver;
+import android.arch.lifecycle.OnLifecycleEvent;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -43,9 +46,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import nuclei.logs.Log;
 import nuclei.logs.Logs;
 import nuclei.media.playback.PlaybackManager;
-import nuclei.ui.Destroyable;
 
-public class MediaInterface implements Destroyable {
+public class MediaInterface implements LifecycleObserver {
 
     private static final Log LOG = Logs.newLog(MediaInterface.class);
 
@@ -135,7 +137,7 @@ public class MediaInterface implements Destroyable {
         }
     }
 
-    @Override
+    @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
     public void onDestroy() {
         if (mCallbacks != null)
             mCallbacks.onDestroy(this);

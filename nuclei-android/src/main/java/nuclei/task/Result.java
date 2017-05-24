@@ -34,7 +34,6 @@ public class Result<T> {
     boolean mDataSet;
     boolean mFromCache;
     Object mObjectHandle;
-    ContextHandle mContextHandle;
     Result<T> mForwardTo;
 
     public Result() {
@@ -116,18 +115,6 @@ public class Result<T> {
         return mDataSet && mException == null;
     }
 
-    public <C> Result<C> continueWith(final ChainedTask<C, T> task) {
-        return continueWith(task, task, Tasks.get());
-    }
-
-    public <C> Result<C> continueWith(final ChainedTask<C, T> task, final ChainedTask<C, T> errorTask) {
-        return continueWith(task, errorTask, Tasks.get());
-    }
-
-    public <C> Result<C> continueWith(final ChainedTask<C, T> task, final TaskPool taskPool) {
-        return continueWith(task, task, taskPool);
-    }
-
     public <C> Result<C> continueWith(final ChainedTask<C, T> task, final ChainedTask<C, T> errorTask, final TaskPool taskPool) {
         final Result<C> nextResult = new Result<>();
         addCallback(new CallbackAdapter<T>() {
@@ -150,48 +137,6 @@ public class Result<T> {
                 if (errorTask != null) {
                     errorTask.chainedResult = Result.this;
                     taskPool.execute(errorTask).forward(nextResult);
-                } else {
-                    nextResult.onException(err);
-                }
-            }
-        });
-        return nextResult;
-    }
-
-    public <C> Result<C> continueWith(final ContextHandle handle, final ChainedTask<C, T> task) {
-        return continueWith(handle, task, task, Tasks.get());
-    }
-
-    public <C> Result<C> continueWith(final ContextHandle handle, final ChainedTask<C, T> task, final ChainedTask<C, T> errorTask) {
-        return continueWith(handle, task, errorTask, Tasks.get());
-    }
-
-    public <C> Result<C> continueWith(final ContextHandle handle, final ChainedTask<C, T> task, final TaskPool taskPool) {
-        return continueWith(handle, task, task, taskPool);
-    }
-
-    public <C> Result<C> continueWith(final ContextHandle handle, final ChainedTask<C, T> task, final ChainedTask<C, T> errorTask, final TaskPool taskPool) {
-        final Result<C> nextResult = new Result<>();
-        addCallback(new CallbackAdapter<T>() {
-            @Override
-            public void onResult(T result) {
-                if (task != null) {
-                    task.chainedResult = Result.this;
-                    taskPool.execute(handle, task).forward(nextResult);
-                } else {
-                    try {
-                        nextResult.onResult((C) result);
-                    } catch (ClassCastException err) {
-                        nextResult.onException(err);
-                    }
-                }
-            }
-
-            @Override
-            public void onException(Exception err) {
-                if (errorTask != null) {
-                    errorTask.chainedResult = Result.this;
-                    taskPool.execute(handle, errorTask).forward(nextResult);
                 } else {
                     nextResult.onException(err);
                 }
@@ -261,19 +206,14 @@ public class Result<T> {
             mData = data;
             mDataSet = true;
             mFromCache = fromCache;
-            boolean released = mContextHandle != null && mContextHandle.get() == null;
             for (SimpleCallback<T> cb : mCallbacks) {
                 if (cb instanceof Callback) {
                     Callback<T> callback = (Callback<T>) cb;
                     callback.setResult(this);
-                    if (released) {
-                        callback.onContextReleased(mData, mObjectHandle);
-                    } else {
-                        if (fromCache)
-                            callback.onCacheResult(mData, mObjectHandle);
-                        else
-                            callback.onResult(mData, mObjectHandle);
-                    }
+                    if (fromCache)
+                        callback.onCacheResult(mData, mObjectHandle);
+                    else
+                        callback.onResult(mData, mObjectHandle);
                 } else {
                     cb.onResult(mData, mException, mObjectHandle);
                 }
@@ -305,15 +245,11 @@ public class Result<T> {
             mFromCache = fromCache;
             mDataSet = true;
             mException = err;
-            boolean released = mContextHandle != null && mContextHandle.get() == null;
             for (SimpleCallback<T> cb : mCallbacks) {
                 if (cb instanceof Callback) {
                     Callback<T> callback = (Callback<T>) cb;
                     callback.setResult(this);
-                    if (released)
-                        callback.onContextReleased(mException, mObjectHandle);
-                    else
-                        callback.onException(mException, mObjectHandle);
+                    callback.onException(mException, mObjectHandle);
                 } else {
                     cb.onResult(mData, mException, mObjectHandle);
                 }
@@ -349,16 +285,13 @@ public class Result<T> {
         }
     }
 
-    /**
-     * Leverage a ContextHandle to ensure that callbacks are only executed while the
-     * ContextHandle is not released.
-     *
-     * @param handle The ContextHandle
-     * @return The result
-     */
-    public Result<T> withHandle(ContextHandle handle) {
-        mContextHandle = handle;
-        return this;
+    public Result<T> forward(ResultLiveData<T> liveData) {
+        return addCallback(new SimpleCallback<T>() {
+            @Override
+            public void onResult(T result, Exception err, Object handle) {
+
+            }
+        });
     }
 
     public interface SimpleCallback<T> {
@@ -389,10 +322,6 @@ public class Result<T> {
         void onException(Exception err);
 
         void onException(Exception err, Object handle);
-
-        void onContextReleased(T result, Object handle);
-
-        void onContextReleased(Exception err, Object handle);
 
     }
 
@@ -452,14 +381,6 @@ public class Result<T> {
         @Override
         public void onException(Exception err, Object handle) {
             onException(err);
-        }
-
-        @Override
-        public void onContextReleased(T result, Object handle) {
-        }
-
-        @Override
-        public void onContextReleased(Exception err, Object handle) {
         }
 
     }

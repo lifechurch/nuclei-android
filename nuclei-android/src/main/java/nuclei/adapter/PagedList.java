@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nuclei.persistence.adapter;
+package nuclei.adapter;
 
 import android.content.Context;
 import android.os.Handler;

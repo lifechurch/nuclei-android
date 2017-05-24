@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import nuclei.logs.Logs;
-import nuclei.task.ContextHandle;
 import nuclei.task.Result;
 import nuclei.task.cache.SimpleCache;
 import nuclei.task.Task;
@@ -167,19 +166,6 @@ public final class Http {
         if (sHttpPool == null)
             throw new IllegalStateException("Http Pool NOT initialized");
         return sHttpPool.execute(task);
-    }
-
-    /**
-     * Execute an HTTP Task on the default Http Pool
-     *
-     * @param handle The ContextHandle to attach to the task and Result
-     * @param task
-     * @return The Result of the Task
-     */
-    public static <T> Result<T> execute(ContextHandle handle, HttpTask<T> task) {
-        if (sHttpPool == null)
-            throw new IllegalStateException("Http Pool NOT initialized");
-        return sHttpPool.execute(handle, task);
     }
 
     /**

@@ -21,7 +21,6 @@ import android.os.Build;
 import android.os.StrictMode;
 
 import io.nuclei.BuildConfig;
-import nuclei.task.ContextHandle;
 import nuclei.task.http.Http;
 import nuclei.logs.Logs;
 import nuclei.task.TaskJobService;
@@ -45,7 +44,7 @@ public class NucleiApplication extends Application {
     public void onCreate() {
         super.onCreate();
 
-        ContextHandle.initialize(this);
+        Logs.initialize(this);
         Tasks.initialize(this);
         initializeHttp();
 

@@ -4,19 +4,20 @@ buildscript {
     repositories {
         jcenter()
         maven { url 'https://dl.bintray.com/lifechurch/maven/' }
+        maven { url 'https://maven.google.com' }
         mavenLocal()
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:2.3.0'
-        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.1'
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.2'
         classpath 'com.github.dcendents:android-maven-gradle-plugin:1.5'
-        classpath "nuclei.gradle:nuclei-gradle:2.2.4"
     }
 }
 
 allprojects {
     repositories {
         jcenter()
+        maven { url 'https://maven.google.com' }
     }
 }
 
@@ -37,7 +38,9 @@ ext {
 
     exoPlayerVersion = "r2.2.0"
 
-    okHttpVersion = "3.6.0"
+    okHttpVersion = "3.7.0"
+
+    appArchVersion = '1.0.0-alpha1'
 
     // Android Test Support Libraries
     espressoRunnerVersion = "0.5"
