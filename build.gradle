@@ -29,18 +29,18 @@ ext {
     compileSdkVersion = 25
     targetSdkVersion = 25
     minSdkVersion = 15
-    buildToolsVersion = "25.0.1"
+    buildToolsVersion = "25.0.3"
 
     playServicesVersion = "9.4.0"
-    supportLibVersion = "25.3.1"
+    supportLibVersion = "25.4.0"
     glideVersion = "3.7.0"
     jsoupVersion = "1.8.3"
 
     exoPlayerVersion = "r2.2.0"
 
-    okHttpVersion = "3.7.0"
+    okHttpVersion = "3.8.1"
 
-    appArchVersion = '1.0.0-alpha1'
+    appArchVersion = '1.0.0-alpha3'
 
     // Android Test Support Libraries
     espressoRunnerVersion = "0.5"

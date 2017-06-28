@@ -1,6 +1,6 @@
 apply plugin: 'com.android.library'
 
-def versionId = "3.0.0-alpha1"
+def versionId = "3.0.0-alpha2"
 
 def isTest = false
 List<String> names = gradle.startParameter.taskNames
@@ -69,7 +69,7 @@ dependencies {
     provided ("com.android.databinding:library:1.3.1") {
         exclude group: "com.android.databinding"
     }
-    provided "com.android.databinding:baseLibrary:2.2.3"
+    provided "com.android.databinding:baseLibrary:2.3.0"
 
     // exoplayer
     compile "com.google.android.exoplayer:exoplayer:$rootProject.ext.exoPlayerVersion"

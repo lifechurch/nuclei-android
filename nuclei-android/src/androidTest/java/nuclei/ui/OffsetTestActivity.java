@@ -33,14 +33,14 @@ public class OffsetTestActivity extends NucleiActivity {
 
         ItemsAdapter adapter = new ItemsAdapter(this);
         adapter.setList(new ItemPagedList(this));
-        manage(adapter);
+        //manage(adapter);
 
         SparseArrayCompat<Integer> offsetItems = new SparseArrayCompat<>();
         offsetItems.put(1, Integer.MAX_VALUE - 1);
         offsetItems.put(10, Integer.MAX_VALUE - 2);
 
         OffsetTestAdapter offsetAdapter = new OffsetTestAdapter(this, adapter, offsetItems);
-        manage(offsetAdapter);
+        //manage(offsetAdapter);
 
         RecyclerView items = (RecyclerView) findViewById(R.id.items);
         items.setLayoutManager(new LinearLayoutManager(this));
