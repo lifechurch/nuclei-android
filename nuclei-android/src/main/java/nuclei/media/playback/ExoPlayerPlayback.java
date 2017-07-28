@@ -20,7 +20,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioManager;
-import android.media.PlaybackParams;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.Build;
@@ -31,11 +30,11 @@ import android.support.v4.media.session.PlaybackStateCompat;
 import android.text.TextUtils;
 import android.view.Surface;
 
-import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.ExoPlayerFactory;
 import com.google.android.exoplayer2.Format;
+import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
@@ -44,7 +43,7 @@ import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.source.hls.HlsMediaSource;
-import com.google.android.exoplayer2.trackselection.AdaptiveVideoTrackSelection;
+import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.upstream.DataSource;
@@ -110,7 +109,7 @@ public class ExoPlayerPlayback extends BasePlayback
 
     private long mSurfaceId;
     private Surface mSurface;
-    private PlaybackParams mPlaybackParams;
+    private PlaybackParameters mPlaybackParams;
 
     private final PowerManager.WakeLock mWakeLock;
 
@@ -467,6 +466,11 @@ public class ExoPlayerPlayback extends BasePlayback
         }
     }
 
+    @Override
+    public void onPlaybackParametersChanged(PlaybackParameters playbackParameters) {
+
+    }
+
     /**
      * Called by AudioManager on audio focus changes.
      * Implementation of {@link AudioManager.OnAudioFocusChangeListener}
@@ -534,7 +538,7 @@ public class ExoPlayerPlayback extends BasePlayback
         }
         mPrepared = false;
         mMediaPlayer = ExoPlayerFactory.newSimpleInstance(mService.getApplicationContext(),
-                new DefaultTrackSelector(new AdaptiveVideoTrackSelection.Factory(BANDWIDTH_METER)), new DefaultLoadControl());
+                new DefaultTrackSelector(new AdaptiveTrackSelection.Factory(BANDWIDTH_METER)));
         mMediaPlayer.addListener(this);
         boolean hls = false;
         boolean localFile = url.startsWith("file://");
@@ -622,7 +626,7 @@ public class ExoPlayerPlayback extends BasePlayback
                     mState = PlaybackStateCompat.STATE_PLAYING;
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                         if (mPlaybackParams != null)
-                            mMediaPlayer.setPlaybackParams(mPlaybackParams);
+                            mMediaPlayer.setPlaybackParameters(mPlaybackParams);
                     }
                 } else
                     mState = PlaybackStateCompat.STATE_PAUSED;
@@ -795,10 +799,10 @@ public class ExoPlayerPlayback extends BasePlayback
     }
 
     @Override
-    public void setPlaybackParams(PlaybackParams playbackParams) {
+    public void setPlaybackParams(PlaybackParameters playbackParams) {
         mPlaybackParams = playbackParams;
         if (mMediaPlayer != null)
-            mMediaPlayer.setPlaybackParams(mPlaybackParams);
+            mMediaPlayer.setPlaybackParameters(playbackParams);
         if (mCallback != null)
             mCallback.onPlaybackStatusChanged(mState);
     }

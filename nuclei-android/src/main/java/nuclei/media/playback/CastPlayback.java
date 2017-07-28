@@ -22,6 +22,7 @@ import android.support.v4.media.session.PlaybackStateCompat;
 import android.text.TextUtils;
 import android.view.Surface;
 
+import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.gms.cast.MediaInfo;
 import com.google.android.gms.cast.MediaStatus;
 import com.google.android.gms.common.ConnectionResult;
@@ -466,7 +467,7 @@ public class CastPlayback extends BasePlayback implements Playback {
     }
 
     @Override
-    public void setPlaybackParams(PlaybackParams playbackParams) {
+    public void setPlaybackParams(PlaybackParameters playbackParams) {
         if (mCallback != null)
             mCallback.onPlaybackStatusChanged(mState);
     }

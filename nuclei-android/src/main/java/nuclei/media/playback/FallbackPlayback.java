@@ -30,6 +30,8 @@ import android.support.v4.media.session.PlaybackStateCompat;
 import android.text.TextUtils;
 import android.view.Surface;
 
+import com.google.android.exoplayer2.PlaybackParameters;
+
 import nuclei.logs.Log;
 import nuclei.logs.Logs;
 import nuclei.media.MediaId;
@@ -608,12 +610,12 @@ public class FallbackPlayback extends BasePlayback implements Playback, AudioMan
     }
 
     @Override
-    public void setPlaybackParams(PlaybackParams playbackParams) {
+    public void setPlaybackParams(PlaybackParameters playbackParams) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (mMediaPlayer == null || !mPrepared) {
-                mPlaybackParams = playbackParams;
+                mPlaybackParams = new PlaybackParams().setSpeed(playbackParams.speed).setPitch(playbackParams.pitch);
             } else {
-                mMediaPlayer.setPlaybackParams(playbackParams);
+                mMediaPlayer.setPlaybackParams(new PlaybackParams().setSpeed(playbackParams.speed).setPitch(playbackParams.pitch));
 
                 if (mState != PlaybackStateCompat.STATE_PLAYING && mMediaPlayer.isPlaying()) {
                     mState = PlaybackStateCompat.STATE_PLAYING;
