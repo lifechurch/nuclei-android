@@ -619,11 +619,9 @@ public class PlaybackManager implements Playback.Callback {
                     }
                     break;
                 case MediaService.ACTION_SET_SPEED:
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        final float speed = extras.getFloat(MediaService.EXTRA_SPEED);
-                        mServiceCallback.onSpeedSet(speed);
-                        mPlayback.setPlaybackParams(new PlaybackParameters(speed, 1));
-                    }
+                    final float speed = extras.getFloat(MediaService.EXTRA_SPEED);
+                    mServiceCallback.onSpeedSet(speed);
+                    mPlayback.setPlaybackParams(new PlaybackParameters(speed, 1));
                     break;
                 case MediaService.ACTION_SET_TIMER:
                     mTimer = extras.getLong(MediaService.EXTRA_TIMER);
