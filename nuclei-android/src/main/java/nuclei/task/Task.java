@@ -249,12 +249,12 @@ public abstract class Task<T> implements Runnable {
             throw new IllegalStateException("Already attached");
         this.pool = pool;
         if (this.result == null)
-            this.result = new Result<>();
+            this.result = new Result<>(getId());
         return this.result;
     }
 
     final Result<T> deferredAttach() {
-        this.result = new Result<>();
+        this.result = new Result<>(getId());
         return this.result;
     }
 

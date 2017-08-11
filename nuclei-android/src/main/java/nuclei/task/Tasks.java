@@ -55,18 +55,18 @@ public final class Tasks {
         return sDefault.executeNowResult(task);
     }
 
-    public static <T> Result<T> execute(TaskRunnable<T> runnable) {
-        RunnableTask<T> task = new RunnableTask<>(runnable);
+    public static <T> Result<T> execute(String id, TaskRunnable<T> runnable) {
+        RunnableTask<T> task = new RunnableTask<>(id, runnable);
         return sDefault.execute(task);
     }
 
-    public static <T> T executeNow(TaskRunnable<T> runnable) {
-        RunnableTask<T> task = new RunnableTask<>(runnable);
+    public static <T> T executeNow(String id, TaskRunnable<T> runnable) {
+        RunnableTask<T> task = new RunnableTask<>(id, runnable);
         return sDefault.executeNow(task);
     }
 
-    public static <T> Result<T> executeNowResult(TaskRunnable<T> runnable) {
-        RunnableTask<T> task = new RunnableTask<>(runnable);
+    public static <T> Result<T> executeNowResult(String id, TaskRunnable<T> runnable) {
+        RunnableTask<T> task = new RunnableTask<>(id, runnable);
         return sDefault.executeNowResult(task);
     }
 

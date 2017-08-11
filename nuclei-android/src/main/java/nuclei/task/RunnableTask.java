@@ -4,15 +4,17 @@ import android.content.Context;
 
 public class RunnableTask<T> extends Task<T> {
 
+    private final String mId;
     private final TaskRunnable<T> mRunnable;
 
-    public RunnableTask(TaskRunnable<T> runnable) {
+    public RunnableTask(String id, TaskRunnable<T> runnable) {
+        mId = id;
         mRunnable = runnable;
     }
 
     @Override
     public String getId() {
-        return "runnable-" + System.currentTimeMillis();
+        return mId;
     }
 
     @Override

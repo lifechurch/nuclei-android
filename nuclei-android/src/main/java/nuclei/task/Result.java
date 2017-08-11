@@ -29,6 +29,7 @@ public class Result<T> {
 
     final List<SimpleCallback<T>> mCallbacks = new ArrayList<>(1);
 
+    String mId;
     T mData;
     Exception mException;
     boolean mDataSet;
@@ -39,9 +40,17 @@ public class Result<T> {
     public Result() {
     }
 
+    public Result(String id) {
+        mId = id;
+    }
+
     public Result(T data) {
         mData = data;
         mDataSet = true;
+    }
+
+    public String getTaskId() {
+        return mId;
     }
 
     public Result<T> forward(Result<T> forwardTo) {
