@@ -173,13 +173,9 @@ public class PlayerControlsView extends FrameLayout {
 
         TextView speed = ((TextView) view.findViewById(R.id.btn_speed));
         if (speed != null) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                speed.setText(ResourceProvider.getInstance().getSelectedSpeed());
-                speed.setOnClickListener(listener);
-                speed.setVisibility(View.VISIBLE);
-            } else {
-                speed.setVisibility(View.GONE);
-            }
+            speed.setText(ResourceProvider.getInstance().getSelectedSpeed());
+            speed.setOnClickListener(listener);
+            speed.setVisibility(View.VISIBLE);
         }
 
         TextView timer = (TextView) view.findViewById(R.id.btn_timer);

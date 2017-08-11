@@ -20,7 +20,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioManager;
-import android.media.PlaybackParams;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.Build;
@@ -31,11 +30,11 @@ import android.support.v4.media.session.PlaybackStateCompat;
 import android.text.TextUtils;
 import android.view.Surface;
 
-import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.ExoPlayerFactory;
 import com.google.android.exoplayer2.Format;
+import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
@@ -44,7 +43,7 @@ import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.source.hls.HlsMediaSource;
-import com.google.android.exoplayer2.trackselection.AdaptiveVideoTrackSelection;
+import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.upstream.DataSource;
@@ -87,7 +86,7 @@ public class ExoPlayerPlayback extends BasePlayback
     // we have full audio focus
     private static final int AUDIO_FOCUSED = 2;
 
-    private static final DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
+    protected static final DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
 
     private final Handler mHandler;
     final MediaService mService;
@@ -110,7 +109,7 @@ public class ExoPlayerPlayback extends BasePlayback
 
     private long mSurfaceId;
     private Surface mSurface;
-    private PlaybackParams mPlaybackParams;
+    private PlaybackParameters mPlaybackParams;
 
     private final PowerManager.WakeLock mWakeLock;
 
@@ -467,6 +466,11 @@ public class ExoPlayerPlayback extends BasePlayback
         }
     }
 
+    @Override
+    public void onPlaybackParametersChanged(PlaybackParameters playbackParameters) {
+
+    }
+
     /**
      * Called by AudioManager on audio focus changes.
      * Implementation of {@link AudioManager.OnAudioFocusChangeListener}
@@ -507,19 +511,48 @@ public class ExoPlayerPlayback extends BasePlayback
      *                          DataSource factory.
      * @return A new DataSource factory.
      */
-    private DataSource.Factory buildDataSourceFactory(Context context, boolean useBandwidthMeter, boolean http) {
+    protected DataSource.Factory buildDataSourceFactory(Context context, boolean useBandwidthMeter, boolean http) {
         return http
                ? buildHttpDataSourceFactory(context, useBandwidthMeter)
                : buildFileDataSourceFactory(useBandwidthMeter);
     }
 
-    private HttpDataSource.Factory buildHttpDataSourceFactory(Context context, boolean useBandwidthMeter) {
+    protected HttpDataSource.Factory buildHttpDataSourceFactory(Context context, boolean useBandwidthMeter) {
         final String userAgent = Util.getUserAgent(context, "NucleiPlayer");
         return new DefaultHttpDataSourceFactory(userAgent, useBandwidthMeter ? BANDWIDTH_METER : null, 15000, 15000, false);
     }
 
-    private DataSource.Factory buildFileDataSourceFactory(boolean useBandwidthMeter) {
+    protected DataSource.Factory buildFileDataSourceFactory(boolean useBandwidthMeter) {
         return new FileDataSourceFactory(useBandwidthMeter ? BANDWIDTH_METER : null);
+    }
+
+    protected SimpleExoPlayer newMediaPlayer(Context context, String url, int type) {
+        return ExoPlayerFactory.newSimpleInstance(context,
+                new DefaultTrackSelector(new AdaptiveTrackSelection.Factory(BANDWIDTH_METER)));
+    }
+
+    protected MediaSource newMediaSource(Context context, String url, int type, Handler handler) {
+        boolean hls = false;
+        boolean localFile = url.startsWith("file://");
+        if (!localFile) {
+            try {
+                hls = type == MediaId.TYPE_VIDEO || Uri.parse(url).getPath().endsWith(".m3u8");
+            } catch (Exception ignore) {
+            }
+        }
+        // expecting MP3 here ... otherwise HLS
+        if ((localFile || type == MediaId.TYPE_AUDIO) && !hls) {
+            return new ExtractorMediaSource(Uri.parse(url),
+                    buildDataSourceFactory(context, true, !localFile),
+                    new DefaultExtractorsFactory(),
+                    handler,
+                    this);
+        } else {
+            return new HlsMediaSource(Uri.parse(url),
+                    buildDataSourceFactory(context, true, true),
+                    handler,
+                    this);
+        }
     }
 
     /**
@@ -533,32 +566,12 @@ public class ExoPlayerPlayback extends BasePlayback
             mMediaPlayer.removeListener(this);
         }
         mPrepared = false;
-        mMediaPlayer = ExoPlayerFactory.newSimpleInstance(mService.getApplicationContext(),
-                new DefaultTrackSelector(new AdaptiveVideoTrackSelection.Factory(BANDWIDTH_METER)), new DefaultLoadControl());
+        mMediaPlayer = newMediaPlayer(mService.getApplicationContext(), url, type);
         mMediaPlayer.addListener(this);
-        boolean hls = false;
-        boolean localFile = url.startsWith("file://");
-        if (!localFile) {
-            try {
-                hls = type == MediaId.TYPE_VIDEO || Uri.parse(url).getPath().endsWith(".m3u8");
-            } catch (Exception ignore) {
-            }
-        }
-        // expecting MP3 here ... otherwise HLS
-        if ((localFile || type == MediaId.TYPE_AUDIO) && !hls) {
-            MediaSource mediaSource = new ExtractorMediaSource(Uri.parse(url),
-                    buildDataSourceFactory(mService.getApplication(), true, !localFile),
-                    new DefaultExtractorsFactory(),
-                    mHandler,
-                    this);
-            mMediaPlayer.prepare(mediaSource);
-        } else {
-            MediaSource mediaSource = new HlsMediaSource(Uri.parse(url),
-                    buildDataSourceFactory(mService.getApplication(), true, true),
-                    mHandler,
-                    this);
-            mMediaPlayer.prepare(mediaSource);
-        }
+
+        MediaSource mediaSource = newMediaSource(mService.getApplicationContext(), url, type, mHandler);
+        mMediaPlayer.prepare(mediaSource);
+
         // Make sure the media player will acquire a wake-lock while
         // playing. If we don't do that, the CPU might go to sleep while the
         // song is playing, causing playback to stop.
@@ -622,7 +635,7 @@ public class ExoPlayerPlayback extends BasePlayback
                     mState = PlaybackStateCompat.STATE_PLAYING;
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                         if (mPlaybackParams != null)
-                            mMediaPlayer.setPlaybackParams(mPlaybackParams);
+                            mMediaPlayer.setPlaybackParameters(mPlaybackParams);
                     }
                 } else
                     mState = PlaybackStateCompat.STATE_PAUSED;
@@ -795,10 +808,10 @@ public class ExoPlayerPlayback extends BasePlayback
     }
 
     @Override
-    public void setPlaybackParams(PlaybackParams playbackParams) {
+    public void setPlaybackParams(PlaybackParameters playbackParams) {
         mPlaybackParams = playbackParams;
         if (mMediaPlayer != null)
-            mMediaPlayer.setPlaybackParams(mPlaybackParams);
+            mMediaPlayer.setPlaybackParameters(playbackParams);
         if (mCallback != null)
             mCallback.onPlaybackStatusChanged(mState);
     }

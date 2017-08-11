@@ -18,6 +18,8 @@ package nuclei.media.playback;
 import android.media.PlaybackParams;
 import android.view.Surface;
 
+import com.google.android.exoplayer2.PlaybackParameters;
+
 import nuclei.media.MediaId;
 import nuclei.media.MediaMetadata;
 
@@ -69,7 +71,7 @@ public interface Playback {
 
     void setSurface(long surfaceId, Surface surface);
 
-    void setPlaybackParams(PlaybackParams playbackParams);
+    void setPlaybackParams(PlaybackParameters playbackParams);
 
     interface Callback {
         /**

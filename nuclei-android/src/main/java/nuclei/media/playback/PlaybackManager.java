@@ -16,7 +16,6 @@
 
 package nuclei.media.playback;
 
-import android.media.PlaybackParams;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -27,6 +26,8 @@ import android.support.annotation.NonNull;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.view.Surface;
+
+import com.google.android.exoplayer2.PlaybackParameters;
 
 import java.lang.ref.WeakReference;
 
@@ -120,11 +121,9 @@ public class PlaybackManager implements Playback.Callback {
             final MediaId id = MediaProvider.getInstance().getMediaId(mMediaMetadata.getDescription().getMediaId());
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 if (id.type == MediaId.TYPE_AUDIO)
-                    mPlayback.setPlaybackParams(new PlaybackParams()
-                            .allowDefaults()
-                            .setSpeed(mServiceCallback.getAudioSpeed()));
+                    mPlayback.setPlaybackParams(new PlaybackParameters(mServiceCallback.getAudioSpeed(), 1));
                 else
-                    mPlayback.setPlaybackParams(new PlaybackParams().allowDefaults());
+                    mPlayback.setPlaybackParams(PlaybackParameters.DEFAULT);
             }
             mServiceCallback.onPlaybackPrepare(id);
             mPlayback.prepare(mMediaMetadata);
@@ -145,11 +144,9 @@ public class PlaybackManager implements Playback.Callback {
             final MediaId id = MediaProvider.getInstance().getMediaId(mMediaMetadata.getDescription().getMediaId());
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 if (id.type == MediaId.TYPE_AUDIO)
-                    mPlayback.setPlaybackParams(new PlaybackParams()
-                            .allowDefaults()
-                            .setSpeed(mServiceCallback.getAudioSpeed()));
+                    mPlayback.setPlaybackParams(new PlaybackParameters(mServiceCallback.getAudioSpeed(), 1));
                 else
-                    mPlayback.setPlaybackParams(new PlaybackParams().allowDefaults());
+                    mPlayback.setPlaybackParams(PlaybackParameters.DEFAULT);
             }
             mServiceCallback.onPlaybackStart(id);
             mServiceCallback.onNotificationRequired();
@@ -622,13 +619,9 @@ public class PlaybackManager implements Playback.Callback {
                     }
                     break;
                 case MediaService.ACTION_SET_SPEED:
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        final float speed = extras.getFloat(MediaService.EXTRA_SPEED);
-                        mServiceCallback.onSpeedSet(speed);
-                        mPlayback.setPlaybackParams(new PlaybackParams()
-                                .allowDefaults()
-                                .setSpeed(speed));
-                    }
+                    final float speed = extras.getFloat(MediaService.EXTRA_SPEED);
+                    mServiceCallback.onSpeedSet(speed);
+                    mPlayback.setPlaybackParams(new PlaybackParameters(speed, 1));
                     break;
                 case MediaService.ACTION_SET_TIMER:
                     mTimer = extras.getLong(MediaService.EXTRA_TIMER);
