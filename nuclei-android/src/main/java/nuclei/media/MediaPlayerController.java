@@ -51,6 +51,10 @@ public class MediaPlayerController implements MediaController.MediaPlayerControl
         return mCallbacks != null && mMediaControls != null;
     }
 
+    public void setCallbacks(MediaInterface.MediaInterfaceCallback callback) {
+        mCallbacks = callback;
+    }
+
     public void setMediaControls(MediaInterface.MediaInterfaceCallback callback, MediaControllerCompat mediaControls) {
         mCallbacks = callback;
         mMediaControls = mediaControls;

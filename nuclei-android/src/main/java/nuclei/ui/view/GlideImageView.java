@@ -66,7 +66,7 @@ public class GlideImageView extends AppCompatImageView {
     }
 
     boolean mCircle = false;
-    private int mDownloadState;
+    private int mDownloadState = -1;
     float mRadius;
     private float mRatio;
     private int mPlaceholderId;
@@ -99,8 +99,6 @@ public class GlideImageView extends AppCompatImageView {
         final TypedArray a = context.obtainStyledAttributes(attrs,
                 R.styleable.GlideImageView, defStyleAttr, defStyleRes);
 
-        mDownloadState = sDefaultDownloadState;
-
         mCircle = a.getBoolean(R.styleable.GlideImageView_circle, false);
         mRatio = a.getFloat(R.styleable.GlideImageView_ratio, 0);
         mRadius = a.getDimensionPixelSize(R.styleable.GlideImageView_radius, 0);
@@ -116,14 +114,12 @@ public class GlideImageView extends AppCompatImageView {
         boolean preload = a.getBoolean(R.styleable.GlideImageView_preload, true);
         a.recycle();
 
-        if (preload) {
-            if (!isInEditMode()) {
-                if (uri == null) {
-                    setPlaceHolder();
-                } else
-                    setImageURI(uri);
-            } else
+        if (preload && !isInEditMode()) {
+            if (uri == null) {
                 setPlaceHolder();
+            } else
+                setImageURI(uri);
+
         }
     }
 
@@ -242,7 +238,10 @@ public class GlideImageView extends AppCompatImageView {
 
     @Override
     public void setImageURI(Uri uri) {
-        if (mDownloadState == DOWNLOAD_STATE_NONE) {
+        if (isInEditMode())
+            return;
+        int downloadStatus = mDownloadState == -1 ? sDefaultDownloadState : mDownloadState;
+        if (downloadStatus == DOWNLOAD_STATE_NONE) {
             if (mPlaceholderId == 0) {
                 Glide.clear(this);
                 setImageDrawable(null);
@@ -251,8 +250,6 @@ public class GlideImageView extends AppCompatImageView {
             }
             return;
         }
-        if (isInEditMode())
-            return;
         mSet = true;
         try {
             mUri = uri;
@@ -267,7 +264,7 @@ public class GlideImageView extends AppCompatImageView {
             } else {
                 if (mCircle || mRadius > 0) {
                     if (mPlaceholderId != 0) {
-                        if (mDownloadState == DOWNLOAD_STATE_CACHE_ONLY)
+                        if (downloadStatus == DOWNLOAD_STATE_CACHE_ONLY)
                             mgr.using(CACHE_MODEL_LOADER)
                                     .load(uri)
                                     .asBitmap()
@@ -285,7 +282,7 @@ public class GlideImageView extends AppCompatImageView {
                                     .fallback(mPlaceholderId)
                                     .into(newTarget());
                     } else {
-                        if (mDownloadState == DOWNLOAD_STATE_CACHE_ONLY)
+                        if (downloadStatus == DOWNLOAD_STATE_CACHE_ONLY)
                             mgr.using(CACHE_MODEL_LOADER)
                                     .load(uri)
                                     .asBitmap()
@@ -299,7 +296,7 @@ public class GlideImageView extends AppCompatImageView {
                     }
                 } else {
                     if (mPlaceholderId != 0) {
-                        if (mDownloadState == DOWNLOAD_STATE_CACHE_ONLY)
+                        if (downloadStatus == DOWNLOAD_STATE_CACHE_ONLY)
                             mgr.using(CACHE_MODEL_LOADER)
                                     .load(uri)
                                     .asBitmap()
@@ -317,7 +314,7 @@ public class GlideImageView extends AppCompatImageView {
                                     .fallback(mPlaceholderId)
                                     .into(this);
                     } else {
-                        if (mDownloadState == DOWNLOAD_STATE_CACHE_ONLY)
+                        if (downloadStatus == DOWNLOAD_STATE_CACHE_ONLY)
                             mgr.using(CACHE_MODEL_LOADER)
                                     .load(uri)
                                     .asBitmap()

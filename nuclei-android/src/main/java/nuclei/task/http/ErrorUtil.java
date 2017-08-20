@@ -37,17 +37,19 @@ public final class ErrorUtil {
     public static int getErrorType(Exception err) {
         Throwable t = err;
         int error = getErrorType(t);
-        if (error != GENERIC)
+        if (error != GENERIC && error != GENERIC_IO)
             return error;
         int depth = 10;
         do {
             if (t != null) {
                 error = getErrorType(t);
-                if (error != GENERIC)
+                if (error != GENERIC && error != GENERIC_IO)
                     return error;
                 t = t.getCause();
             }
         } while (t != null && depth-- > 0);
+        if (error != GENERIC)
+            return error;
         return GENERIC;
     }
 
