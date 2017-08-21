@@ -56,6 +56,7 @@ public abstract class ResourceProvider {
         return CONTEXT;
     }
 
+    public abstract String getNotificationChannelId();
     public abstract CharSequence getString(int id);
     public abstract CharSequence getString(int id, String v);
     public abstract CharSequence getQuantityString(int id, int quantity);

@@ -28,6 +28,7 @@ import android.media.session.MediaController;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.os.RemoteException;
 import android.provider.MediaStore;
@@ -55,6 +56,7 @@ public class MediaInterface implements LifecycleObserver {
 
     private static final AtomicLong SURFACE_ID = new AtomicLong(1);
 
+    private Context mAppliationContext;
     private Activity mLActivity;
     private FragmentActivity mFragmentActivity;
     MediaInterfaceCallback mCallbacks;
@@ -62,17 +64,19 @@ public class MediaInterface implements LifecycleObserver {
     private MediaControllerCompat mMediaControls;
     private MediaControllerCompat.Callback mMediaCallback;
     private MediaPlayerController mPlayerControls;
-    private ProgressHandler mHandler = new ProgressHandler(this);
+    private ProgressHandler mProgressHandler = new ProgressHandler(this);
+    private Handler mCallbackHandler = new Handler(Looper.getMainLooper());
     private Surface mSurface;
     private long mSurfaceId;
 
     public MediaInterface(FragmentActivity activity, MediaId mediaId, MediaInterfaceCallback callback) {
         mFragmentActivity = activity;
+        mAppliationContext = activity.getApplicationContext();
         mCallbacks = callback;
         mPlayerControls = new MediaPlayerController(mediaId);
         mPlayerControls.setMediaControls(mCallbacks, null);
-        mMediaBrowser = new MediaBrowserCompat(activity.getApplicationContext(),
-                new ComponentName(activity, MediaService.class),
+        mMediaBrowser = new MediaBrowserCompat(mAppliationContext,
+                new ComponentName(mAppliationContext, MediaService.class),
                 new MediaBrowserCompat.ConnectionCallback() {
                     @Override
                     public void onConnected() {
@@ -88,11 +92,32 @@ public class MediaInterface implements LifecycleObserver {
     @TargetApi(21)
     public MediaInterface(Activity activity, MediaId mediaId, MediaInterfaceCallback callback) {
         mLActivity = activity;
+        mAppliationContext = activity.getApplicationContext();
         mCallbacks = callback;
         mPlayerControls = new MediaPlayerController(mediaId);
         mPlayerControls.setMediaControls(mCallbacks, null);
-        mMediaBrowser = new MediaBrowserCompat(activity.getApplicationContext(),
-                new ComponentName(activity, MediaService.class),
+        mMediaBrowser = new MediaBrowserCompat(mAppliationContext,
+                new ComponentName(mAppliationContext, MediaService.class),
+                new MediaBrowserCompat.ConnectionCallback() {
+                    @Override
+                    public void onConnected() {
+                        MediaInterface.this.onConnected();
+                    }
+                }, null);
+        mMediaBrowser.connect();
+        mSurfaceId = SURFACE_ID.incrementAndGet();
+        if (SURFACE_ID.longValue() == Long.MAX_VALUE)
+            SURFACE_ID.set(1);
+    }
+
+    @TargetApi(21)
+    public MediaInterface(Context context, MediaId mediaId, MediaInterfaceCallback callback) {
+        mCallbacks = callback;
+        mAppliationContext = context.getApplicationContext();
+        mPlayerControls = new MediaPlayerController(mediaId);
+        mPlayerControls.setMediaControls(mCallbacks, null);
+        mMediaBrowser = new MediaBrowserCompat(mAppliationContext,
+                new ComponentName(mAppliationContext, MediaService.class),
                 new MediaBrowserCompat.ConnectionCallback() {
                     @Override
                     public void onConnected() {
@@ -113,16 +138,20 @@ public class MediaInterface implements LifecycleObserver {
         return mMediaControls;
     }
 
+    public Handler getCallbackHandler() {
+        return mCallbackHandler;
+    }
+
     public void autoHide() {
-        if (mHandler != null) {
-            mHandler.removeMessages(ProgressHandler.AUTO_HIDE);
-            mHandler.sendEmptyMessageDelayed(ProgressHandler.AUTO_HIDE, 3000);
+        if (mProgressHandler != null) {
+            mProgressHandler.removeMessages(ProgressHandler.AUTO_HIDE);
+            mProgressHandler.sendEmptyMessageDelayed(ProgressHandler.AUTO_HIDE, 3000);
         }
     }
 
     public void cancelAutoHide() {
-        if (mHandler != null)
-            mHandler.removeMessages(ProgressHandler.AUTO_HIDE);
+        if (mProgressHandler != null)
+            mProgressHandler.removeMessages(ProgressHandler.AUTO_HIDE);
     }
 
     public void setSurface(Surface surface) {
@@ -155,7 +184,8 @@ public class MediaInterface implements LifecycleObserver {
         mCallbacks = null;
         mFragmentActivity = null;
         mLActivity = null;
-        mHandler = null;
+        mProgressHandler = null;
+        mCallbackHandler = null;
     }
 
     @TargetApi(21)
@@ -166,10 +196,7 @@ public class MediaInterface implements LifecycleObserver {
 
     void onConnected() {
         try {
-            Context context = mFragmentActivity == null ? mLActivity : mFragmentActivity;
-            if (context == null)
-                return;
-            mMediaControls = new MediaControllerCompat(context, mMediaBrowser.getSessionToken());
+            mMediaControls = new MediaControllerCompat(mAppliationContext, mMediaBrowser.getSessionToken());
             mMediaCallback = new MediaControllerCompat.Callback() {
                 @Override
                 public void onPlaybackStateChanged(PlaybackStateCompat state) {
@@ -186,7 +213,7 @@ public class MediaInterface implements LifecycleObserver {
                     MediaInterface.this.onMetadataChanged(metadata);
                 }
             };
-            mMediaControls.registerCallback(mMediaCallback);
+            mMediaControls.registerCallback(mMediaCallback, mCallbackHandler);
 
             if (mFragmentActivity != null) {
                 MediaControllerCompat.setMediaController(mFragmentActivity, mMediaControls);
@@ -200,13 +227,17 @@ public class MediaInterface implements LifecycleObserver {
             if (mMediaControls.getPlaybackState() != null)
                 onPlaybackStateChanged(mMediaControls.getPlaybackState());
 
-            final Intent intent = mFragmentActivity == null ? mLActivity.getIntent() : mFragmentActivity.getIntent();
-            if (MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH.equals(intent.getAction())) {
-                final Bundle params = intent.getExtras();
-                final String query = params.getString(SearchManager.QUERY);
-                LOG.i("Starting from voice search query=" + query);
-                mMediaControls.getTransportControls()
-                        .playFromSearch(query, params);
+            if (mLActivity != null || mFragmentActivity != null) {
+                final Intent intent = mFragmentActivity == null ? mLActivity.getIntent() : mFragmentActivity.getIntent();
+                if (MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH.equals(intent.getAction())) {
+                    final Bundle params = intent.getExtras();
+                    if (params != null) {
+                        final String query = params.getString(SearchManager.QUERY);
+                        LOG.i("Starting from voice search query=" + query);
+                        mMediaControls.getTransportControls()
+                                .playFromSearch(query, params);
+                    }
+                }
             }
             if (mCallbacks != null) {
                 mCallbacks.onConnected(this);
@@ -224,12 +255,12 @@ public class MediaInterface implements LifecycleObserver {
             }
 
             if (mPlayerControls != null && mPlayerControls.isPlaying())
-                mHandler.start();
+                mProgressHandler.start();
 
             if (mSurface != null)
                 setSurface(mSurface);
 
-            LocalBroadcastManager.getInstance(context).sendBroadcast(new Intent(ACTION_CONNECTED));
+            LocalBroadcastManager.getInstance(mAppliationContext).sendBroadcast(new Intent(ACTION_CONNECTED));
         } catch (RemoteException err) {
             LOG.e("Error in onConnected", err);
         }
@@ -248,8 +279,8 @@ public class MediaInterface implements LifecycleObserver {
             if (MediaPlayerController.isPlaying(mMediaControls, state, mPlayerControls.getMediaId())) {
                 if (mCallbacks != null)
                     mCallbacks.onPlaying(mPlayerControls);
-                if (mHandler != null)
-                    mHandler.start();
+                if (mProgressHandler != null)
+                    mProgressHandler.start();
             } else {
                 if (mCallbacks != null) {
                     if (state.getState() == PlaybackStateCompat.STATE_STOPPED)
@@ -257,11 +288,11 @@ public class MediaInterface implements LifecycleObserver {
                     else
                         mCallbacks.onPaused(mPlayerControls);
                 }
-                if (mHandler != null)
-                    mHandler.stop();
+                if (mProgressHandler != null)
+                    mProgressHandler.stop();
             }
-        } else if (mHandler != null) {
-            mHandler.stop();
+        } else if (mProgressHandler != null) {
+            mProgressHandler.stop();
         }
         if (state.getState() == PlaybackStateCompat.STATE_PLAYING && mCallbacks != null) {
             if (mPlayerControls != null
@@ -302,21 +333,27 @@ public class MediaInterface implements LifecycleObserver {
     }
 
     public void setSpeed(float speed) {
-        Bundle args = new Bundle();
-        args.putFloat(MediaService.EXTRA_SPEED, speed);
-        mMediaControls.getTransportControls().sendCustomAction(MediaService.ACTION_SET_SPEED, args);
+        if (mMediaControls != null) {
+            Bundle args = new Bundle();
+            args.putFloat(MediaService.EXTRA_SPEED, speed);
+            mMediaControls.getTransportControls().sendCustomAction(MediaService.ACTION_SET_SPEED, args);
+        }
     }
 
     public void setTimer(long timer) {
-        Bundle args = new Bundle();
-        args.putLong(MediaService.EXTRA_TIMER, timer);
-        mMediaControls.getTransportControls().sendCustomAction(MediaService.ACTION_SET_TIMER, args);
+        if (mMediaControls != null) {
+            Bundle args = new Bundle();
+            args.putLong(MediaService.EXTRA_TIMER, timer);
+            mMediaControls.getTransportControls().sendCustomAction(MediaService.ACTION_SET_TIMER, args);
+        }
     }
 
     public void setAutoContinue(boolean autoContinue) {
-        Bundle args = new Bundle();
-        args.putBoolean(MediaService.EXTRA_AUTO_CONTINUE, autoContinue);
-        mMediaControls.getTransportControls().sendCustomAction(MediaService.ACTION_SET_AUTO_CONTINUE, args);
+        if (mMediaControls != null) {
+            Bundle args = new Bundle();
+            args.putBoolean(MediaService.EXTRA_AUTO_CONTINUE, autoContinue);
+            mMediaControls.getTransportControls().sendCustomAction(MediaService.ACTION_SET_AUTO_CONTINUE, args);
+        }
     }
 
     public interface MediaInterfaceCallback {

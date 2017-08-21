@@ -43,7 +43,7 @@ public class MediaPlayerController implements MediaController.MediaPlayerControl
         mMediaId = mediaId;
         if (play)
             start();
-        else
+        else if (mMediaControls != null)
             mMediaControls.getTransportControls().prepareFromMediaId(mediaId.toString(), null);
     }
 

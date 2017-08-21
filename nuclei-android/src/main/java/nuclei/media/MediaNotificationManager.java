@@ -31,7 +31,7 @@ import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
-import android.support.v7.app.NotificationCompat;
+import android.support.v4.app.NotificationCompat;
 
 import io.nuclei.R;
 import nuclei.ui.util.ViewUtil;
@@ -269,7 +269,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
             return null;
         }
 
-        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(mService);
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(mService, ResourceProvider.getInstance().getNotificationChannelId());
         int playPauseButtonPosition = 0;
 
         // If skip to previous action is enabled
@@ -303,7 +303,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-            notificationBuilder.setStyle(new NotificationCompat.MediaStyle()
+            notificationBuilder.setStyle(new android.support.v4.media.app.NotificationCompat.MediaStyle()
                     .setShowActionsInCompactView(playPauseButtonPosition)  // show only play/pause in compact view
                     .setShowCancelButton(true)
                     .setCancelButtonIntent(mCancelIntent)
@@ -331,9 +331,6 @@ public class MediaNotificationManager extends BroadcastReceiver {
         }
 
         setNotificationPlaybackState(notificationBuilder);
-
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN)
-            notificationBuilder.mActions.clear();
 
         return notificationBuilder.build();
     }
