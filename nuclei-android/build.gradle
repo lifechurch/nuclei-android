@@ -112,7 +112,7 @@ ext {
 
     publishedGroupId = 'nuclei3.android'
     libraryName = 'Nuclei Android'
-    artifact = 'nuclei3-android'
+    artifact = 'nuclei-android'
 
     libraryDescription = 'UI, Tasks/Threads, Media, and Persistence Library for Android'
 

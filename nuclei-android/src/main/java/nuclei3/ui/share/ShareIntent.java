@@ -37,7 +37,7 @@ import java.util.Map;
 
 public final class ShareIntent {
 
-    public static final String SHARING_AUTHORITY = "nuclei.sharing.authority";
+    public static final String SHARING_AUTHORITY = "nuclei3.sharing.authority";
 
     static final String TAG = "ShareIntent";
     static final String MISSING_CONFIG = "Missing meta data key " + SHARING_AUTHORITY + " in AndroidManifest.xml, file sharing won't work properly";

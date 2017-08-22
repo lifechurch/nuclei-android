@@ -3,7 +3,7 @@
 
     <application android:theme="@style/Theme.AppCompat.Light" android:name="nuclei3.TestApp">
 
-        <meta-data android:name="io.nuclei3.sharing.authority" android:value="na" />
+        <meta-data android:name="nuclei3.sharing.authority" android:value="na" />
 
         <activity android:name="nuclei3.ui.TestSendActivity" android:label="Share to ME">
             <intent-filter>
