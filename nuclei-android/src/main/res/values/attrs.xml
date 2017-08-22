@@ -14,7 +14,7 @@
         <attr name="url" />
     </declare-styleable>
 
-    <declare-styleable name="GlideImageView">
+    <declare-styleable name="NucleiImageView">
         <attr name="url" />
         <attr name="ratio" format="float" />
         <attr name="radius" format="dimension" />

@@ -1,0 +1,4 @@
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <cache-path name="nuclei3_share_provider" path="nuclei3_share_provider/" />
+    <external-path name="nuclei3_share_provider_external" path=".nuclei3/nuclei3_share_provider/"/>
+</paths>

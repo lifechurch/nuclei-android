@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           xmlns:tools="http://schemas.android.com/tools"
-          package="io.nuclei">
+          package="io.nuclei3">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
@@ -11,11 +11,11 @@
 
         <!-- Scheduled Task Services -->
         <service
-            android:name="nuclei.task.TaskJobService"
+            android:name="nuclei3.task.TaskJobService"
             android:exported="true"
             android:permission="android.permission.BIND_JOB_SERVICE" />
         <service
-            android:name="nuclei.task.TaskGcmService"
+            android:name="nuclei3.task.TaskGcmService"
             android:exported="true"
             android:permission="com.google.android.gms.permission.BIND_NETWORK_TASK_SERVICE">
             <intent-filter>
@@ -24,7 +24,7 @@
         </service>
 
         <service
-            android:name="nuclei.media.MediaService"
+            android:name="nuclei3.media.MediaService"
             android:exported="true"
             tools:ignore="ExportedService">
             <intent-filter>
@@ -45,8 +45,6 @@
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>
         </receiver>
-
-        <service android:name="nuclei.notifications.NotificationIntentService" />
 
     </application>
 

@@ -1,4 +1,4 @@
-package nuclei.persistence.model;
+package nuclei3.persistence.model;
 
 import freemarker.template.Configuration;
 import freemarker.template.Template;

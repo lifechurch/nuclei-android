@@ -1,4 +1,4 @@
-package nuclei.persistence.db;
+package nuclei3.persistence.db;
 
 public class EntityIndexProperty {
 

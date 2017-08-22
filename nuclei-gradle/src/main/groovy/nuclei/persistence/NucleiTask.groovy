@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nuclei.persistence
+package nuclei3.persistence
 
-import nuclei.persistence.db.DbContext
-import nuclei.persistence.model.Context
+import nuclei3.persistence.db.DbContext
+import nuclei3.persistence.model.Context
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Input

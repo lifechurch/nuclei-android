@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nuclei.persistence.intent;
+package nuclei3.persistence.intent;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.*;
@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import nuclei.persistence.apt.AptProcessor;
+import nuclei3.persistence.apt.AptProcessor;
 
 public class IntentBinding {
 

@@ -19,8 +19,8 @@ package ${packageName};
 
 import android.content.Context;
 
-import android.support.BinaryReader;
-import android.support.BinaryWriter;
+import nuclei3.android.BinaryReader;
+import nuclei3.android.BinaryWriter;
 
 import java.io.IOException;
 import java.util.List;

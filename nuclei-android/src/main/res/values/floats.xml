@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <item name="cyto_aspect_ratio_16x9" format="float" type="fraction">1.77777777778</item>
-    <item name="cyto_aspect_ratio_1x1" format="float" type="fraction">1</item>
+    <item name="nuclei3_aspect_ratio_16x9" format="float" type="fraction">1.77777777778</item>
+    <item name="nuclei3_aspect_ratio_1x1" format="float" type="fraction">1</item>
 
 </resources>

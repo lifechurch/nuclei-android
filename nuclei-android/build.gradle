@@ -1,6 +1,6 @@
 apply plugin: 'com.android.library'
 
-def versionId = "3.0.0-alpha5"
+def versionId = "3.0.0-alpha6"
 
 def isTest = false
 List<String> names = gradle.startParameter.taskNames
@@ -108,11 +108,11 @@ dependencies {
 
 ext {
     bintrayRepo = 'maven'
-    bintrayName = 'nuclei-android'
+    bintrayName = 'nuclei3-android'
 
-    publishedGroupId = 'nuclei.android'
+    publishedGroupId = 'nuclei3.android'
     libraryName = 'Nuclei Android'
-    artifact = 'nuclei-android'
+    artifact = 'nuclei3-android'
 
     libraryDescription = 'UI, Tasks/Threads, Media, and Persistence Library for Android'
 

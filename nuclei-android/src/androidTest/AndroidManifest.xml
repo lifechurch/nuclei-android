@@ -1,11 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="io.nuclei">
 
-    <application android:theme="@style/Theme.AppCompat.Light" android:name="nuclei.TestApp">
+    <application android:theme="@style/Theme.AppCompat.Light" android:name="nuclei3.TestApp">
 
-        <meta-data android:name="io.nuclei.sharing.authority" android:value="na" />
+        <meta-data android:name="io.nuclei3.sharing.authority" android:value="na" />
 
-        <activity android:name="nuclei.ui.TestSendActivity" android:label="Share to ME">
+        <activity android:name="nuclei3.ui.TestSendActivity" android:label="Share to ME">
             <intent-filter>
                 <category android:name="android.intent.category.DEFAULT" />
                 <action android:name="android.intent.action.SEND" />
@@ -14,11 +14,11 @@
         </activity>
 
         <activity
-            android:name="nuclei.ui.TestShareActivity"
+            android:name="nuclei3.ui.TestShareActivity"
             android:label="@string/share_via" />
 
-        <activity android:name="nuclei.ui.OffsetTestActivity" />
-        <activity android:name="nuclei.ui.OffsetTestActivity2" />
+        <activity android:name="nuclei3.ui.OffsetTestActivity" />
+        <activity android:name="nuclei3.ui.OffsetTestActivity2" />
 
     </application>
 

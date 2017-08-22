@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nuclei.persistence.apt;
+package nuclei3.persistence.apt;
 
 import com.google.auto.service.AutoService;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import freemarker.template.TemplateExceptionHandler;
-import nuclei.persistence.intent.IntentBinding;
-import nuclei.persistence.model.ArrayModel;
-import nuclei.persistence.model.Context;
-import nuclei.persistence.model.Property;
-import nuclei.persistence.model.SimpleModel;
+import nuclei3.persistence.intent.IntentBinding;
+import nuclei3.persistence.model.ArrayModel;
+import nuclei3.persistence.model.Context;
+import nuclei3.persistence.model.Property;
+import nuclei3.persistence.model.SimpleModel;
 
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
