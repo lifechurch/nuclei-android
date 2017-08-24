@@ -4,8 +4,8 @@ import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import freemarker.template.TemplateExceptionHandler;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import nuclei.persistence.JSONArray;
+import nuclei.persistence.JSONObject;
 
 import javax.annotation.processing.Filer;
 import javax.tools.JavaFileObject;

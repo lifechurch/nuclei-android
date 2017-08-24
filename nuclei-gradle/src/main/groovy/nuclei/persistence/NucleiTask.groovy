@@ -23,8 +23,6 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs
-import org.json.JSONArray
-import org.json.JSONObject
 
 class NucleiTask extends DefaultTask {
 

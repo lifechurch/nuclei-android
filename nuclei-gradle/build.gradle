@@ -1,5 +1,5 @@
 group 'nuclei.gradle'
-version '2.2.4'
+version '2.2.5'
 
 apply plugin: 'maven'
 apply plugin: 'java'
@@ -32,7 +32,6 @@ dependencies {
     compile gradleApi()
     compile localGroovy()
     compile 'org.freemarker:freemarker:2.3.23'
-    compile 'org.json:json:20131018'
     compile 'com.google.auto.service:auto-service:1.0-rc2'
 
     testCompile 'com.google.testing.compile:compile-testing:0.6'

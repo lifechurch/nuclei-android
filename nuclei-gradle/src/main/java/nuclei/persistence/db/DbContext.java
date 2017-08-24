@@ -19,8 +19,8 @@ import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import freemarker.template.TemplateExceptionHandler;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import nuclei.persistence.JSONArray;
+import nuclei.persistence.JSONObject;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -403,38 +403,38 @@ public class DbContext {
 
     public static DbContext newContext(JSONObject model, File outputDir, String defaultPackage, String authority) throws IOException {
         EntityModelRegistry.clear();
-        DbContext ctx = new DbContext(model.getString("defaultPackage"),
+        DbContext ctx = new DbContext(model.get("defaultPackage").toString(),
                 authority == null
-                        ? model.getString("authority")
-                        : authority, model.getString("databaseName"), outputDir);
+                        ? model.get("authority").toString()
+                        : authority, model.get("databaseName").toString(), outputDir);
 
-        JSONArray versions = model.getJSONArray("versions");
+        JSONArray versions = (JSONArray) model.get("versions");
         for (int i = 0; i < versions.length(); i++) {
-            JSONObject version = versions.getJSONObject(i);
-            JSONArray entities = version.getJSONArray("entities");
+            JSONObject version = (JSONObject) versions.getJSONObject(i);
+            JSONArray entities = (JSONArray) version.get("entities");
 
             for (int e = 0; e < entities.length(); e++) {
-                JSONObject entity = entities.getJSONObject(e);
+                JSONObject entity = (JSONObject) entities.get(e);
                 processEntity(entity, ctx, ctx.currentVersion());
             }
 
             if (i + 1 < versions.length()) {
-                version = versions.getJSONObject(i + 1);
+                version = (JSONObject) versions.get(i + 1);
                 ctx.newVersion(
                         version.has("type")
-                                ? Version.VersionType.valueOf(version.getString("type"))
+                                ? Version.VersionType.valueOf(version.get("type").toString())
                                 : Version.VersionType.DIFF);
             }
         }
 
         for (int i = 0; i < versions.length(); i++) {
-            JSONObject version = versions.getJSONObject(i);
-            JSONObject defaultQueries = version.has("queries") ? version.getJSONObject("queries") : null;
-            JSONArray entities = version.getJSONArray("entities");
+            JSONObject version = (JSONObject) versions.get(i);
+            JSONObject defaultQueries = version.has("queries") ? (JSONObject) version.get("queries") : null;
+            JSONArray entities = (JSONArray) version.get("entities");
 
             for (int e = 0; e < entities.length(); e++) {
-                JSONObject entity = entities.getJSONObject(e);
-                EntityModel entityModel = ctx.getModel(entity.getString("name"));
+                JSONObject entity = (JSONObject) entities.get(e);
+                EntityModel entityModel = ctx.getModel(entity.get("name").toString());
                 processQueries(defaultQueries, entityModel, ctx.currentVersion());
             }
         }
@@ -446,44 +446,44 @@ public class DbContext {
         if (entity.has("rootModel")) { // if there is a rootModel property, we're dealing with a view
             processEntityView(entity, ctx);
         } else { // otherwise an entity table
-            EntityModelVersion v = ctx.currentVersion().newModel(entity.getString("name"),
+            EntityModelVersion v = ctx.currentVersion().newModel(entity.get("name").toString(),
                     !entity.has("render") || entity.getBoolean("render")).currentVersion();
             if (entity.has("properties")) {
-                JSONArray properties = entity.getJSONArray("properties");
+                JSONArray properties = (JSONArray) entity.get("properties");
                 for (int p = 0; p < properties.length(); p++) {
-                    JSONObject property = properties.getJSONObject(p);
+                    JSONObject property = (JSONObject) properties.get(p);
                     v.newProperty(
                             property.has("type")
-                                    ? EntityProperty.Type.valueOf(property.getString("type"))
+                                    ? EntityProperty.Type.valueOf(property.get("type").toString())
                                     : EntityProperty.Type.UNKNOWN,
-                            property.getString("name"),
+                            property.get("name").toString(),
                             property.has("nullable") && property.getBoolean("nullable"));
                 }
             }
         }
 
-        EntityModel m = ctx.getModel(entity.getString("name"));
+        EntityModel m = ctx.getModel(entity.get("name").toString());
         if (m == null)
-            throw new NullPointerException("Model " + entity.getString("name") + " not found");
+            throw new NullPointerException("Model " + entity.get("name").toString() + " not found");
         if (entity.has("extensions")) {
-            JSONArray extensions = entity.getJSONArray("extensions");
+            JSONArray extensions = (JSONArray) entity.get("extensions");
             for (int p = 0; p < extensions.length(); p++) {
-                m.getExtensions().add(extensions.getString(p));
+                m.getExtensions().add(extensions.get(p).toString());
             }
         }
 
         if (entity.has("queries"))
-            processQueries(entity.getJSONObject("queries"), m, version);
+            processQueries((JSONObject) entity.get("queries"), m, version);
 
         if (entity.has("indexes")) {
             JSONArray indexes = entity.getJSONArray("indexes");
             for (int i = 0; i < indexes.length(); i++) {
-                JSONObject index = indexes.getJSONObject(i);
+                JSONObject index = (JSONObject) indexes.get(i);
 
                 List<EntityIndexProperty> properties = new ArrayList<EntityIndexProperty>();
 
                 if (index.has("properties")) {
-                    JSONArray indexProperties = index.getJSONArray("properties");
+                    JSONArray indexProperties = (JSONArray) index.get("properties");
                     for (int p = 0; p < indexProperties.length(); p++) {
                         Object prop = indexProperties.get(p);
                         EntityIndexProperty property = new EntityIndexProperty();
@@ -492,9 +492,9 @@ public class DbContext {
                             property.setOrder(EntityIndexProperty.Order.DEFAULT);
                         } else {
                             JSONObject o = (JSONObject) prop;
-                            property.setProperty(m.getProperty(m.currentVersion().getVersion(), o.getString("name")));
+                            property.setProperty(m.getProperty(m.currentVersion().getVersion(), o.get("name").toString()));
                             property.setOrder(o.has("order")
-                                    ? EntityIndexProperty.Order.valueOf(index.getString("order"))
+                                    ? EntityIndexProperty.Order.valueOf(index.get("order").toString())
                                     : EntityIndexProperty.Order.DEFAULT);
                         }
                         properties.add(property);
@@ -503,9 +503,9 @@ public class DbContext {
 
                 m.currentVersion()
                         .newIndex(index.has("type")
-                                ? EntityIndex.Type.valueOf(index.getString("type"))
+                                ? EntityIndex.Type.valueOf(index.get("type").toString())
                                 : EntityIndex.Type.DEFAULT,
-                                index.getString("name"), properties);
+                                index.get("name").toString(), properties);
             }
         }
 
@@ -513,26 +513,26 @@ public class DbContext {
     }
 
     static void processEntityView(JSONObject entity, DbContext ctx) {
-        ViewEntityModel viewModel = ctx.currentVersion().newViewModel(entity.getString("name"),
+        ViewEntityModel viewModel = ctx.currentVersion().newViewModel(entity.get("name").toString(),
                 !entity.has("render") || entity.getBoolean("render"));
-        viewModel.setRootModel(ctx.getModel(entity.getString("rootModel")));
-        viewModel.setRootAlias(entity.getString("rootAlias"));
+        viewModel.setRootModel(ctx.getModel(entity.get("rootModel").toString()));
+        viewModel.setRootAlias(entity.get("rootAlias").toString());
         if (entity.has("groupBy"))
-            viewModel.setGroupBy(entity.getString("groupBy"));
+            viewModel.setGroupBy(entity.get("groupBy").toString());
         if (entity.has("selection"))
-            viewModel.setSelection(entity.getString("selection"));
+            viewModel.setSelection(entity.get("selection").toString());
 
         EntityModelVersion v = viewModel.currentVersion();
 
         if (entity.has("models")) {
-            JSONArray models = entity.getJSONArray("models");
+            JSONArray models = (JSONArray) entity.get("models");
             // add the models
             for (int m = 0; m < models.length(); m++) {
-                JSONObject child = models.getJSONObject(m);
-                EntityModel childModel = ctx.getModel(child.getString("name"));
-                ViewEntityModel.Relationship relationship = ViewEntityModel.Relationship.valueOf(child.getString("type"));
-                String alias = child.has("alias") ? child.getString("alias") : child.getString("name");
-                viewModel.addModel(childModel, relationship, alias, child.getString("selection"));
+                JSONObject child = (JSONObject) models.get(m);
+                EntityModel childModel = ctx.getModel(child.get("name").toString());
+                ViewEntityModel.Relationship relationship = ViewEntityModel.Relationship.valueOf(child.get("type").toString());
+                String alias = child.has("alias") ? child.get("alias").toString() : child.get("name").toString();
+                viewModel.addModel(childModel, relationship, alias, child.get("selection").toString());
             }
         }
         // process model properties
@@ -551,19 +551,19 @@ public class DbContext {
     }
 
     static void processProperties(JSONObject entity, ViewEntityModel viewModel, DbContext ctx, EntityModelVersion version) {
-        JSONArray properties = entity.getJSONArray("properties");
+        JSONArray properties = (JSONArray) entity.get("properties");
         for (int p = 0; p < properties.length(); p++) {
-            JSONObject property = properties.getJSONObject(p);
+            JSONObject property = (JSONObject) properties.get(p);
             EntityModel child;
             String alias;
 
             if (property.has("model")) {
-                String model = property.getString("model");
+                String model = property.get("model").toString();
                 if (model.equals(viewModel.getRootModel().getName())) {
                     child = viewModel.getRootModel();
                     alias = viewModel.getRootAlias();
                 } else {
-                    ViewEntityModel.EntityRelationship relationship = viewModel.getModel(property.getString("model"));
+                    ViewEntityModel.EntityRelationship relationship = viewModel.getModel(property.get("model").toString());
                     child = relationship.getModel();
                     alias = relationship.getAlias();
                 }
@@ -572,7 +572,7 @@ public class DbContext {
                 alias = viewModel.getRootAlias();
             }
 
-            String propertyName = property.getString("name");
+            String propertyName = property.get("name").toString();
             if ("*".equals(propertyName)) {
                 for (EntityProperty childProperty : child.getAllProperties(version.getVersion())) {
                     String name = childProperty.getName();
@@ -593,11 +593,11 @@ public class DbContext {
                     childProperty = child.getProperty(version.getVersion(), propertyName);
                 } catch (IllegalArgumentException ignore) {}
                 EntityProperty cp = version.newProperty(
-                        childProperty == null ? EntityProperty.Type.valueOf(property.getString("type")) : childProperty.getType(),
-                        property.getString("name"),
+                        childProperty == null ? EntityProperty.Type.valueOf(property.get("type").toString()) : childProperty.getType(),
+                        property.get("name").toString(),
                         !property.has("nullable") || property.getBoolean("nullable"),
-                        property.has("alias") ? property.getString("alias") : null,
-                        property.has("sql") ? property.getString("sql") : null);
+                        property.has("alias") ? property.get("alias").toString() : null,
+                        property.has("sql") ? property.get("sql").toString() : null);
                 cp.setModelAlias(alias);
                 if (childProperty != null)
                     cp.setOriginalModel(childProperty.getModel());
@@ -608,27 +608,27 @@ public class DbContext {
     static void processQueries(JSONObject queries, EntityModel m, Version version) {
         if (queries != null) {
             if (queries.has("select")) {
-                JSONArray select = queries.getJSONArray("select");
+                JSONArray select = (JSONArray) queries.get("select");
                 for (int s = 0; s < select.length(); s++) {
-                    JSONObject query = select.getJSONObject(s);
+                    JSONObject query = (JSONObject) select.get(s);
                     List<EntityProperty> props = getProperties(query, m, version);
-                    m.newSelectQuery(query.getString("id"), query.isNull("selection") ? null : query.getString("selection"),
-                            query.isNull("orderBy") ? null : query.getString("orderBy"), props);
+                    m.newSelectQuery(query.get("id").toString(), query.isNull("selection") ? null : query.get("selection").toString(),
+                            query.isNull("orderBy") ? null : query.get("orderBy").toString(), props);
                 }
             }
             if (queries.has("update")) {
-                JSONArray update = queries.getJSONArray("update");
+                JSONArray update = (JSONArray) queries.get("update");
                 for (int s = 0; s < update.length(); s++) {
-                    JSONObject query = update.getJSONObject(s);
+                    JSONObject query = (JSONObject) update.get(s);
                     List<EntityProperty> props = getProperties(query, m, version);
-                    m.newUpdateQuery(query.getString("id"), query.isNull("selection") ? null : query.getString("selection"), props);
+                    m.newUpdateQuery(query.get("id").toString(), query.isNull("selection") ? null : query.get("selection").toString(), props);
                 }
             }
             if (queries.has("delete")) {
-                JSONArray delete = queries.getJSONArray("delete");
+                JSONArray delete = (JSONArray) queries.get("delete");
                 for (int s = 0; s < delete.length(); s++) {
-                    JSONObject query = delete.getJSONObject(s);
-                    m.newDeleteQuery(query.getString("id"), query.isNull("selection") ? null : query.getString("selection"));
+                    JSONObject query = (JSONObject) delete.get(s);
+                    m.newDeleteQuery(query.get("id").toString(), query.isNull("selection") ? null : query.get("selection").toString());
                 }
             }
         }
@@ -638,9 +638,9 @@ public class DbContext {
         List<EntityProperty> props = null;
         if (query.has("properties")) {
             props = new ArrayList<>();
-            JSONArray names = query.getJSONArray("properties");
+            JSONArray names = (JSONArray) query.get("properties");
             for (int n = 0; n < names.length(); n++) {
-                props.add(m.getProperty(version, names.getString(n)));
+                props.add(m.getProperty(version, names.get(n).toString()));
             }
         }
         return props;
