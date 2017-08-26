@@ -30,6 +30,7 @@ public final class ErrorUtil {
     public static final int AUTHENTICATION = 300;
     public static final int GENERIC_IO = 400;
     public static final int GENERIC = 500;
+    public static final int NOT_MODIFIED = 304;
 
     private ErrorUtil() {
     }
@@ -59,6 +60,8 @@ public final class ErrorUtil {
             if (h.getHttpCode() == 403 || h.getHttpCode() == 401) {
                 return AUTHENTICATION;
             }
+            if (h.getHttpCode() == 304)
+                return NOT_MODIFIED;
         }
         if (err instanceof TimeoutException
                 || err instanceof java.util.concurrent.TimeoutException
