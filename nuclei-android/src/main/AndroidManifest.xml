@@ -32,6 +32,8 @@
             </intent-filter>
         </service>
 
+        <service android:name="nuclei3.notifications.NotificationIntentService" />
+
         <!-- Service that keeps track of reconnecting to Cast when wifi is enabled. -->
         <service
             android:name="com.google.android.libraries.cast.companionlibrary.cast.reconnection.ReconnectionService"/>
