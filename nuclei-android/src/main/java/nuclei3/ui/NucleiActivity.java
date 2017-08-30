@@ -19,11 +19,13 @@ import android.annotation.TargetApi;
 import android.app.Activity;
 import android.arch.lifecycle.LifecycleRegistry;
 import android.arch.lifecycle.LifecycleRegistryOwner;
+import android.content.Intent;
 import android.os.Bundle;
 
 import nuclei3.logs.Log;
 import nuclei3.logs.Logs;
 import nuclei3.logs.Trace;
+import nuclei3.notifications.NotificationManager;
 
 /**
  * Base Activity with easy hooks for managing PersistenceLists and ContextHandles
@@ -49,6 +51,20 @@ public abstract class NucleiActivity extends Activity implements LifecycleRegist
             mTrace = new Trace();
             mTrace.onCreate(getClass());
         }
+
+        if (savedInstanceState == null) {
+            NotificationManager manager = NotificationManager.getInstance();
+            if (manager != null)
+                manager.dismiss(getIntent());
+        }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        NotificationManager manager = NotificationManager.getInstance();
+        if (manager != null)
+            manager.dismiss(intent);
     }
 
     protected void trace(String message) {

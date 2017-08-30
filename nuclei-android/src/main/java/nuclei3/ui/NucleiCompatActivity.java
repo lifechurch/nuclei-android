@@ -17,12 +17,14 @@ package nuclei3.ui;
 
 import android.arch.lifecycle.LifecycleRegistry;
 import android.arch.lifecycle.LifecycleRegistryOwner;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 
 import nuclei3.logs.Logs;
 import nuclei3.logs.Trace;
+import nuclei3.notifications.NotificationManager;
 
 /**
  * Base Compat Activity with easy hooks for managing PersistenceLists and ContextHandles
@@ -45,6 +47,20 @@ public abstract class NucleiCompatActivity extends AppCompatActivity implements 
             mTrace = new Trace();
             mTrace.onCreate(getClass());
         }
+
+        if (savedInstanceState == null) {
+            NotificationManager manager = NotificationManager.getInstance();
+            if (manager != null)
+                manager.dismiss(getIntent());
+        }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        NotificationManager manager = NotificationManager.getInstance();
+        if (manager != null)
+            manager.dismiss(intent);
     }
 
     protected void trace(String message) {
