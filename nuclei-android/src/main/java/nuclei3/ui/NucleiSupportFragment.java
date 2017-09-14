@@ -15,29 +15,17 @@
  */
 package nuclei3.ui;
 
-import android.arch.lifecycle.LifecycleRegistry;
-import android.arch.lifecycle.LifecycleRegistryOwner;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 
-import nuclei3.logs.Log;
 import nuclei3.logs.Logs;
 import nuclei3.logs.Trace;
 
 /**
  * Base Fragment with easy hooks for managing PersistenceLists and ContextHandles
  */
-public abstract class NucleiSupportFragment extends Fragment implements LifecycleRegistryOwner {
-
-    static final Log LOG = Logs.newLog(NucleiSupportFragment.class);
-
-    private final LifecycleRegistry mRegistry = new LifecycleRegistry(this);
-
-    @Override
-    public LifecycleRegistry getLifecycle() {
-        return mRegistry;
-    }
+public abstract class NucleiSupportFragment extends Fragment {
 
     private Trace mTrace;
 

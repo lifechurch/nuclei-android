@@ -15,8 +15,6 @@
  */
 package nuclei3.ui;
 
-import android.arch.lifecycle.LifecycleRegistry;
-import android.arch.lifecycle.LifecycleRegistryOwner;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -29,14 +27,7 @@ import nuclei3.notifications.NotificationManager;
 /**
  * Base Compat Activity with easy hooks for managing PersistenceLists and ContextHandles
  */
-public abstract class NucleiCompatActivity extends AppCompatActivity implements LifecycleRegistryOwner {
-
-    private final LifecycleRegistry mRegistry = new LifecycleRegistry(this);
-
-    @Override
-    public LifecycleRegistry getLifecycle() {
-        return mRegistry;
-    }
+public abstract class NucleiCompatActivity extends AppCompatActivity {
 
     private Trace mTrace;
 
