@@ -106,9 +106,14 @@ public class DefaultCallback implements MediaInterface.MediaInterfaceCallback {
             }
             if (mWasPlaying && mView != null && mView.mMediaInterface != null) {
                 MediaInterface mediaInterface = mView.mMediaInterface;
-                MediaPlayerController controller = mediaInterface.getPlayerController();
+                final MediaPlayerController controller = mediaInterface.getPlayerController();
                 if (controller != null)
-                    controller.start();
+                    mHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            controller.start();
+                        }
+                    });
                 mWasPlaying = false;
             }
             mDragging = false;
