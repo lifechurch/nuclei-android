@@ -1,7 +1,7 @@
 apply plugin: 'com.android.library'
 apply plugin: "nuclei.gradle"
 
-def versionId = "2.3.3"
+def versionId = "2.3.3-NO_MEDIA_SERVICE"
 
 def isTest = false
 List<String> names = gradle.startParameter.taskNames
@@ -55,11 +55,9 @@ dependencies {
 
     // play services
     compile "com.google.android.gms:play-services-gcm:$rootProject.ext.playServicesVersion"
-    compile "com.google.android.gms:play-services-cast:$rootProject.ext.playServicesVersion"
 
     // support libraries
     compile "com.android.support:appcompat-v7:$rootProject.ext.supportLibVersion"
-    compile "com.android.support:mediarouter-v7:$rootProject.ext.supportLibVersion"
     compile "com.android.support:recyclerview-v7:$rootProject.ext.supportLibVersion"
     compile "com.android.support:design:$rootProject.ext.supportLibVersion"
 
@@ -67,9 +65,6 @@ dependencies {
         exclude group: "com.android.databinding"
     }
     provided "com.android.databinding:baseLibrary:2.2.3"
-
-    // exoplayer
-    compile "com.google.android.exoplayer:exoplayer:$rootProject.ext.exoPlayerVersion"
 
     // okhttp3
     compile 'com.squareup.okhttp3:okhttp:' + rootProject.ext.okHttpVersion
