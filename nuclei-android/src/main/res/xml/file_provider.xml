@@ -1,4 +1,0 @@
-<paths xmlns:android="http://schemas.android.com/apk/res/android">
-    <cache-path name="cyto_share_provider" path="cyto_share_provider/" />
-    <external-path name="cyto_share_provider_external" path=".cyto/cyto_share_provider/"/>
-</paths>

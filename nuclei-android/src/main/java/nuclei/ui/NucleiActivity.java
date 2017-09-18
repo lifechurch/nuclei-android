@@ -24,12 +24,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.v4.app.ActivityOptionsCompat;
+import android.util.Log;
 
-import nuclei.intent.IntentBuilderActivity;
-import nuclei.logs.Log;
-import nuclei.logs.Logs;
-import nuclei.logs.Trace;
-import nuclei.notifications.NotificationManager;
 import nuclei.persistence.PersistenceList;
 import nuclei.persistence.PersistenceLoaderImpl;
 import nuclei.persistence.PersistenceObserver;
@@ -44,12 +40,9 @@ import nuclei.task.ContextHandle;
  * Base Activity with easy hooks for managing PersistenceLists and ContextHandles
  */
 @TargetApi(15)
-public abstract class NucleiActivity extends Activity implements IntentBuilderActivity, NucleiContext, QueryManager {
-
-    static final Log LOG = Logs.newLog(NucleiActivity.class);
+public abstract class NucleiActivity extends Activity implements NucleiContext, QueryManager {
 
     private ContextHandle mHandle;
-    private Trace mTrace;
     private PersistenceLoaderImpl mLoader;
     private ActivityOptionsCompat mOptions;
     private LifecycleManager mLifecycleManager;
@@ -114,7 +107,7 @@ public abstract class NucleiActivity extends Activity implements IntentBuilderAc
                 mLoader = PersistenceLoaderImpl.newLoaderManager(getLoaderManager());
             return mLoader.executeWithOrder(query, listener, orderBy, selectionArgs);
         } catch (IllegalStateException err) {
-            LOG.wtf("Error executing query", err);
+            Log.wtf("Error executing query", err);
             return -1;
         }
     }
@@ -131,7 +124,7 @@ public abstract class NucleiActivity extends Activity implements IntentBuilderAc
                 mLoader = PersistenceLoaderImpl.newLoaderManager(getLoaderManager());
             return mLoader.execute(query, listener, selectionArgs);
         } catch (IllegalStateException err) {
-            LOG.wtf("Error executing query", err);
+            Log.wtf("Error executing query", err);
             return -1;
         }
     }
@@ -160,11 +153,6 @@ public abstract class NucleiActivity extends Activity implements IntentBuilderAc
     }
 
     @Override
-    public void setDefaultActivityOptions(ActivityOptionsCompat options) {
-        mOptions = options;
-    }
-
-    @Override
     public void startActivityForResult(Intent intent, int requestCode, Bundle options) {
         if (options != null || mOptions == null) {
             if (Build.VERSION.SDK_INT >= 16)
@@ -176,46 +164,6 @@ public abstract class NucleiActivity extends Activity implements IntentBuilderAc
         else
             super.startActivityForResult(intent, requestCode);
         mOptions = null;
-    }
-
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (Logs.TRACE) {
-            mTrace = new Trace();
-            mTrace.onCreate(getClass());
-        }
-
-        NotificationManager manager = NotificationManager.getInstance();
-        if (manager != null)
-            manager.dismiss(getIntent());
-    }
-
-    protected void trace(String message) {
-        if (mTrace != null)
-            mTrace.trace(getClass(), message);
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        if (mTrace != null)
-            mTrace.onPause(getClass());
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if (mTrace != null)
-            mTrace.onResume(getClass());
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        if (mTrace != null)
-            mTrace.onStop(getClass());
     }
 
     /**
@@ -244,9 +192,6 @@ public abstract class NucleiActivity extends Activity implements IntentBuilderAc
         if (mHandle != null)
             mHandle.release();
         mHandle = null;
-        if (mTrace != null)
-            mTrace.onDestroy(getClass());
-        mTrace = null;
         super.onDestroy();
         if (mLoader != null)
             mLoader.onDestroy();

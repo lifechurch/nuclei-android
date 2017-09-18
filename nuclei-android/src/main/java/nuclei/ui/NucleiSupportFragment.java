@@ -22,11 +22,9 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.View;
 
-import nuclei.logs.Log;
-import nuclei.logs.Logs;
-import nuclei.logs.Trace;
 import nuclei.persistence.PersistenceList;
 import nuclei.persistence.PersistenceObserver;
 import nuclei.persistence.Query;
@@ -42,11 +40,8 @@ import nuclei.task.ContextHandle;
  */
 public abstract class NucleiSupportFragment extends Fragment implements NucleiContext, QueryManager {
 
-    static final Log LOG = Logs.newLog(NucleiSupportFragment.class);
-
     private ContextHandle mHandle;
     private ContextHandle mViewHandle;
-    private Trace mTrace;
     private SupportPersistenceLoaderImpl mLoader;
     private LifecycleManager mLifecycleManager;
     private Handler mHandler;
@@ -115,7 +110,7 @@ public abstract class NucleiSupportFragment extends Fragment implements NucleiCo
                 mLoader = SupportPersistenceLoaderImpl.newLoaderManager(getLoaderManager());
             return mLoader.executeWithOrder(query, listener, orderBy, selectionArgs);
         } catch (IllegalStateException err) {
-            LOG.wtf("Error executing query", err);
+            Log.wtf("Error executing query", err);
             return -1;
         }
     }
@@ -132,7 +127,7 @@ public abstract class NucleiSupportFragment extends Fragment implements NucleiCo
                 mLoader = SupportPersistenceLoaderImpl.newLoaderManager(getLoaderManager());
             return mLoader.execute(query, listener, selectionArgs);
         } catch (IllegalStateException err) {
-            LOG.wtf("Error executing query", err);
+            Log.wtf("Error executing query", err);
             return -1;
         }
     }
@@ -168,42 +163,12 @@ public abstract class NucleiSupportFragment extends Fragment implements NucleiCo
     public void onCreate(@Nullable Bundle savedInstanceState) {
         mLifecycleStage = LifecycleManager.FRAGMENT;
         super.onCreate(savedInstanceState);
-        if (Logs.TRACE) {
-            mTrace = new Trace();
-            mTrace.onCreate(getClass());
-        }
     }
 
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         mLifecycleStage = LifecycleManager.VIEW;
         super.onViewCreated(view, savedInstanceState);
-    }
-
-    protected void trace(String message) {
-        if (mTrace != null)
-            mTrace.trace(getClass(), message);
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        if (mTrace != null)
-            mTrace.onPause(getClass());
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        if (mTrace != null)
-            mTrace.onResume(getClass());
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-        if (mTrace != null)
-            mTrace.onStop(getClass());
     }
 
     /**
@@ -269,9 +234,6 @@ public abstract class NucleiSupportFragment extends Fragment implements NucleiCo
         if (mViewHandle != null)
             mViewHandle.release();
         mViewHandle = null;
-        if (mTrace != null)
-            mTrace.onDestroy(getClass());
-        mTrace = null;
         super.onDestroy();
         if (mLoader != null)
             mLoader.onDestroy();

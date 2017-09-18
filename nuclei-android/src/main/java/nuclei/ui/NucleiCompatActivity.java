@@ -21,15 +21,10 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 
-import nuclei.intent.IntentBuilderActivity;
-import nuclei.logs.Log;
-import nuclei.logs.Logs;
-import nuclei.logs.Trace;
-import nuclei.notifications.NotificationManager;
 import nuclei.persistence.PersistenceList;
 import nuclei.persistence.PersistenceObserver;
 import nuclei.persistence.Query;
@@ -43,9 +38,7 @@ import nuclei.task.ContextHandle;
 /**
  * Base Compat Activity with easy hooks for managing PersistenceLists and ContextHandles
  */
-public abstract class NucleiCompatActivity extends AppCompatActivity implements IntentBuilderActivity, NucleiContext, QueryManager {
-
-    static final Log LOG = Logs.newLog(NucleiCompatActivity.class);
+public abstract class NucleiCompatActivity extends AppCompatActivity implements NucleiContext, QueryManager {
 
     private SupportPersistenceLoaderImpl mLoader;
     private ActivityOptionsCompat mOptions;
@@ -113,7 +106,7 @@ public abstract class NucleiCompatActivity extends AppCompatActivity implements 
                 mLoader = SupportPersistenceLoaderImpl.newLoaderManager(getSupportLoaderManager());
             return mLoader.executeWithOrder(query, listener, orderBy, selectionArgs);
         } catch (IllegalStateException err) {
-            LOG.wtf("Error executing query", err);
+            Log.wtf("Error executing query", err);
             return -1;
         }
     }
@@ -130,7 +123,7 @@ public abstract class NucleiCompatActivity extends AppCompatActivity implements 
                 mLoader = SupportPersistenceLoaderImpl.newLoaderManager(getSupportLoaderManager());
             return mLoader.execute(query, listener, selectionArgs);
         } catch (IllegalStateException err) {
-            LOG.wtf("Error executing query", err);
+            Log.wtf("Error executing query", err);
             return -1;
         }
     }
@@ -159,11 +152,6 @@ public abstract class NucleiCompatActivity extends AppCompatActivity implements 
     }
 
     @Override
-    public void setDefaultActivityOptions(ActivityOptionsCompat options) {
-        mOptions = options;
-    }
-
-    @Override
     public void startActivityForResult(Intent intent, int requestCode, Bundle options) {
         if (options != null || mOptions == null) {
             if (Build.VERSION.SDK_INT >= 16)
@@ -178,46 +166,6 @@ public abstract class NucleiCompatActivity extends AppCompatActivity implements 
     }
 
     private ContextHandle mHandle;
-    private Trace mTrace;
-
-    @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (Logs.TRACE) {
-            mTrace = new Trace();
-            mTrace.onCreate(getClass());
-        }
-
-        NotificationManager manager = NotificationManager.getInstance();
-        if (manager != null)
-            manager.dismiss(getIntent());
-    }
-
-    protected void trace(String message) {
-        if (mTrace != null)
-            mTrace.trace(getClass(), message);
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        if (mTrace != null)
-            mTrace.onPause(getClass());
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if (mTrace != null)
-            mTrace.onResume(getClass());
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        if (mTrace != null)
-            mTrace.onStop(getClass());
-    }
 
     /**
      * Get a managed context handle.
@@ -245,9 +193,6 @@ public abstract class NucleiCompatActivity extends AppCompatActivity implements 
         if (mHandle != null)
             mHandle.release();
         mHandle = null;
-        if (mTrace != null)
-            mTrace.onDestroy(getClass());
-        mTrace = null;
         super.onDestroy();
         if (mLoader != null)
             mLoader.onDestroy();

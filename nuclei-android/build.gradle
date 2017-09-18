@@ -1,7 +1,7 @@
 apply plugin: 'com.android.library'
 apply plugin: "nuclei.gradle"
 
-def versionId = "2.3.3-NO_MEDIA_SERVICE"
+def versionId = "2.3.4-NO_MEDIA_SERVICE"
 
 def isTest = false
 List<String> names = gradle.startParameter.taskNames
@@ -48,11 +48,6 @@ dependencies {
     // glide image library
     compile "com.github.bumptech.glide:glide:$rootProject.ext.glideVersion"
 
-    // google cast
-    compile ("com.google.android.libraries.cast.companionlibrary:ccl:2.9.1") {
-        exclude group: "com.google.android.gms"
-    }
-
     // play services
     compile "com.google.android.gms:play-services-gcm:$rootProject.ext.playServicesVersion"
 
@@ -64,7 +59,7 @@ dependencies {
     provided ("com.android.databinding:library:1.3.1") {
         exclude group: "com.android.databinding"
     }
-    provided "com.android.databinding:baseLibrary:2.2.3"
+    provided "com.android.databinding:baseLibrary:2.3.3"
 
     // okhttp3
     compile 'com.squareup.okhttp3:okhttp:' + rootProject.ext.okHttpVersion
@@ -96,10 +91,6 @@ dependencies {
         exclude group: "com.android.support", module: "support-annotations"
     }
 
-}
-
-nuclei {
-    nucleiModel "configs/box.json"
 }
 
 ext {

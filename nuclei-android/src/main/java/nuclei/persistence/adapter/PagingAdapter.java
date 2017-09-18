@@ -23,9 +23,6 @@ import android.view.ViewGroup;
 
 import java.util.List;
 
-import nuclei.logs.Log;
-import nuclei.logs.Logs;
-
 /**
  * A base adapter to help with paging items
  *
@@ -35,8 +32,6 @@ import nuclei.logs.Logs;
  */
 public abstract class PagingAdapter<T, L extends List<T>, VH extends PersistenceAdapter.ViewHolder<T>>
         extends ListAdapter<T, L, VH> {
-
-    static final Log LOG = Logs.newLog(PagingAdapter.class);
 
     private static final String STATE_LOADING = PagingAdapter.class.getSimpleName() + ".LOADING";
     private static final String STATE_HAS_MORE = PagingAdapter.class.getSimpleName() + ".HAS_MORE";
@@ -231,7 +226,6 @@ public abstract class PagingAdapter<T, L extends List<T>, VH extends Persistence
         if (!mLoading && mReady && mHasMore) {
             int nextPageIx;
             if (mPageSize > 0) {
-                LOG.d("onLoadMore");
                 if (position == mPrevLoadingPosition)
                     nextPageIx = mPrevLoadingPosition / mPageSize;
                 else

@@ -85,7 +85,6 @@ public abstract class PersistencePagingAdapter<T, VH extends PersistenceAdapter.
         if (mHasMore && mPageSize != -1) {
             final int curPageIndex = position / mPageSize;
             if (curPageIndex >= mNextPageIndex) {
-                LOG.d("onLoadBind");
                 for (int p = mLastPageIndex + 1; p <= curPageIndex; p++) {
                     loadPage(p);
                 }

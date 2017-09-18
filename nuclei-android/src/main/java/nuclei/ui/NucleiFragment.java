@@ -23,6 +23,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.View;
 
 import nuclei.persistence.PersistenceList;
@@ -34,9 +35,6 @@ import nuclei.persistence.QueryManager;
 import nuclei.persistence.adapter.PersistenceAdapterListener;
 import nuclei.persistence.adapter.PersistenceListAdapter;
 import nuclei.task.ContextHandle;
-import nuclei.logs.Log;
-import nuclei.logs.Logs;
-import nuclei.logs.Trace;
 
 /**
  * Base Fragment with easy hooks for managing PersistenceLists and ContextHandles
@@ -44,11 +42,8 @@ import nuclei.logs.Trace;
 @TargetApi(15)
 public abstract class NucleiFragment extends Fragment implements NucleiContext, QueryManager {
 
-    static final Log LOG = Logs.newLog(NucleiSupportFragment.class);
-
     private ContextHandle mHandle;
     private ContextHandle mViewHandle;
-    private Trace mTrace;
     private PersistenceLoaderImpl mLoader;
     private LifecycleManager mLifecycleManager;
     private Handler mHandler;
@@ -117,7 +112,7 @@ public abstract class NucleiFragment extends Fragment implements NucleiContext, 
                 mLoader = PersistenceLoaderImpl.newLoaderManager(getLoaderManager());
             return mLoader.executeWithOrder(query, listener, orderBy, selectionArgs);
         } catch (IllegalStateException err) {
-            LOG.wtf("Error executing query", err);
+            Log.wtf("Error executing query", err);
             return -1;
         }
     }
@@ -134,7 +129,7 @@ public abstract class NucleiFragment extends Fragment implements NucleiContext, 
                 mLoader = PersistenceLoaderImpl.newLoaderManager(getLoaderManager());
             return mLoader.execute(query, listener, selectionArgs);
         } catch (IllegalStateException err) {
-            LOG.wtf("Error executing query", err);
+            Log.wtf("Error executing query", err);
             return -1;
         }
     }
@@ -170,42 +165,12 @@ public abstract class NucleiFragment extends Fragment implements NucleiContext, 
     public void onCreate(@Nullable Bundle savedInstanceState) {
         mLifecycleStage = LifecycleManager.FRAGMENT;
         super.onCreate(savedInstanceState);
-        if (Logs.TRACE) {
-            mTrace = new Trace();
-            mTrace.onCreate(getClass());
-        }
     }
 
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         mLifecycleStage = LifecycleManager.VIEW;
         super.onViewCreated(view, savedInstanceState);
-    }
-
-    protected void trace(String message) {
-        if (mTrace != null)
-            mTrace.trace(getClass(), message);
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        if (mTrace != null)
-            mTrace.onPause(getClass());
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        if (mTrace != null)
-            mTrace.onResume(getClass());
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-        if (mTrace != null)
-            mTrace.onStop(getClass());
     }
 
     /**
@@ -271,9 +236,6 @@ public abstract class NucleiFragment extends Fragment implements NucleiContext, 
         if (mViewHandle != null)
             mViewHandle.release();
         mViewHandle = null;
-        if (mTrace != null)
-            mTrace.onDestroy(getClass());
-        mTrace = null;
         super.onDestroy();
         if (mLoader != null)
             mLoader.onDestroy();
