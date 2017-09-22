@@ -16,8 +16,6 @@
 package nuclei.persistence.model;
 
 import android.content.Context;
-import android.support.BinaryReader;
-import android.support.BinaryWriter;
 import android.util.JsonReader;
 import android.util.JsonWriter;
 
@@ -30,14 +28,6 @@ public class CustomSerializer<T> {
     }
 
     public void serialize(Context context, JsonWriter writer, T object) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    public T deserialize(Context context, BinaryReader reader) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    public void serialize(Context context, BinaryWriter writer, T object) throws IOException {
         throw new UnsupportedOperationException();
     }
 
