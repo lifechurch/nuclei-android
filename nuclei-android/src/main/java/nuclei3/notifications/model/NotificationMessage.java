@@ -4,6 +4,7 @@ import android.arch.persistence.room.Entity;
 import android.arch.persistence.room.Ignore;
 import android.arch.persistence.room.Index;
 import android.arch.persistence.room.PrimaryKey;
+import android.support.annotation.NonNull;
 import android.support.v4.util.ArrayMap;
 
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ import nuclei3.notifications.NotificationManager;
 public class NotificationMessage {
 
     @PrimaryKey(autoGenerate = true)
+    @NonNull
     public long _id;
 
     public String url;

@@ -4,12 +4,14 @@ import android.arch.persistence.room.Entity;
 import android.arch.persistence.room.ForeignKey;
 import android.arch.persistence.room.Index;
 import android.arch.persistence.room.PrimaryKey;
+import android.support.annotation.NonNull;
 
 @Entity(indices = @Index("messageClientId"),
         foreignKeys = @ForeignKey(entity = NotificationMessage.class, parentColumns = "_id", childColumns = "messageClientId", onDelete = ForeignKey.CASCADE))
 public class NotificationData {
 
     @PrimaryKey(autoGenerate = true)
+    @NonNull
     public long _id;
 
     public long messageClientId;
