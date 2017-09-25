@@ -1,12 +1,12 @@
 /**
  * Copyright 2016 YouVersion
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,7 +17,15 @@ package nuclei3.task;
 
 import android.app.Application;
 
+import nuclei3.logs.Log;
+import nuclei3.logs.Logs;
+import nuclei3.task.http.HttpTask;
+
 public final class Tasks {
+
+    private static final Log LOG = Logs.newLog(Tasks.class);
+
+    public static boolean DEBUG = false;
 
     private static TaskPool sDefault;
 
@@ -48,10 +56,28 @@ public final class Tasks {
     }
 
     public static <T> T executeNow(Task<T> task) {
+        if (DEBUG && task instanceof HttpTask) {
+            if (Thread.currentThread().getName().startsWith(TaskPool.DEFAULT_POOL + " #")) {
+                try {
+                    throw new RuntimeException("You probably don't want to run HTTP tasks in the default thread pool.  It can slow down other tasks that you expect to be relatively fast.");
+                } catch (Exception err) {
+                    LOG.wtf("***** Thread Pool Warning", err);
+                }
+            }
+        }
         return sDefault.executeNow(task);
     }
 
     public static <T> Result<T> executeNowResult(Task<T> task) {
+        if (DEBUG && task instanceof HttpTask) {
+            if (Thread.currentThread().getName().startsWith(TaskPool.DEFAULT_POOL + " #")) {
+                try {
+                    throw new RuntimeException("You probably don't want to run HTTP tasks in the default thread pool.  It can slow down other tasks that you expect to be relatively fast.");
+                } catch (Exception err) {
+                    LOG.wtf("***** Thread Pool Warning", err);
+                }
+            }
+        }
         return sDefault.executeNowResult(task);
     }
 
