@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.support.annotation.WorkerThread;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.util.ArrayMap;
 
@@ -22,6 +23,7 @@ import nuclei3.task.Tasks;
 
 public abstract class NotificationManager {
 
+    private static final Object MUTEX = new Object();
     private static Context CONTEXT;
     private static NotificationManager INSTANCE;
     private static NotificationsDb DB;
@@ -30,14 +32,21 @@ public abstract class NotificationManager {
     static final String AUTO_DISMISS_ID = "_nuclei_auto_dismiss_id_";
 
     public static void initialize(Context context, NotificationManager instance) {
-        CONTEXT = context.getApplicationContext();
+        CONTEXT = context;
         INSTANCE = instance;
-        DB = Room.databaseBuilder(CONTEXT, NotificationsDb.class, "nuclei_notifications.db")
-                .fallbackToDestructiveMigration()
-                .build();
     }
 
+    @WorkerThread
     public static NotificationManager getInstance() {
+        if (DB == null) {
+            synchronized (MUTEX) {
+                if (DB == null) {
+                    DB = Room.databaseBuilder(CONTEXT, NotificationsDb.class, "nuclei_notifications.db")
+                            .fallbackToDestructiveMigration()
+                            .build();
+                }
+            }
+        }
         return INSTANCE;
     }
 
@@ -318,7 +327,7 @@ public abstract class NotificationManager {
         intent.putExtra(NotificationIntentService.EXTRA_GROUP_KEY, message.groupKey);
     }
 
-    public void dismiss(Intent intent) {
+    public static void dismiss(Intent intent) {
         if (intent != null) {
             if (intent.hasExtra(NotificationIntentService.EXTRA_CLEAR_ID)) {
                 final long clearId = intent.getLongExtra(NotificationIntentService.EXTRA_CLEAR_ID, -1);

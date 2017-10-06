@@ -5,6 +5,7 @@ import android.arch.persistence.room.Ignore;
 import android.arch.persistence.room.Index;
 import android.arch.persistence.room.PrimaryKey;
 import android.support.annotation.NonNull;
+import android.support.annotation.WorkerThread;
 import android.support.v4.util.ArrayMap;
 
 import java.util.ArrayList;
@@ -33,6 +34,7 @@ public class NotificationMessage {
     private Map<String, NotificationData> _dataMap;
 
     @Ignore
+    @WorkerThread
     public NotificationData getData(String key) {
         if (_dataMap != null)
             return _dataMap.get(key);
@@ -46,6 +48,7 @@ public class NotificationMessage {
     }
 
     @Ignore
+    @WorkerThread
     public List<NotificationData> getData() {
         if (_data != null)
             return _data;
@@ -55,6 +58,7 @@ public class NotificationMessage {
     }
 
     @Ignore
+    @WorkerThread
     public void setData(List<NotificationData> data) {
         try {
             _data = data;

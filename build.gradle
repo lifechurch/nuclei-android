@@ -29,7 +29,7 @@ ext {
     compileSdkVersion = 26
     targetSdkVersion = 26
     minSdkVersion = 16
-    buildToolsVersion = "26.0.1"
+    buildToolsVersion = "26.0.2"
 
     playServicesVersion = "9.4.0"
     supportLibVersion = "26.1.0"
@@ -40,7 +40,7 @@ ext {
 
     okHttpVersion = "3.8.1"
 
-    appArchVersion = '1.0.0-beta1'
+    appArchVersion = '1.0.0-beta2'
 
     // Android Test Support Libraries
     espressoRunnerVersion = "0.5"

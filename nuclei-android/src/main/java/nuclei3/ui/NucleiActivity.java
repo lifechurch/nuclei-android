@@ -53,18 +53,14 @@ public abstract class NucleiActivity extends Activity implements LifecycleRegist
         }
 
         if (savedInstanceState == null) {
-            NotificationManager manager = NotificationManager.getInstance();
-            if (manager != null)
-                manager.dismiss(getIntent());
+            NotificationManager.dismiss(getIntent());
         }
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-        NotificationManager manager = NotificationManager.getInstance();
-        if (manager != null)
-            manager.dismiss(intent);
+        NotificationManager.dismiss(intent);
     }
 
     protected void trace(String message) {
