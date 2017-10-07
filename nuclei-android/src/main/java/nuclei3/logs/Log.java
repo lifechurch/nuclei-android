@@ -165,7 +165,7 @@ public final class Log {
                 sExtraLog = new PrintWriter(new FileOutputStream(Logs.newLogFile()));
                 sDateFormat = new SimpleDateFormat("yyyy-MM-dd kk:mm z", Locale.US);
             } catch (IOException e) {
-                android.util.Log.wtf(tag, "Error creating extra log file", e);
+                android.util.Log.wtf(tag, "Error creating extra log file: " + e);
             }
         }
         if (sExtraLog != null) {
@@ -201,7 +201,7 @@ public final class Log {
                 }
                 sExtraLog.flush();
             } catch (Exception e) {
-                android.util.Log.wtf(tag, "Error writing extra log file", e);
+                android.util.Log.wtf(tag, "Error writing extra log file : " + e);
             }
         }
     }

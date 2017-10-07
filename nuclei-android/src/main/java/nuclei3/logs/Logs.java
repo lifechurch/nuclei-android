@@ -44,10 +44,10 @@ public final class Logs {
     }
 
     protected static File newLogFile() {
-        if (ContextCompat.checkSelfPermission(CONTEXT, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-            == PackageManager.PERMISSION_GRANTED) {
-            return new File(CONTEXT.getExternalFilesDir(null), "info.log");
-        }
+//        if (ContextCompat.checkSelfPermission(CONTEXT, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+//            == PackageManager.PERMISSION_GRANTED) {
+//            return new File(CONTEXT.getExternalFilesDir(null), "info.log");
+//        }
         return new File(CONTEXT.getFilesDir(), "info.log");
     }
 
