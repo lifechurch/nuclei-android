@@ -65,11 +65,15 @@ public abstract class HttpTask<T> extends Task<T> {
         return entry == null || entry.isExpired();
     }
 
+    protected boolean shouldCache() {
+        return cache;
+    }
+
     @Override
     public final void run(Context context) {
         boolean cached = false;
         try {
-            if (cache && Http.sCache != null) {
+            if (shouldCache() && Http.sCache != null) {
                 SimpleCache.Entry entry = Http.sCache.get(getUrl());
                 T object = onLoadCache(context, entry);
                 if (object != null) {
@@ -100,7 +104,7 @@ public abstract class HttpTask<T> extends Task<T> {
                                 break;
                             default:
                                 T object = onDeserialize(context, response);
-                                if (object != null && cache && Http.sCache != null)
+                                if (object != null && shouldCache() && Http.sCache != null)
                                     onCache(context, object);
                                 if (!cached)
                                     onComplete(object, response.cacheResponse() != null);
