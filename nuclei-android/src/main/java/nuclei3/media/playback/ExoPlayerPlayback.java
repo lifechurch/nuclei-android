@@ -504,6 +504,11 @@ public class ExoPlayerPlayback extends BasePlayback
         configMediaPlayerState(false, false);
     }
 
+    @Override
+    public void onRepeatModeChanged(int repeatMode) {
+
+    }
+
     /**
      * Returns a new DataSource factory.
      *
