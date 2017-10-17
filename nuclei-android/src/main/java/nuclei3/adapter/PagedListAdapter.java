@@ -91,12 +91,4 @@ public abstract class PagedListAdapter<T, VH extends ListAdapter.ViewHolder<T>>
         onLoadComplete(true, true, true);
     }
 
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        PagedList<T> list = getList();
-        if (list != null)
-            list.setListener(null);
-    }
-
 }

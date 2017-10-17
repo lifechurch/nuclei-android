@@ -21,6 +21,7 @@ import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
+import java.lang.ref.WeakReference;
 import java.util.List;
 
 import nuclei3.logs.Log;
@@ -206,9 +207,17 @@ public abstract class PagingAdapter<T, L extends List<T>, VH extends ListAdapter
 
     @Override
     public VH onCreateViewHolder(ViewGroup parent, int viewType) {
+        LayoutInflater inflater = mInflater.get();
+        if (inflater == null) {
+            Context context = mContext.get();
+            if (context != null) {
+                inflater = LayoutInflater.from(context);
+                mInflater = new WeakReference<>(inflater);
+            }
+        }
         if (viewType == mMoreViewType)
-            return onCreateMoreViewHolder(mInflater, parent, viewType);
-        return onCreateViewHolder(mInflater, parent, viewType);
+            return onCreateMoreViewHolder(inflater, parent, viewType);
+        return onCreateViewHolder(inflater, parent, viewType);
     }
 
     protected abstract VH onCreateMoreViewHolder(LayoutInflater inflater, ViewGroup parent, int viewType);

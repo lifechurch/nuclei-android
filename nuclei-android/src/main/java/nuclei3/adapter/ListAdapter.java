@@ -24,6 +24,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import java.lang.ref.WeakReference;
 import java.util.List;
 
 /**
@@ -36,18 +37,18 @@ import java.util.List;
 public abstract class ListAdapter<T, L extends List<T>, VH extends ListAdapter.ViewHolder<T>>
         extends RecyclerView.Adapter<VH> implements LifecycleObserver {
 
-    Context mContext;
-    LayoutInflater mInflater;
+    WeakReference<Context> mContext;
+    WeakReference<LayoutInflater> mInflater;
     L mList;
     long mListUpdates;
 
     public ListAdapter(Context context) {
-        mContext = context;
-        mInflater = LayoutInflater.from(context);
+        mContext = new WeakReference<>(context);
+        mInflater = new WeakReference<>(LayoutInflater.from(context));
     }
 
     protected Context getContext() {
-        return mContext;
+        return mContext.get();
     }
 
     /**
@@ -70,7 +71,15 @@ public abstract class ListAdapter<T, L extends List<T>, VH extends ListAdapter.V
 
     @Override
     public VH onCreateViewHolder(ViewGroup parent, int viewType) {
-        return onCreateViewHolder(mInflater, parent, viewType);
+        LayoutInflater inflater = mInflater.get();
+        if (inflater == null) {
+            Context context = mContext.get();
+            if (context != null) {
+                inflater = LayoutInflater.from(context);
+                mInflater = new WeakReference<>(inflater);
+            }
+        }
+        return onCreateViewHolder(inflater, parent, viewType);
     }
 
     protected abstract VH onCreateViewHolder(LayoutInflater inflater, ViewGroup parent, int viewType);
@@ -90,15 +99,6 @@ public abstract class ListAdapter<T, L extends List<T>, VH extends ListAdapter.V
     @Override
     public int getItemCount() {
         return mList == null ? 0 : mList.size();
-    }
-
-    @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-    public void onDestroy() {
-        mList = null;
-        mListUpdates++;
-        mContext = null;
-        mInflater = null;
-        notifyDataSetChanged();
     }
 
     public static class ViewHolder<T> extends RecyclerView.ViewHolder {
