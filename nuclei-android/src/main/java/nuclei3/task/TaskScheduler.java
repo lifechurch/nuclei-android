@@ -26,10 +26,14 @@ import android.os.Parcelable;
 import android.os.PersistableBundle;
 import android.support.v4.util.ArrayMap;
 
+import com.firebase.jobdispatcher.Constraint;
+import com.firebase.jobdispatcher.FirebaseJobDispatcher;
+import com.firebase.jobdispatcher.GooglePlayDriver;
+import com.firebase.jobdispatcher.Job;
+import com.firebase.jobdispatcher.Lifetime;
+import com.firebase.jobdispatcher.Trigger;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
-import com.google.android.gms.gcm.*;
-import com.google.android.gms.gcm.Task;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -101,8 +105,8 @@ public final class TaskScheduler {
     }
 
     private static void cancelPreL(Context context, nuclei3.task.Task<?> task) {
-        GcmNetworkManager.getInstance(context)
-                .cancelTask(task.getTaskTag(), TaskGcmService.class);
+        FirebaseJobDispatcher dispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(context));
+        dispatcher.cancel(task.getTaskTag());
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
@@ -124,8 +128,8 @@ public final class TaskScheduler {
     }
 
     private static void cancelAllPreL(Context context) {
-        GcmNetworkManager.getInstance(context)
-                .cancelAllTasks(TaskGcmService.class);
+        FirebaseJobDispatcher dispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(context));
+        dispatcher.cancelAll();
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
@@ -135,19 +139,22 @@ public final class TaskScheduler {
     }
 
     private void onSchedulePreL(Context context) {
-        Task.Builder builder;
+        FirebaseJobDispatcher dispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(context));
+        Job.Builder builder = dispatcher.newJobBuilder();
 
         switch (mBuilder.mTaskType) {
             case TASK_ONE_OFF:
-                OneoffTask.Builder oneOffBuilder = new OneoffTask.Builder();
-                builder = oneOffBuilder;
+                builder.setRecurring(false);
                 if (mBuilder.mWindowStartDelaySecondsSet || mBuilder.mWindowEndDelaySecondsSet)
-                    oneOffBuilder.setExecutionWindow(mBuilder.mWindowStartDelaySeconds, mBuilder.mWindowEndDelaySeconds);
+                    builder.setTrigger(Trigger.executionWindow((int) mBuilder.mWindowStartDelaySeconds, (int) mBuilder.mWindowEndDelaySeconds));
                 break;
             case TASK_PERIODIC:
-                builder = new PeriodicTask.Builder()
-                        .setFlex(mBuilder.mFlexInSeconds)
-                        .setPeriod(mBuilder.mPeriodInSeconds);
+                builder.setRecurring(true);
+                //builder.setTrigger(Trigger.NOW);
+//                builder = new PeriodicTask.Builder()
+//                        .setFlex(mBuilder.mFlexInSeconds)
+//                        .setPeriod(mBuilder.mPeriodInSeconds);
+                // TODO:?
                 break;
             default:
                 throw new IllegalArgumentException();
@@ -187,27 +194,26 @@ public final class TaskScheduler {
         }
         extras.putString(TASK_NAME, mBuilder.mTask.getClass().getName());
 
-        builder.setExtras(extras)
-                .setPersisted(mBuilder.mPersisted)
-                .setRequiresCharging(mBuilder.mRequiresCharging)
-                .setService(TaskGcmService.class)
-                .setTag(mBuilder.mTask.getTaskTag())
-                .setUpdateCurrent(mBuilder.mUpdateCurrent);
+        if (mBuilder.mPersisted)
+            builder.setLifetime(Lifetime.FOREVER);
+        if (mBuilder.mRequiresCharging)
+            builder.addConstraint(Constraint.DEVICE_CHARGING);
+        builder.setTag(mBuilder.mTask.getTaskTag());
+
+        builder.setReplaceCurrent(mBuilder.mUpdateCurrent);
+        builder.setExtras(extras);
 
         switch (mBuilder.mNetworkState) {
             case NETWORK_STATE_ANY:
-                builder.setRequiredNetwork(Task.NETWORK_STATE_ANY);
-                break;
             case NETWORK_STATE_CONNECTED:
-                builder.setRequiredNetwork(Task.NETWORK_STATE_CONNECTED);
+                builder.addConstraint(Constraint.ON_ANY_NETWORK);
                 break;
             case NETWORK_STATE_UNMETERED:
-                builder.setRequiredNetwork(Task.NETWORK_STATE_UNMETERED);
+                builder.addConstraint(Constraint.ON_UNMETERED_NETWORK);
                 break;
         }
 
-        GcmNetworkManager.getInstance(context)
-                .schedule(builder.build());
+        dispatcher.mustSchedule(builder.build());
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
@@ -265,8 +271,6 @@ public final class TaskScheduler {
 
         switch (mBuilder.mNetworkState) {
             case NETWORK_STATE_ANY:
-                builder.setRequiredNetworkType(JobInfo.NETWORK_TYPE_NONE);
-                break;
             case NETWORK_STATE_CONNECTED:
                 builder.setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY);
                 break;
@@ -295,7 +299,7 @@ public final class TaskScheduler {
     public static final class Builder {
 
         final nuclei3.task.Task mTask;
-        int mNetworkState = NETWORK_STATE_ANY;
+        int mNetworkState = -1;
         boolean mRequiresDeviceIdle;
         boolean mRequiresCharging;
         boolean mUpdateCurrent;

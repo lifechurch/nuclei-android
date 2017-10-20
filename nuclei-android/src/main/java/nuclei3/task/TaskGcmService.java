@@ -15,38 +15,43 @@
  */
 package nuclei3.task;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.util.ArrayMap;
 
-import com.google.android.gms.gcm.GcmNetworkManager;
-import com.google.android.gms.gcm.GcmTaskService;
-import com.google.android.gms.gcm.TaskParams;
+import com.firebase.jobdispatcher.JobParameters;
+import com.firebase.jobdispatcher.JobService;
 
 import nuclei3.logs.Log;
 import nuclei3.logs.Logs;
+import nuclei3.task.http.Http;
+import nuclei3.task.http.HttpTask;
 
 /**
  * For GCM Backed Job Scheduling.  Will receive scheduled Job and execute.
  */
-public class TaskGcmService extends GcmTaskService {
+public class TaskGcmService extends JobService {
 
     private static final Log LOG = Logs.newLog(TaskGcmService.class);
 
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        try {
-            return super.onStartCommand(intent, flags, startId);
-        } catch (Exception err) {
-            LOG.e("Error with task service", err);
-            return START_NOT_STICKY;
-        }
+    static TaskPool sTaskPool;
+
+    /**
+     * Initialize this Job Service with the supplied TaskPool.  This must be called
+     * in order for scheduled Jobs to be executed.
+     *
+     * @param taskPool
+     */
+    public static void initialize(TaskPool taskPool) {
+        sTaskPool = taskPool;
     }
 
     @Override
-    public int onRunTask(TaskParams taskParams) {
+    @SuppressWarnings("unchecked")
+    public boolean onStartJob(JobParameters params) {
         try {
-            Bundle bundle = taskParams.getExtras();
+            if (sTaskPool == null)
+                throw new NullPointerException("TaskGcmService TaskPool not set!");
+            Bundle bundle = params.getExtras();
             String taskName = bundle.getString(TaskScheduler.TASK_NAME);
             Task task = (Task) Class.forName(taskName).newInstance();
             ArrayMap<String, Object> map = new ArrayMap<>(bundle.size());
@@ -54,16 +59,40 @@ public class TaskGcmService extends GcmTaskService {
                 map.put(key, bundle.get(key));
             }
             task.deserialize(map);
-            if (task.isRunning())
-                return GcmNetworkManager.RESULT_RESCHEDULE;
-            task.attach(null);
-            task.run();
-            task.deliverResult(this);
-            return GcmNetworkManager.RESULT_SUCCESS;
+            if (task instanceof HttpTask)
+                Http.execute((HttpTask)task).addCallback(new JobCallback(params));
+            else
+                sTaskPool.execute(task).addCallback(new JobCallback(params));
+            return true;
         } catch (Exception err) {
             LOG.e("Error running task", err);
-            return GcmNetworkManager.RESULT_FAILURE;
+            jobFinished(params, true);
+            return false;
         }
+    }
+
+    @Override
+    public boolean onStopJob(JobParameters params) {
+        return false;
+    }
+
+    class JobCallback extends Result.CallbackAdapter {
+        final JobParameters params;
+
+        public JobCallback(JobParameters params) {
+            this.params = params;
+        }
+
+        @Override
+        public void onResult(Object type) {
+            jobFinished(params, false);
+        }
+
+        @Override
+        public void onException(Exception err) {
+            jobFinished(params, false);
+        }
+
     }
 
 }
