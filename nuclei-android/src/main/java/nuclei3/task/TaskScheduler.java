@@ -202,6 +202,7 @@ public final class TaskScheduler {
 
         builder.setReplaceCurrent(mBuilder.mUpdateCurrent);
         builder.setExtras(extras);
+        builder.setService(TaskGcmService.class);
 
         switch (mBuilder.mNetworkState) {
             case NETWORK_STATE_ANY:
