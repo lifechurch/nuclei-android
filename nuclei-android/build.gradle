@@ -1,6 +1,6 @@
 apply plugin: 'com.android.library'
 
-def versionId = "3.0.0-beta1"
+def versionId = "3.0.0-beta2"
 
 def isTest = false
 List<String> names = gradle.startParameter.taskNames

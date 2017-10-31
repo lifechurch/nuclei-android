@@ -36,6 +36,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.media.MediaBrowserCompat;
+import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -68,6 +69,8 @@ public class MediaInterface implements LifecycleObserver {
     private Handler mCallbackHandler = new Handler(Looper.getMainLooper());
     private Surface mSurface;
     private long mSurfaceId;
+
+    private MediaId mCurrentId;
 
     public MediaInterface(FragmentActivity activity, MediaId mediaId, MediaInterfaceCallback callback) {
         mFragmentActivity = activity;
@@ -276,7 +279,8 @@ public class MediaInterface implements LifecycleObserver {
             mCallbacks.onStateChanged(this, state);
         }
         if (mPlayerControls != null) {
-            if (MediaPlayerController.isPlaying(mMediaControls, state, mPlayerControls.getMediaId())) {
+            mPlayerControls.mPlaybackState = state;
+            if (isPlaying(state)) {
                 if (mCallbacks != null)
                     mCallbacks.onPlaying(mPlayerControls);
                 if (mProgressHandler != null)
@@ -296,7 +300,7 @@ public class MediaInterface implements LifecycleObserver {
         }
         if (state.getState() == PlaybackStateCompat.STATE_PLAYING && mCallbacks != null) {
             if (mPlayerControls != null
-                    && (!mPlayerControls.isMediaControlsSet() || !MediaPlayerController.isEquals(mMediaControls, mPlayerControls.getMediaId()))) {
+                    && (!mPlayerControls.isMediaControlsSet() || !(mCurrentId != null && mCurrentId.equals(mPlayerControls.getMediaId())))) {
                 mPlayerControls.setMediaControls(mCallbacks, mMediaControls);
             }
         }
@@ -318,10 +322,13 @@ public class MediaInterface implements LifecycleObserver {
     void onMetadataChanged(@Nullable MediaMetadataCompat metadata) {
         if (mCallbacks != null) {
             if (mPlayerControls != null) {
-                final String mediaId = MediaPlayerController.getMediaId(metadata);
-                if (mediaId != null && (mPlayerControls.mMediaId == null || !mediaId.equals(mPlayerControls.mMediaId.toString()))) {
+                mPlayerControls.mMetaData = metadata;
+                final String mediaId = getMediaId(metadata);
+                if (mediaId != null && (mPlayerControls.mMediaId == null || !mediaId.equals(mPlayerControls.mMediaIdStr))) {
                     LOG.v("Media ID Changed");
                     mPlayerControls.mMediaId = MediaProvider.getInstance().getMediaId(mediaId);
+                    mPlayerControls.mMediaIdStr = mPlayerControls.mMediaId.toString();
+                    mCurrentId = mPlayerControls.mMediaId;
                     onPlaybackStateChanged(mMediaControls.getPlaybackState());
                 }
             }
@@ -434,7 +441,6 @@ public class MediaInterface implements LifecycleObserver {
                         mediaInterface.mCallbacks.setPosition(mediaInterface, MAX_PROGRESS, currentPos, percent * 10);
                         mediaInterface.mCallbacks.setTimePlayed(mediaInterface, position);
                         sendEmptyMessageDelayed(SHOW_PROGRESS, PlaybackManager.ONE_SECOND - (position % PlaybackManager.ONE_SECOND));
-                        //sendEmptyMessageDelayed(SHOW_PROGRESS, PlaybackManager.ONE_SECOND);
                     }
                     break;
                 }
@@ -461,6 +467,32 @@ public class MediaInterface implements LifecycleObserver {
         public void stop() {
             removeMessages(SHOW_PROGRESS);
         }
+    }
+
+    static boolean isPlaying(PlaybackStateCompat playbackStateCompat) {
+        int state = -1;
+        if (playbackStateCompat != null)
+            state = playbackStateCompat.getState();
+        return state == PlaybackStateCompat.STATE_BUFFERING || state == PlaybackStateCompat.STATE_PLAYING;
+    }
+
+    @Nullable
+    static String getMediaId(MediaControllerCompat mediaControllerCompat) {
+        if (mediaControllerCompat != null) {
+            MediaMetadataCompat metadataCompat = mediaControllerCompat.getMetadata();
+            if (metadataCompat != null) {
+                return getMediaId(metadataCompat);
+            }
+        }
+        return null;
+    }
+
+    @Nullable
+    static String getMediaId(MediaMetadataCompat metadataCompat) {
+        MediaDescriptionCompat descriptionCompat = metadataCompat == null ? null : metadataCompat.getDescription();
+        if (descriptionCompat != null)
+            return descriptionCompat.getMediaId();
+        return null;
     }
 
 }
