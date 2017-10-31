@@ -41,7 +41,7 @@ public abstract class NotificationManager {
         if (DB == null) {
             synchronized (MUTEX) {
                 if (DB == null) {
-                    DB = Room.databaseBuilder(CONTEXT, NotificationsDb.class, "nuclei_notifications.db")
+                    DB = Room.databaseBuilder(CONTEXT, NotificationsDb.class, "nuclei.notifications.v3.db")
                             .fallbackToDestructiveMigration()
                             .build();
                 }
@@ -118,6 +118,8 @@ public abstract class NotificationManager {
     }
 
     public void setData(final NotificationMessage message, final List<NotificationData> data) {
+        if (message._id != 0)
+            throw new IllegalArgumentException("Message must have been added already");
         for (int i = 0, len = data.size(); i < len; i++) {
             NotificationData d = data.get(i);
             d.messageClientId = message._id;
