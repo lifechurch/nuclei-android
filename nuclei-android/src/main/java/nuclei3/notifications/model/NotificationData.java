@@ -16,8 +16,7 @@ import android.support.annotation.NonNull;
 public class NotificationData {
 
     @PrimaryKey(autoGenerate = true)
-    @NonNull
-    public long _id;
+    public Long _id;
 
     public long messageClientId;
     public String dataKey;

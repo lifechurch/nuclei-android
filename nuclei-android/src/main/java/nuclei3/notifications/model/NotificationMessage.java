@@ -18,8 +18,7 @@ import nuclei3.notifications.NotificationManager;
 public class NotificationMessage {
 
     @PrimaryKey(autoGenerate = true)
-    @NonNull
-    public long _id;
+    public Long _id;
 
     public String url;
     public String groupKey;
@@ -63,7 +62,7 @@ public class NotificationMessage {
         try {
             _data = data;
             _dataMap = null;
-            if (_id > 0) {
+            if (_id != null && _id > 0) {
                 NotificationManager.getInstance().setData(this, data);
             }
         } catch (Exception err) {

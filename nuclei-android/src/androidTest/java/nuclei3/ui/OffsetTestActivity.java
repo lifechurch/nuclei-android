@@ -112,7 +112,7 @@ public class OffsetTestActivity extends NucleiActivity {
 
         @Override
         protected void onLoadPage(Context context, final int pageIndex) {
-            Tasks.execute(new TaskRunnable<List<Integer>>() {
+            Tasks.execute("onLoadPage", new TaskRunnable<List<Integer>>() {
                 @Override
                 public List<Integer> run(Context context) {
                     return null;

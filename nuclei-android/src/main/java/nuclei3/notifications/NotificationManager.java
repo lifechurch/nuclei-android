@@ -11,6 +11,7 @@ import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.util.ArrayMap;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -114,11 +115,13 @@ public abstract class NotificationManager {
     }
 
     public List<NotificationData> getData(NotificationMessage message) {
+        if (message._id == null)
+            return Collections.emptyList();
         return DB.notificationsDao().getData(message._id);
     }
 
     public void setData(final NotificationMessage message, final List<NotificationData> data) {
-        if (message._id != 0)
+        if (message._id == null || message._id == 0)
             throw new IllegalArgumentException("Message must have been added already");
         for (int i = 0, len = data.size(); i < len; i++) {
             NotificationData d = data.get(i);
