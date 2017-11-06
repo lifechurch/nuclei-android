@@ -36,11 +36,11 @@ ext {
     glideVersion = "3.7.0"
     jsoupVersion = "1.8.3"
 
-    exoPlayerVersion = "r2.5.3"
+    exoPlayerVersion = "r2.5.4"
 
     okHttpVersion = "3.8.1"
 
-    appArchVersion = '1.0.0-rc1'
+    appArchVersion = '1.0.0'
 
     // Android Test Support Libraries
     espressoRunnerVersion = "0.5"
