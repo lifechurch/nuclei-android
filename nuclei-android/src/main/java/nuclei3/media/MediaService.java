@@ -313,10 +313,14 @@ public class MediaService extends MediaBrowserServiceCompat implements
 
         mDelayedStopHandler.removeCallbacksAndMessages(null);
 
-        // The service needs to continue running even after the bound client (usually a
-        // MediaController) disconnects, otherwise the music playback will stop.
-        // Calling startService(Intent) will keep the service running until it is explicitly killed.
-        startService(new Intent(getApplicationContext(), MediaService.class));
+        try {
+            // The service needs to continue running even after the bound client (usually a
+            // MediaController) disconnects, otherwise the music playback will stop.
+            // Calling startService(Intent) will keep the service running until it is explicitly killed.
+            startService(new Intent(getApplicationContext(), MediaService.class));
+        } catch (Exception e) {
+            LOG.e("Error starting media service", e);
+        }
     }
 
     @Override
