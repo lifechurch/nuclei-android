@@ -119,12 +119,10 @@ public class PlaybackManager implements Playback.Callback {
         mPendingAutoContinue = false;
         if (mMediaMetadata != null) {
             final MediaId id = MediaProvider.getInstance().getMediaId(mMediaMetadata.getDescription().getMediaId());
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                if (id.type == MediaId.TYPE_AUDIO)
-                    mPlayback.setPlaybackParams(new PlaybackParameters(mServiceCallback.getAudioSpeed(), 1));
-                else
-                    mPlayback.setPlaybackParams(PlaybackParameters.DEFAULT);
-            }
+            if (id.type == MediaId.TYPE_AUDIO)
+                mPlayback.setPlaybackParams(new PlaybackParameters(mServiceCallback.getAudioSpeed(), 1));
+            else
+                mPlayback.setPlaybackParams(PlaybackParameters.DEFAULT);
             mServiceCallback.onPlaybackPrepare(id);
             mPlayback.prepare(mMediaMetadata);
 
@@ -142,12 +140,10 @@ public class PlaybackManager implements Playback.Callback {
         mPendingAutoContinue = false;
         if (mMediaMetadata != null) {
             final MediaId id = MediaProvider.getInstance().getMediaId(mMediaMetadata.getDescription().getMediaId());
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                if (id.type == MediaId.TYPE_AUDIO)
-                    mPlayback.setPlaybackParams(new PlaybackParameters(mServiceCallback.getAudioSpeed(), 1));
-                else
-                    mPlayback.setPlaybackParams(PlaybackParameters.DEFAULT);
-            }
+            if (id.type == MediaId.TYPE_AUDIO)
+                mPlayback.setPlaybackParams(new PlaybackParameters(mServiceCallback.getAudioSpeed(), 1));
+            else
+                mPlayback.setPlaybackParams(PlaybackParameters.DEFAULT);
             mServiceCallback.onPlaybackStart(id);
             mServiceCallback.onNotificationRequired();
             mPlayback.start();

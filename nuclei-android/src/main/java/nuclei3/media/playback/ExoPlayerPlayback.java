@@ -636,13 +636,9 @@ public class ExoPlayerPlayback extends BasePlayback
                 break;
             case ExoPlayer.STATE_READY:
                 mIllegalStateRetries = 0;
-                if (isMediaPlayerPlaying()) {
+                if (isMediaPlayerPlaying())
                     mState = PlaybackStateCompat.STATE_PLAYING;
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        if (mPlaybackParams != null)
-                            mMediaPlayer.setPlaybackParameters(mPlaybackParams);
-                    }
-                } else
+                else
                     mState = PlaybackStateCompat.STATE_PAUSED;
                 break;
             default:
@@ -657,6 +653,9 @@ public class ExoPlayerPlayback extends BasePlayback
             mRestart = true;
             if (mCallback != null)
                 mCallback.onCompletion();
+        } else if (mState != PlaybackStateCompat.STATE_NONE) {
+            if (mMediaPlayer != null && mPlaybackParams != null)
+                mMediaPlayer.setPlaybackParameters(mPlaybackParams);
         }
     }
 
