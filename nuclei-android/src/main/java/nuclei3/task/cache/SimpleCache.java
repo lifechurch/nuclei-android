@@ -186,7 +186,7 @@ public final class SimpleCache implements Closeable, Flushable {
             this.key = key;
             this.version = VERSION;
             this.created = created;
-            this.ttl = ttl * 1000;
+            this.ttl = ((long) ttl) * 1000L;
 
             BufferedSink sink = Okio.buffer(editor.newSink(HEADER));
             sink.writeUtf8(key);
