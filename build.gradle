@@ -36,7 +36,7 @@ ext {
     glideVersion = "3.7.0"
     jsoupVersion = "1.8.3"
 
-    exoPlayerVersion = "r2.5.4"
+    exoPlayerVersion = "2.8.1"
 
     okHttpVersion = "3.8.1"
 
