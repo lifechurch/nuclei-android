@@ -22,32 +22,29 @@ import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
-import android.os.Build;
 import android.os.Handler;
 import android.os.PowerManager;
+import android.support.annotation.Nullable;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.text.TextUtils;
 import android.view.Surface;
 
 import com.google.android.exoplayer2.ExoPlaybackException;
-import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.ExoPlayerFactory;
-import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.PlaybackParameters;
+import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.Timeline;
-import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
-import com.google.android.exoplayer2.source.AdaptiveMediaSourceEventListener;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
+import com.google.android.exoplayer2.source.MediaSourceEventListener;
 import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.source.hls.HlsMediaSource;
 import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.upstream.DataSource;
-import com.google.android.exoplayer2.upstream.DataSpec;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 import com.google.android.exoplayer2.upstream.FileDataSourceFactory;
@@ -67,9 +64,8 @@ public class ExoPlayerPlayback extends BasePlayback
         implements
         Playback,
         AudioManager.OnAudioFocusChangeListener,
-        ExoPlayer.EventListener,
-        ExtractorMediaSource.EventListener,
-        AdaptiveMediaSourceEventListener {
+        Player.EventListener,
+        MediaSourceEventListener {
 
     static final Log LOG = Logs.newLog(ExoPlayerPlayback.class);
 
@@ -254,8 +250,8 @@ public class ExoPlayerPlayback extends BasePlayback
         } else {
             mState = mMediaPlayer != null
                     ? mState == PlaybackStateCompat.STATE_STOPPED
-                        ? PlaybackStateCompat.STATE_STOPPED
-                        : PlaybackStateCompat.STATE_PAUSED
+                    ? PlaybackStateCompat.STATE_STOPPED
+                    : PlaybackStateCompat.STATE_PAUSED
                     : PlaybackStateCompat.STATE_STOPPED;
             relaxResources(false); // release everything except MediaPlayer
             setTrack(metadataCompat);
@@ -306,7 +302,7 @@ public class ExoPlayerPlayback extends BasePlayback
         if (mMediaPlayer == null || !mMediaPlayer.getPlayWhenReady())
             return false;
         int state = mMediaPlayer.getPlaybackState();
-        return state == ExoPlayer.STATE_READY || state == ExoPlayer.STATE_BUFFERING;
+        return state == Player.STATE_READY || state == Player.STATE_BUFFERING;
     }
 
     @Override
@@ -471,6 +467,11 @@ public class ExoPlayerPlayback extends BasePlayback
 
     }
 
+    @Override
+    public void onSeekProcessed() {
+
+    }
+
     /**
      * Called by AudioManager on audio focus changes.
      * Implementation of {@link AudioManager.OnAudioFocusChangeListener}
@@ -509,6 +510,11 @@ public class ExoPlayerPlayback extends BasePlayback
 
     }
 
+    @Override
+    public void onShuffleModeEnabledChanged(boolean shuffleModeEnabled) {
+
+    }
+
     /**
      * Returns a new DataSource factory.
      *
@@ -518,8 +524,8 @@ public class ExoPlayerPlayback extends BasePlayback
      */
     protected DataSource.Factory buildDataSourceFactory(Context context, boolean useBandwidthMeter, boolean http) {
         return http
-               ? buildHttpDataSourceFactory(context, useBandwidthMeter)
-               : buildFileDataSourceFactory(useBandwidthMeter);
+                ? buildHttpDataSourceFactory(context, useBandwidthMeter)
+                : buildFileDataSourceFactory(useBandwidthMeter);
     }
 
     protected HttpDataSource.Factory buildHttpDataSourceFactory(Context context, boolean useBandwidthMeter) {
@@ -536,7 +542,7 @@ public class ExoPlayerPlayback extends BasePlayback
                 new DefaultTrackSelector(new AdaptiveTrackSelection.Factory(BANDWIDTH_METER)));
     }
 
-    protected MediaSource newMediaSource(Context context, String url, int type, Handler handler) {
+    protected MediaSource newMediaSource(Context context, String url, int type) {
         boolean hls = false;
         boolean localFile = url.startsWith("file://");
         if (!localFile) {
@@ -547,16 +553,12 @@ public class ExoPlayerPlayback extends BasePlayback
         }
         // expecting MP3 here ... otherwise HLS
         if ((localFile || type == MediaId.TYPE_AUDIO) && !hls) {
-            return new ExtractorMediaSource(Uri.parse(url),
-                    buildDataSourceFactory(context, true, !localFile),
-                    new DefaultExtractorsFactory(),
-                    handler,
-                    this);
+            return new ExtractorMediaSource.Factory(buildDataSourceFactory(context, true, !localFile))
+                    .createMediaSource(Uri.parse(url));
         } else {
-            return new HlsMediaSource(Uri.parse(url),
-                    buildDataSourceFactory(context, true, true),
-                    handler,
-                    this);
+            return new HlsMediaSource.Factory(buildDataSourceFactory(context, true, true))
+                    .setMinLoadableRetryCount(5)
+                    .createMediaSource(Uri.parse(url));
         }
     }
 
@@ -574,7 +576,7 @@ public class ExoPlayerPlayback extends BasePlayback
         mMediaPlayer = newMediaPlayer(mService.getApplicationContext(), url, type);
         mMediaPlayer.addListener(this);
 
-        MediaSource mediaSource = newMediaSource(mService.getApplicationContext(), url, type, mHandler);
+        MediaSource mediaSource = newMediaSource(mService.getApplicationContext(), url, type);
         mMediaPlayer.prepare(mediaSource);
 
         // Make sure the media player will acquire a wake-lock while
@@ -600,7 +602,7 @@ public class ExoPlayerPlayback extends BasePlayback
     public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
         if (LOG.isLoggable(Log.DEBUG))
             LOG.d("onStateChanged=" + playbackState + ", " + playWhenReady);
-        if (!mPrepared && playbackState == ExoPlayer.STATE_READY && mMediaPlayer != null) {
+        if (!mPrepared && playbackState == Player.STATE_READY && mMediaPlayer != null) {
             mPrepared = true;
             if (!mWakeLock.isHeld())
                 mWakeLock.acquire();
@@ -622,19 +624,19 @@ public class ExoPlayerPlayback extends BasePlayback
         }
 
         switch (playbackState) {
-            case ExoPlayer.STATE_BUFFERING:
+            case Player.STATE_BUFFERING:
                 mState = PlaybackStateCompat.STATE_BUFFERING;
                 mIllegalStateRetries = 0;
                 break;
-            case ExoPlayer.STATE_ENDED:
+            case Player.STATE_ENDED:
                 mState = PlaybackStateCompat.STATE_NONE;
                 mIllegalStateRetries = 0;
                 break;
-            case ExoPlayer.STATE_IDLE:
+            case Player.STATE_IDLE:
                 if (mState != PlaybackStateCompat.STATE_ERROR)
                     mState = PlaybackStateCompat.STATE_NONE;
                 break;
-            case ExoPlayer.STATE_READY:
+            case Player.STATE_READY:
                 mIllegalStateRetries = 0;
                 if (isMediaPlayerPlaying())
                     mState = PlaybackStateCompat.STATE_PLAYING;
@@ -649,7 +651,7 @@ public class ExoPlayerPlayback extends BasePlayback
         if (mCallback != null)
             mCallback.onPlaybackStatusChanged(mState);
 
-        if (playbackState == ExoPlayer.STATE_ENDED) {
+        if (playbackState == Player.STATE_ENDED) {
             mRestart = true;
             if (mCallback != null)
                 mCallback.onCompletion();
@@ -660,7 +662,7 @@ public class ExoPlayerPlayback extends BasePlayback
     }
 
     @Override
-    public void onTimelineChanged(Timeline timeline, Object manifest) {
+    public void onTimelineChanged(Timeline timeline, Object manifest, int reason) {
 
     }
 
@@ -670,47 +672,53 @@ public class ExoPlayerPlayback extends BasePlayback
     }
 
     @Override
-    public void onPositionDiscontinuity() {
+    public void onPositionDiscontinuity(int reason) {
 
     }
 
     @Override
-    public void onLoadStarted(DataSpec dataSpec, int dataType, int trackType, Format trackFormat, int trackSelectionReason, Object trackSelectionData, long
-            mediaStartTimeMs, long mediaEndTimeMs, long elapsedRealtimeMs) {
+    public void onMediaPeriodCreated(int windowIndex, MediaSource.MediaPeriodId mediaPeriodId) {
 
     }
 
     @Override
-    public void onLoadCompleted(DataSpec dataSpec, int dataType, int trackType, Format trackFormat, int trackSelectionReason, Object trackSelectionData, long
-            mediaStartTimeMs, long mediaEndTimeMs, long elapsedRealtimeMs, long loadDurationMs, long bytesLoaded) {
+    public void onMediaPeriodReleased(int windowIndex, MediaSource.MediaPeriodId mediaPeriodId) {
 
     }
 
     @Override
-    public void onLoadCanceled(DataSpec dataSpec, int dataType, int trackType, Format trackFormat, int trackSelectionReason, Object trackSelectionData, long
-            mediaStartTimeMs, long mediaEndTimeMs, long elapsedRealtimeMs, long loadDurationMs, long bytesLoaded) {
+    public void onLoadStarted(int windowIndex, @Nullable MediaSource.MediaPeriodId mediaPeriodId, LoadEventInfo loadEventInfo, MediaLoadData mediaLoadData) {
 
     }
 
     @Override
-    public void onLoadError(DataSpec dataSpec, int dataType, int trackType, Format trackFormat, int trackSelectionReason, Object trackSelectionData, long
-            mediaStartTimeMs, long mediaEndTimeMs, long elapsedRealtimeMs, long loadDurationMs, long bytesLoaded, IOException error, boolean wasCanceled) {
-        onError(error);
-    }
-
-    @Override
-    public void onUpstreamDiscarded(int trackType, long mediaStartTimeMs, long mediaEndTimeMs) {
+    public void onLoadCompleted(int windowIndex, @Nullable MediaSource.MediaPeriodId mediaPeriodId, LoadEventInfo loadEventInfo, MediaLoadData mediaLoadData) {
 
     }
 
     @Override
-    public void onDownstreamFormatChanged(int trackType, Format trackFormat, int trackSelectionReason, Object trackSelectionData, long mediaTimeMs) {
+    public void onLoadCanceled(int windowIndex, @Nullable MediaSource.MediaPeriodId mediaPeriodId, LoadEventInfo loadEventInfo, MediaLoadData mediaLoadData) {
 
     }
 
     @Override
-    public void onLoadError(IOException error) {
-        onError(error);
+    public void onLoadError(int windowIndex, @Nullable MediaSource.MediaPeriodId mediaPeriodId, LoadEventInfo loadEventInfo, MediaLoadData mediaLoadData, IOException error, boolean wasCanceled) {
+
+    }
+
+    @Override
+    public void onReadingStarted(int windowIndex, MediaSource.MediaPeriodId mediaPeriodId) {
+
+    }
+
+    @Override
+    public void onUpstreamDiscarded(int windowIndex, MediaSource.MediaPeriodId mediaPeriodId, MediaLoadData mediaLoadData) {
+
+    }
+
+    @Override
+    public void onDownstreamFormatChanged(int windowIndex, @Nullable MediaSource.MediaPeriodId mediaPeriodId, MediaLoadData mediaLoadData) {
+
     }
 
     private void onError(Exception e) {
