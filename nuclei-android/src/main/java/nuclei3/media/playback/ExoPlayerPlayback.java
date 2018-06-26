@@ -542,7 +542,7 @@ public class ExoPlayerPlayback extends BasePlayback
                 new DefaultTrackSelector(new AdaptiveTrackSelection.Factory(BANDWIDTH_METER)));
     }
 
-    protected MediaSource newMediaSource(Context context, String url, int type, Handler handler) {
+    protected MediaSource newMediaSource(Context context, String url, int type) {
         boolean hls = false;
         boolean localFile = url.startsWith("file://");
         if (!localFile) {
@@ -576,7 +576,7 @@ public class ExoPlayerPlayback extends BasePlayback
         mMediaPlayer = newMediaPlayer(mService.getApplicationContext(), url, type);
         mMediaPlayer.addListener(this);
 
-        MediaSource mediaSource = newMediaSource(mService.getApplicationContext(), url, type, mHandler);
+        MediaSource mediaSource = newMediaSource(mService.getApplicationContext(), url, type);
         mMediaPlayer.prepare(mediaSource);
 
         // Make sure the media player will acquire a wake-lock while
