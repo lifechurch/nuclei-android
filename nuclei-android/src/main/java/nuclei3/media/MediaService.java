@@ -394,10 +394,7 @@ public class MediaService extends MediaBrowserServiceCompat implements
                 mediaMetadataCompat.setSession(mSession);
                 Context context = getApplicationContext();
                 MediaId id = MediaProvider.getInstance().getMediaId(mediaMetadataCompat.getDescription().getMediaId());
-                Intent intent = new Intent(context, id.type == MediaId.TYPE_AUDIO
-                                                    ? Configuration.AUDIO_ACTIVITY
-                                                    : Configuration.VIDEO_ACTIVITY);
-                intent.putExtra(MEDIA_ID, id.toString());
+                Intent intent = MediaProvider.getInstance().getContentIntent(id);
                 PendingIntent pi = PendingIntent.getActivity(context, REQUEST_CODE, intent, PendingIntent.FLAG_UPDATE_CURRENT);
                 mSession.setSessionActivity(pi);
             } else {

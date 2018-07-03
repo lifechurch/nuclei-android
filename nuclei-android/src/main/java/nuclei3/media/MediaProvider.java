@@ -16,6 +16,7 @@
 package nuclei3.media;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
@@ -61,6 +62,8 @@ public abstract class MediaProvider {
     public abstract float getAudioSpeed();
 
     public abstract void setAudioSpeed(float speed);
+
+    public abstract Intent getContentIntent(MediaId id);
 
     public final <T extends MediaId> T getMediaId(String id) {
         T mediaId = parseMediaId(id);
