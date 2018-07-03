@@ -213,12 +213,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
     private PendingIntent createContentIntent(MediaDescriptionCompat description) {
         try {
             MediaId id = MediaProvider.getInstance().getMediaId(description.getMediaId());
-            Intent openUI = new Intent(mService,
-                    id.type == MediaId.TYPE_AUDIO
-                    ? Configuration.AUDIO_ACTIVITY
-                    : Configuration.VIDEO_ACTIVITY);
-            openUI.putExtra(MediaService.MEDIA_ID, description.getMediaId());
-            openUI.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            Intent openUI = MediaProvider.getInstance().getContentIntent(id);
             return PendingIntent.getActivity(mService, REQUEST_CODE, openUI, PendingIntent.FLAG_CANCEL_CURRENT);
         } catch (Exception err) {
             throw new RuntimeException(err);
