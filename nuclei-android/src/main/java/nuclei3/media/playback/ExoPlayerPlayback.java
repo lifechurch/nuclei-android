@@ -123,7 +123,11 @@ public class ExoPlayerPlayback extends BasePlayback
                     Intent i = new Intent(context, MediaService.class);
                     i.setAction(MediaService.ACTION_CMD);
                     i.putExtra(MediaService.CMD_NAME, MediaService.CMD_PAUSE);
-                    mService.startService(i);
+                    try {
+                        mService.startService(i);
+                    } catch (Exception e) {
+                        mService.getPlaybackManager().handlePauseRequest();
+                    }
                 }
             }
         }
