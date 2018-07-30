@@ -441,6 +441,10 @@ public class MediaService extends MediaBrowserServiceCompat implements
         registerReceiver(mCarConnectionReceiver, filter);
     }
 
+    public PlaybackManager getPlaybackManager() {
+        return mPlaybackManager;
+    }
+
     private void unregisterCarConnectionReceiver() {
         unregisterReceiver(mCarConnectionReceiver);
     }

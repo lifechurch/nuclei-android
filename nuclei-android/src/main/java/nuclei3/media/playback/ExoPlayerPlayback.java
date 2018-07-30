@@ -24,7 +24,9 @@ import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.Handler;
 import android.os.PowerManager;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.app.JobIntentService;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.text.TextUtils;
@@ -123,7 +125,11 @@ public class ExoPlayerPlayback extends BasePlayback
                     Intent i = new Intent(context, MediaService.class);
                     i.setAction(MediaService.ACTION_CMD);
                     i.putExtra(MediaService.CMD_NAME, MediaService.CMD_PAUSE);
-                    mService.startService(i);
+                    try {
+                        mService.startService(i);
+                    } catch (Exception e) {
+                        mService.getPlaybackManager().handlePauseRequest();
+                    }
                 }
             }
         }
