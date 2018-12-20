@@ -23,6 +23,7 @@ public abstract class ButtonAdapter {
 
     public abstract int getTitle(int position);
     public abstract int getDrawable(int position);
+    public abstract int getImageViewId(int position);
     public abstract int getCount();
 
     public void notifyDataSetChanged() {

@@ -314,6 +314,7 @@ public class ButtonBarView extends FrameLayout {
         for (int i = 0; i < count; i++) {
             final int textId = mAdapter.getTitle(i);
             final int imageId = mAdapter.getDrawable(i);
+            final int imageViewId = mAdapter.getImageViewId(i);
             Item item = new Item(textId, imageId);
 
             item.view = (ViewGroup) inflater.inflate(
@@ -327,6 +328,9 @@ public class ButtonBarView extends FrameLayout {
                 item.imageView.setContentDescription(getResources().getString(item.textId));
             item.imageView.setImageResource(item.imageId);
             item.imageView.setColorFilter(mUnselectedTint, PorterDuff.Mode.SRC_ATOP);
+            if (imageViewId != 0) {
+                item.imageView.setId(imageViewId);
+            }
 
             item.textView = (TextView) item.view.findViewById(R.id.text);
             if (item.textView != null) {
