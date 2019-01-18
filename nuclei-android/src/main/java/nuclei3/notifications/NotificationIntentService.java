@@ -23,7 +23,11 @@ public class NotificationIntentService extends IntentService {
                 ? intent.getStringExtra(EXTRA_GROUP_KEY)
                 : null;
         if (intent.hasExtra(EXTRA_CLEAR_ALL)) {
-            NotificationManager.getInstance().removeMessages(groupKey);
+            try {
+                NotificationManager.getInstance().removeMessages(groupKey);
+            } catch (Exception e) {
+
+            }
         } else {
             long clientId = intent.getLongExtra(EXTRA_CLEAR_ID, -1);
             NotificationMessage message = NotificationManager.getInstance().getMessage(clientId);
