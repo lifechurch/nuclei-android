@@ -26,17 +26,17 @@ task clean(type: Delete) {
 }
 
 ext {
-    compileSdkVersion = 26
-    targetSdkVersion = 26
+    compileSdkVersion = 28
+    targetSdkVersion = 28
     minSdkVersion = 16
-    buildToolsVersion = "26.0.2"
+    buildToolsVersion = "28.0.0"
 
     playServicesVersion = "11.4.2"
     supportLibVersion = "26.1.0"
     glideVersion = "3.7.0"
     jsoupVersion = "1.8.3"
 
-    exoPlayerVersion = "2.8.1"
+    exoPlayerVersion = "2.9.2"
 
     okHttpVersion = "3.8.1"
 

@@ -3,6 +3,8 @@ package nuclei3.notifications;
 import android.app.IntentService;
 import android.content.Intent;
 
+import nuclei3.logs.Log;
+import nuclei3.logs.Logs;
 import nuclei3.notifications.model.NotificationMessage;
 
 public class NotificationIntentService extends IntentService {
@@ -10,6 +12,8 @@ public class NotificationIntentService extends IntentService {
     public static final String EXTRA_CLEAR_ID = "clear_id";
     public static final String EXTRA_CLEAR_ALL = "clear_all";
     public static final String EXTRA_GROUP_KEY = "group_key";
+
+    static final Log LOG = Logs.newLog(NotificationIntentService.class);
 
     public NotificationIntentService() {
         super("NotificationIntentService");
@@ -23,7 +27,11 @@ public class NotificationIntentService extends IntentService {
                 ? intent.getStringExtra(EXTRA_GROUP_KEY)
                 : null;
         if (intent.hasExtra(EXTRA_CLEAR_ALL)) {
-            NotificationManager.getInstance().removeMessages(groupKey);
+            try {
+                NotificationManager.getInstance().removeMessages(groupKey);
+            } catch (Exception e) {
+                LOG.e("Error clearing messages", e);
+            }
         } else {
             long clientId = intent.getLongExtra(EXTRA_CLEAR_ID, -1);
             NotificationMessage message = NotificationManager.getInstance().getMessage(clientId);

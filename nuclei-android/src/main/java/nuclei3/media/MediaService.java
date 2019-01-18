@@ -22,6 +22,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -207,6 +208,7 @@ public class MediaService extends MediaBrowserServiceCompat implements
         mPlaybackManager.updatePlaybackState(null, true);
 
         registerCarConnectionReceiver();
+
     }
 
     @Override
@@ -317,7 +319,11 @@ public class MediaService extends MediaBrowserServiceCompat implements
             // The service needs to continue running even after the bound client (usually a
             // MediaController) disconnects, otherwise the music playback will stop.
             // Calling startService(Intent) will keep the service running until it is explicitly killed.
-            startService(new Intent(getApplicationContext(), MediaService.class));
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                startForegroundService(new Intent(getApplicationContext(), MediaService.class));
+            else
+                startService(new Intent(getApplicationContext(), MediaService.class));
+
         } catch (Exception e) {
             LOG.e("Error starting media service", e);
         }
