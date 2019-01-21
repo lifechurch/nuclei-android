@@ -78,6 +78,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
     private final int mNotificationColor;
 
     private boolean mStarted = false;
+    private Notification mRunningNotification;
 
     public MediaNotificationManager(MediaService service) throws RemoteException {
         mService = service;
@@ -119,8 +120,8 @@ public class MediaNotificationManager extends BroadcastReceiver {
             mPlaybackState = mController.getPlaybackState();
 
             // The notification must be updated after setting started to true
-            Notification notification = createNotification();
-            if (notification != null) {
+            mRunningNotification = createNotification();
+            if (mRunningNotification != null) {
                 mController.registerCallback(mCb);
                 IntentFilter filter = new IntentFilter();
                 filter.addAction(ACTION_NEXT);
@@ -131,9 +132,13 @@ public class MediaNotificationManager extends BroadcastReceiver {
                 filter.addAction(ACTION_CANCEL);
                 mService.registerReceiver(this, filter);
 
-                mService.startForeground(NOTIFICATION_ID, notification);
+                mService.startForeground(NOTIFICATION_ID, mRunningNotification);
                 mStarted = true;
             }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            // when starting a ForegroundService we need to call startForeground within 5 seconds or
+            // there is a resulting ANR. see https://stackoverflow.com/questions/44425584/context-startforegroundservice-did-not-then-call-service-startforeground)
+            mService.startForeground(NOTIFICATION_ID, mRunningNotification);
         }
     }
 
@@ -144,6 +149,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
     public void stopNotification() {
         if (mStarted) {
             mStarted = false;
+            mRunningNotification = null;
             mController.unregisterCallback(mCb);
             try {
                 mNotificationManager.cancel(NOTIFICATION_ID);
