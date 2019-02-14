@@ -1,6 +1,7 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
+    ext.kotlin_version = '1.3.20'
     repositories {
         jcenter()
         maven { url 'https://dl.bintray.com/lifechurch/maven/' }
@@ -11,6 +12,7 @@ buildscript {
         classpath 'com.android.tools.build:gradle:3.3.0'
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3'
         classpath 'com.github.dcendents:android-maven-gradle-plugin:1.5'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
 
@@ -31,16 +33,18 @@ ext {
     minSdkVersion = 16
     buildToolsVersion = "28.0.3"
 
-    playServicesVersion = "11.4.2"
     supportLibVersion = "28.0.0"
     glideVersion = "3.7.0"
     jsoupVersion = "1.8.3"
+
+    playServicesBaseVersion = "16.1.0"
+    playServicesCastVersion = "16.1.2"
 
     exoPlayerVersion = "2.9.2"
 
     okHttpVersion = "3.8.1"
 
-    appArchVersion = '1.0.0'
+    appArchVersion = '1.1.1'
 
     // Android Test Support Libraries
     espressoRunnerVersion = "0.5"

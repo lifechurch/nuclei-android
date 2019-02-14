@@ -16,6 +16,7 @@
 package nuclei3.media.playback;
 
 import android.net.Uri;
+import android.os.Bundle;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.text.TextUtils;
@@ -23,7 +24,12 @@ import android.view.Surface;
 
 import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.gms.cast.MediaInfo;
+import com.google.android.gms.cast.MediaLoadOptions;
 import com.google.android.gms.cast.MediaStatus;
+import com.google.android.gms.cast.framework.CastContext;
+import com.google.android.gms.cast.framework.CastSession;
+import com.google.android.gms.cast.framework.SessionManagerListener;
+import com.google.android.gms.cast.framework.media.RemoteMediaClient;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.images.WebImage;
 import com.google.android.libraries.cast.companionlibrary.cast.VideoCastManager;
@@ -40,6 +46,7 @@ import nuclei3.logs.Logs;
 import nuclei3.media.MediaId;
 import nuclei3.media.MediaMetadata;
 import nuclei3.media.MediaProvider;
+import nuclei3.media.MediaService;
 
 /**
  * An implementation of Playback that talks to Cast.
@@ -52,50 +59,6 @@ public class CastPlayback extends BasePlayback implements Playback {
 
     private static final Log LOG = Logs.newLog(CastPlayback.class);
 
-    private final VideoCastConsumerImpl mCastConsumer = new VideoCastConsumerImpl() {
-
-        @Override
-        public void onApplicationStatusChanged(String appStatus) {
-            updatePlaybackState();
-        }
-
-        @Override
-        public void onRemoteMediaPlayerMetadataUpdated() {
-            setMetadataFromRemote();
-        }
-
-        @Override
-        public void onRemoteMediaPlayerStatusUpdated() {
-            updatePlaybackState();
-        }
-
-        @Override
-        public void onApplicationConnectionFailed(int errorCode) {
-            updatePlaybackState();
-        }
-
-        @Override
-        public void onFailed(int resourceId, int statusCode) {
-            updatePlaybackState();
-        }
-
-        @Override
-        public void onDataMessageSendFailed(int errorCode) {
-            updatePlaybackState();
-        }
-
-        @Override
-        public void onConnectionFailed(ConnectionResult result) {
-            updatePlaybackState();
-        }
-
-        @Override
-        public void onApplicationStopFailed(int errorCode) {
-            updatePlaybackState();
-        }
-
-    };
-
     private MediaMetadata mMediaMetadata;
     private int mState;
     private Callback mCallback;
@@ -103,6 +66,57 @@ public class CastPlayback extends BasePlayback implements Playback {
     private volatile MediaId mCurrentMediaId;
     private Surface mSurface;
     private long mSurfaceId;
+
+    CastSession mCastSession;
+    CastContext mCastContext;
+
+    final private SessionManagerListener<CastSession> mSessionManagerListener = new SessionManagerListener<CastSession>() {
+
+        @Override
+        public void onSessionEnded(CastSession session, int error) {
+            updatePlaybackState();
+        }
+
+        @Override
+        public void onSessionResumed(CastSession session, boolean wasSuspended) {
+            mCastSession = session;
+            updatePlaybackState();
+        }
+
+        @Override
+        public void onSessionResumeFailed(CastSession session, int error) {
+            updatePlaybackState();
+        }
+
+        @Override
+        public void onSessionStarted(CastSession session, String sessionId) {
+            mCastSession = session;
+            updatePlaybackState();
+        }
+
+        @Override
+        public void onSessionStartFailed(CastSession session, int error) {
+            updatePlaybackState();
+        }
+
+        @Override
+        public void onSessionStarting(CastSession session) {
+        }
+
+        @Override
+        public void onSessionEnding(CastSession session) {
+        }
+
+        @Override
+        public void onSessionResuming(CastSession session, String sessionId) {
+        }
+
+        @Override
+        public void onSessionSuspended(CastSession session, int reason) {
+        }
+
+    };
+
 
     public CastPlayback() {
     }
@@ -125,8 +139,10 @@ public class CastPlayback extends BasePlayback implements Playback {
 
     @Override
     public void start() {
-        VideoCastManager.getInstance().removeVideoCastConsumer(mCastConsumer);
-        VideoCastManager.getInstance().addVideoCastConsumer(mCastConsumer);
+        mCastContext = CastContext.getSharedInstance();
+        mCastSession = mCastContext.getSessionManager().getCurrentCastSession();
+        mCastContext.getSessionManager().removeSessionManagerListener(mSessionManagerListener, CastSession.class);
+        mCastContext.getSessionManager().addSessionManagerListener(mSessionManagerListener, CastSession.class);
     }
 
     @Override
@@ -134,12 +150,12 @@ public class CastPlayback extends BasePlayback implements Playback {
         if (mMediaMetadata != null)
             mMediaMetadata.setTimingSeeked(false);
         try {
-            VideoCastManager.getInstance().stop();
-        } catch (IllegalStateException | CastException | TransientNetworkDisconnectionException | NoConnectionException e) {
+            mCastSession.getRemoteMediaClient().stop();
+        } catch (IllegalStateException e) {
             LOG.e("Error stopping", e);
         }
         if (notifyListeners)
-            VideoCastManager.getInstance().removeVideoCastConsumer(mCastConsumer);
+            mCastContext.getSessionManager().removeSessionManagerListener(mSessionManagerListener, CastSession.class);
         mState = PlaybackStateCompat.STATE_STOPPED;
         if (notifyListeners && mCallback != null) {
             mCallback.onPlaybackStatusChanged(mState);
@@ -151,8 +167,9 @@ public class CastPlayback extends BasePlayback implements Playback {
         if (mMediaMetadata != null)
             mMediaMetadata.setTimingSeeked(false);
         try {
-            VideoCastManager.getInstance().pause();
-        } catch (IllegalStateException | CastException | TransientNetworkDisconnectionException | NoConnectionException e) {
+            mCastContext.getSessionManager().removeSessionManagerListener(
+                    mSessionManagerListener, CastSession.class);
+        } catch (IllegalStateException e) {
             LOG.e("Error pausing", e);
         }
         mState = PlaybackStateCompat.STATE_STOPPED;
@@ -168,12 +185,12 @@ public class CastPlayback extends BasePlayback implements Playback {
 
     @Override
     protected long internalGetCurrentStreamPosition() {
-        if (!VideoCastManager.getInstance().isConnected()) {
+        if (!isConnected()) {
             return mCurrentPosition;
         }
         try {
-            return VideoCastManager.getInstance().getCurrentMediaPosition();
-        } catch (TransientNetworkDisconnectionException | NoConnectionException e) {
+            return mCastSession.getRemoteMediaClient().getApproximateStreamPosition();
+        } catch (Exception e) {
 
         }
         return -1;
@@ -181,12 +198,12 @@ public class CastPlayback extends BasePlayback implements Playback {
 
     @Override
     protected long internalGetDuration() {
-        if (!VideoCastManager.getInstance().isConnected()) {
+        if (!isConnected()) {
             return -1;
         }
         try {
-            return VideoCastManager.getInstance().getMediaDuration();
-        } catch (TransientNetworkDisconnectionException | NoConnectionException e) {
+            return mCastSession.getRemoteMediaClient().getStreamDuration();
+        } catch (Exception e) {
 
         }
         return -1;
@@ -215,8 +232,7 @@ public class CastPlayback extends BasePlayback implements Playback {
             if (mCallback != null) {
                 mCallback.onPlaybackStatusChanged(mState);
             }
-        } catch (TransientNetworkDisconnectionException | NoConnectionException
-                | JSONException | IllegalArgumentException e) {
+        } catch (JSONException | IllegalArgumentException e) {
             if (mCallback != null) {
                 mCallback.onError(e, true);
             }
@@ -244,14 +260,13 @@ public class CastPlayback extends BasePlayback implements Playback {
     @Override
     public void pause() {
         try {
-            VideoCastManager manager = VideoCastManager.getInstance();
-            if (manager.isRemoteMediaLoaded()) {
-                manager.pause();
-                mCurrentPosition = (int) manager.getCurrentMediaPosition();
+            if (isConnected()) {
+                mCastSession.getRemoteMediaClient().pause();
+                mCurrentPosition = (int) mCastSession.getRemoteMediaClient().getApproximateStreamPosition();
             } else {
                 loadMedia(mMediaMetadata, false);
             }
-        } catch (JSONException | CastException | TransientNetworkDisconnectionException | NoConnectionException | IllegalArgumentException e) {
+        } catch (JSONException | IllegalArgumentException e) {
             if (mCallback != null) {
                 mCallback.onError(e, false);
             }
@@ -267,14 +282,14 @@ public class CastPlayback extends BasePlayback implements Playback {
             return;
         }
         try {
-            if (VideoCastManager.getInstance().isRemoteMediaLoaded()) {
-                VideoCastManager.getInstance().seek((int) position);
+            if (isConnected()) {
+                mCastSession.getRemoteMediaClient().seek((int) position);
                 mCurrentPosition = position;
             } else {
                 mCurrentPosition = position;
                 loadMedia(mMediaMetadata, false);
             }
-        } catch (TransientNetworkDisconnectionException | NoConnectionException | JSONException | IllegalArgumentException e) {
+        } catch (JSONException | IllegalArgumentException e) {
             if (mCallback != null) {
                 mCallback.onError(e, true);
             }
@@ -304,15 +319,14 @@ public class CastPlayback extends BasePlayback implements Playback {
 
     @Override
     public boolean isConnected() {
-        return VideoCastManager.getInstance().isConnected();
+        return mCastSession.isConnected();
     }
 
     @Override
     public boolean isPlaying() {
         try {
-            return VideoCastManager.getInstance().isConnected()
-                    && VideoCastManager.getInstance().isRemoteMediaPlaying();
-        } catch (TransientNetworkDisconnectionException | NoConnectionException e) {
+            return isConnected() && mCastSession.getRemoteMediaClient().isPlaying();
+        } catch (Exception e) {
 
         }
         return false;
@@ -323,8 +337,7 @@ public class CastPlayback extends BasePlayback implements Playback {
         return mState;
     }
 
-    private void loadMedia(MediaMetadata metadataCompat, boolean autoPlay) throws
-            TransientNetworkDisconnectionException, NoConnectionException, JSONException {
+    private void loadMedia(MediaMetadata metadataCompat, boolean autoPlay) throws JSONException {
         if (metadataCompat == null || metadataCompat.getDescription() == null)
             return;
         updatePlaybackState();
@@ -335,7 +348,10 @@ public class CastPlayback extends BasePlayback implements Playback {
         JSONObject customData = new JSONObject();
         customData.put(ITEM_ID, metadataCompat.getDescription().getMediaId());
         MediaInfo media = toCastMediaMetadata(metadataCompat, customData);
-        VideoCastManager.getInstance().loadMedia(media, autoPlay, (int) mCurrentPosition, customData);
+
+        mCastSession.getRemoteMediaClient().load(media, new MediaLoadOptions.Builder()
+                .setAutoplay(autoPlay)
+                .setPlayPosition(mCurrentPosition).build());
     }
 
     /**
@@ -383,7 +399,7 @@ public class CastPlayback extends BasePlayback implements Playback {
         // This can happen when the app was either restarted/disconnected + connected, or if the
         // app joins an existing session while the Chromecast was playing a queue.
         try {
-            MediaInfo mediaInfo = VideoCastManager.getInstance().getRemoteMediaInformation();
+            MediaInfo mediaInfo = mCastSession.getRemoteMediaClient().getMediaInfo();
             if (mediaInfo == null) {
                 return;
             }
@@ -402,7 +418,7 @@ public class CastPlayback extends BasePlayback implements Playback {
                     }
                 }
             }
-        } catch (TransientNetworkDisconnectionException | NoConnectionException | JSONException e) {
+        } catch ( JSONException e) {
             if (mCallback != null) {
                 mCallback.onError(e, true);
             }
@@ -410,12 +426,12 @@ public class CastPlayback extends BasePlayback implements Playback {
     }
 
     void updatePlaybackState() {
-        final int status = VideoCastManager.getInstance().getPlaybackStatus();
+        final int status = mCastSession.getRemoteMediaClient().getPlayerState();
 
         // Convert the remote playback states to media playback states.
         switch (status) {
             case MediaStatus.PLAYER_STATE_IDLE:
-                final int idleReason = VideoCastManager.getInstance().getIdleReason();
+                final int idleReason = mCastSession.getRemoteMediaClient().getIdleReason();
                 switch (idleReason) {
                     case MediaStatus.IDLE_REASON_ERROR:
                         if (mCallback != null)

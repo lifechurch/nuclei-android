@@ -1,6 +1,8 @@
 apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-android'
 
-def versionId = "3.1.11"
+def versionId = "3.1.2"
 
 def isTest = false
 List<String> names = gradle.startParameter.taskNames
@@ -47,14 +49,11 @@ dependencies {
     // glide image library
     compile "com.github.bumptech.glide:glide:$rootProject.ext.glideVersion"
 
-    // google cast
-    compile ("com.google.android.libraries.cast.companionlibrary:ccl:2.9.1") {
-        exclude group: "com.google.android.gms"
-    }
-
     // play services
-    compile "com.google.android.gms:play-services-cast:$rootProject.ext.playServicesVersion"
-    compile "com.firebase:firebase-jobdispatcher:0.8.3"
+    compile "com.google.android.gms:play-services-cast-framework:$rootProject.ext.playServicesCastVersion"
+
+    implementation 'androidx.mediarouter:mediarouter:1.0.0'
+    implementation 'com.android.volley:volley:1.1.1'
 
     // arch
     compile "android.arch.lifecycle:extensions:$rootProject.ext.appArchVersion"
@@ -108,6 +107,7 @@ dependencies {
         exclude group: "com.android.support", module: "appcompat-v7"
         exclude group: "com.android.support", module: "support-annotations"
     }
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 
 }
 
@@ -139,3 +139,6 @@ apply from: '../bintray.gradle'
 apply from: '../maven.gradle'
 
 System.out.println("********** MULTIDEX: " + android.defaultConfig.multiDexEnabled)
+repositories {
+    mavenCentral()
+}
