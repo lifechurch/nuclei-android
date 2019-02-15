@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-android'
 
-def versionId = "3.1.2"
+def versionId = "3.2.0.9"
 
 def isTest = false
 List<String> names = gradle.startParameter.taskNames
@@ -51,9 +51,9 @@ dependencies {
 
     // play services
     compile "com.google.android.gms:play-services-cast-framework:$rootProject.ext.playServicesCastVersion"
+    compile "com.firebase:firebase-jobdispatcher:0.8.5"
 
     implementation 'androidx.mediarouter:mediarouter:1.0.0'
-    implementation 'com.android.volley:volley:1.1.1'
 
     // arch
     compile "android.arch.lifecycle:extensions:$rootProject.ext.appArchVersion"

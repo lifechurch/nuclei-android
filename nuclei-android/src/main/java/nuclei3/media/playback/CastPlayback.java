@@ -16,7 +16,6 @@
 package nuclei3.media.playback;
 
 import android.net.Uri;
-import android.os.Bundle;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.text.TextUtils;
@@ -29,14 +28,7 @@ import com.google.android.gms.cast.MediaStatus;
 import com.google.android.gms.cast.framework.CastContext;
 import com.google.android.gms.cast.framework.CastSession;
 import com.google.android.gms.cast.framework.SessionManagerListener;
-import com.google.android.gms.cast.framework.media.RemoteMediaClient;
-import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.images.WebImage;
-import com.google.android.libraries.cast.companionlibrary.cast.VideoCastManager;
-import com.google.android.libraries.cast.companionlibrary.cast.callbacks.VideoCastConsumerImpl;
-import com.google.android.libraries.cast.companionlibrary.cast.exceptions.CastException;
-import com.google.android.libraries.cast.companionlibrary.cast.exceptions.NoConnectionException;
-import com.google.android.libraries.cast.companionlibrary.cast.exceptions.TransientNetworkDisconnectionException;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -46,7 +38,6 @@ import nuclei3.logs.Logs;
 import nuclei3.media.MediaId;
 import nuclei3.media.MediaMetadata;
 import nuclei3.media.MediaProvider;
-import nuclei3.media.MediaService;
 
 /**
  * An implementation of Playback that talks to Cast.

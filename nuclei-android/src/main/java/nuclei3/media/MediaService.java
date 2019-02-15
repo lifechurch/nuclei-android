@@ -35,7 +35,6 @@ import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.support.v7.media.MediaRouter;
 
-import com.google.android.gms.cast.ApplicationMetadata;
 import com.google.android.gms.cast.framework.CastContext;
 import com.google.android.gms.cast.framework.CastSession;
 import com.google.android.gms.cast.framework.SessionManagerListener;
@@ -256,7 +255,7 @@ public class MediaService extends MediaBrowserServiceCompat implements
                 if (CMD_PAUSE.equals(command)) {
                     mPlaybackManager.handlePauseRequest();
                 } else if (CMD_STOP_CASTING.equals(command)) {
-                    VideoCastManager.getInstance().disconnect();
+                    mCastContext.getSessionManager().removeSessionManagerListener(mSessionManagerListener, CastContext.class);
                 }
             } else {
                 // Try to handle the intent as a media button event wrapped by MediaButtonReceiver
@@ -278,7 +277,7 @@ public class MediaService extends MediaBrowserServiceCompat implements
         mPlaybackManager.handleStopRequest(null);
         mMediaNotificationManager.stopNotification();
         try {
-            VideoCastManager.getInstance().removeVideoCastConsumer(mCastConsumer);
+            mCastContext.getSessionManager().removeSessionManagerListener(mSessionManagerListener, CastContext.class);
         } catch (IllegalStateException e) {
             LOG.w("Error removing cast video consumer : " + e.getMessage());
         }

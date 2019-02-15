@@ -6,9 +6,7 @@ import com.google.android.gms.cast.framework.OptionsProvider
 import com.google.android.gms.cast.framework.SessionProvider
 
 
-abstract class CastOptionsProvider : OptionsProvider {
-
-    abstract val applicationId: String
+class CastOptionsProvider : OptionsProvider {
 
     override fun getCastOptions(context: Context): CastOptions {
         return CastOptions.Builder()
@@ -18,5 +16,13 @@ abstract class CastOptionsProvider : OptionsProvider {
 
     override fun getAdditionalSessionProviders(context: Context): List<SessionProvider>? {
         return null
+    }
+
+    companion object {
+        private var applicationId: String? = null
+
+        fun setApplicationId(appId: String) {
+            this.applicationId = appId
+        }
     }
 }
