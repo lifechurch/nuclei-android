@@ -67,7 +67,7 @@
             android:background="?android:selectableItemBackground"
             android:gravity="center"
             android:scaleType="centerInside"
-            android:src="@drawable/ic_fast_rewind_black_24dp"/>
+            android:src="@drawable/ic_fast_rewind_24dp"/>
 
         <ImageView
             android:id="@+id/btn_play"
@@ -87,7 +87,7 @@
             android:background="?android:selectableItemBackground"
             android:gravity="center"
             android:scaleType="centerInside"
-            android:src="@drawable/ic_fast_forward_black_24dp"/>
+            android:src="@drawable/ic_fast_forward_24dp"/>
 
         <ImageView
             android:id="@+id/btn_next"
