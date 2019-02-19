@@ -474,7 +474,11 @@ public class MediaService extends MediaBrowserServiceCompat implements
                     return;
                 }
                 LOG.d("Stopping service with delay handler.");
-                service.stopSelf();
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    service.stopForeground(true);
+                } else {
+                    service.stopSelf();
+                }
             }
         }
     }
