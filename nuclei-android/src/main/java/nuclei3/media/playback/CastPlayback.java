@@ -28,6 +28,7 @@ import com.google.android.gms.cast.MediaStatus;
 import com.google.android.gms.cast.framework.CastContext;
 import com.google.android.gms.cast.framework.CastSession;
 import com.google.android.gms.cast.framework.SessionManagerListener;
+import com.google.android.gms.cast.framework.media.RemoteMediaClient;
 import com.google.android.gms.common.images.WebImage;
 
 import org.json.JSONException;
@@ -421,37 +422,38 @@ public class CastPlayback extends BasePlayback implements Playback {
 
         // Convert the remote playback states to media playback states.
         switch (status) {
-            case MediaStatus.PLAYER_STATE_IDLE:
-                final int idleReason = mCastSession.getRemoteMediaClient().getIdleReason();
-                switch (idleReason) {
-                    case MediaStatus.IDLE_REASON_ERROR:
-                        if (mCallback != null)
-                            mCallback.onError(new Exception("Error: " + idleReason), true);
-                        break;
-                    case MediaStatus.IDLE_REASON_INTERRUPTED:
-                    case MediaStatus.IDLE_REASON_CANCELED:
-                        // TODO: What should happen here?
-                        mState = PlaybackStateCompat.STATE_NONE;
-                        if (mCallback != null)
-                            mCallback.onPlaybackStatusChanged(mState);
-                        break;
-                    case MediaStatus.IDLE_REASON_FINISHED:
-                        if (mCallback != null)
-                            mCallback.onCompletion();
-                        break;
-                    default:
-                        setMetadataFromRemote();
-                        if (mCallback != null)
-                            mCallback.onPlaybackStatusChanged(mState);
-                        break;
-                }
-                break;
+//            case MediaStatus.PLAYER_STATE_IDLE:
+//                final int idleReason = mCastSession.getRemoteMediaClient().getIdleReason();
+//                switch (idleReason) {
+//                    case MediaStatus.IDLE_REASON_ERROR:
+//                        if (mCallback != null)
+//                            mCallback.onError(new Exception("Error: " + idleReason), true);
+//                        break;
+//                    case MediaStatus.IDLE_REASON_INTERRUPTED:
+//                    case MediaStatus.IDLE_REASON_CANCELED:
+//                        // TODO: What should happen here?
+//                        mState = PlaybackStateCompat.STATE_NONE;
+//                        if (mCallback != null)
+//                            mCallback.onPlaybackStatusChanged(mState);
+//                        break;
+//                    case MediaStatus.IDLE_REASON_FINISHED:
+//                        if (mCallback != null)
+//                            mCallback.onCompletion();
+//                        break;
+//                    default:
+//                        setMetadataFromRemote();
+//                        if (mCallback != null)
+//                            mCallback.onPlaybackStatusChanged(mState);
+//                        break;
+//                }
+//                break;
             case MediaStatus.PLAYER_STATE_BUFFERING:
                 mState = PlaybackStateCompat.STATE_BUFFERING;
                 setMetadataFromRemote();
                 if (mCallback != null)
                     mCallback.onPlaybackStatusChanged(mState);
                 break;
+            case RemoteMediaClient.RESUME_STATE_PLAY:
             case MediaStatus.PLAYER_STATE_PLAYING:
                 mState = PlaybackStateCompat.STATE_PLAYING;
                 setMetadataFromRemote();
