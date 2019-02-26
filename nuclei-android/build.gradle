@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-android'
 
-def versionId = "3.2.0.15"
+def versionId = "3.2.0.19"
 
 def isTest = false
 List<String> names = gradle.startParameter.taskNames

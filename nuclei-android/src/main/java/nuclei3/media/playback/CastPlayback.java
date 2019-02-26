@@ -133,7 +133,7 @@ public class CastPlayback extends BasePlayback implements Playback {
     public void start() {
         mCastContext = CastContext.getSharedInstance();
         mCastSession = mCastContext.getSessionManager().getCurrentCastSession();
-        mCastContext.getSessionManager().removeSessionManagerListener(mSessionManagerListener, CastSession.class);
+//        mCastContext.getSessionManager().removeSessionManagerListener(mSessionManagerListener, CastSession.class);
         mCastContext.getSessionManager().addSessionManagerListener(mSessionManagerListener, CastSession.class);
     }
 
@@ -159,8 +159,7 @@ public class CastPlayback extends BasePlayback implements Playback {
         if (mMediaMetadata != null)
             mMediaMetadata.setTimingSeeked(false);
         try {
-            mCastContext.getSessionManager().removeSessionManagerListener(
-                    mSessionManagerListener, CastSession.class);
+            mCastSession.getRemoteMediaClient().pause();
         } catch (IllegalStateException e) {
             LOG.e("Error pausing", e);
         }
@@ -350,7 +349,7 @@ public class CastPlayback extends BasePlayback implements Playback {
      * Helper method to convert a {@link android.media.MediaMetadata} to a
      * {@link MediaInfo} used for sending media to the receiver app.
      *
-     * @param track {@link MediaMetadata}
+     * @param track      {@link MediaMetadata}
      * @param customData custom data specifies the local mediaId used by the player.
      * @return mediaInfo {@link MediaInfo}
      */
@@ -391,7 +390,10 @@ public class CastPlayback extends BasePlayback implements Playback {
         // This can happen when the app was either restarted/disconnected + connected, or if the
         // app joins an existing session while the Chromecast was playing a queue.
         try {
-            MediaInfo mediaInfo = mCastSession.getRemoteMediaClient().getMediaInfo();
+            RemoteMediaClient client = mCastSession.getRemoteMediaClient();
+            if (client == null)
+                return;
+            MediaInfo mediaInfo = client.getMediaInfo();
             if (mediaInfo == null) {
                 return;
             }
@@ -410,7 +412,7 @@ public class CastPlayback extends BasePlayback implements Playback {
                     }
                 }
             }
-        } catch ( JSONException e) {
+        } catch (JSONException e) {
             if (mCallback != null) {
                 mCallback.onError(e, true);
             }
@@ -418,42 +420,46 @@ public class CastPlayback extends BasePlayback implements Playback {
     }
 
     void updatePlaybackState() {
-        final int status = mCastSession.getRemoteMediaClient().getPlayerState();
+        int status;
+        try {
+            status = mCastSession.getRemoteMediaClient().getMediaStatus().getPlayerState();
+        } catch (Exception e) {
+            status = -1;
+        }
 
         // Convert the remote playback states to media playback states.
         switch (status) {
-//            case MediaStatus.PLAYER_STATE_IDLE:
-//                final int idleReason = mCastSession.getRemoteMediaClient().getIdleReason();
-//                switch (idleReason) {
-//                    case MediaStatus.IDLE_REASON_ERROR:
-//                        if (mCallback != null)
-//                            mCallback.onError(new Exception("Error: " + idleReason), true);
-//                        break;
-//                    case MediaStatus.IDLE_REASON_INTERRUPTED:
-//                    case MediaStatus.IDLE_REASON_CANCELED:
-//                        // TODO: What should happen here?
-//                        mState = PlaybackStateCompat.STATE_NONE;
-//                        if (mCallback != null)
-//                            mCallback.onPlaybackStatusChanged(mState);
-//                        break;
-//                    case MediaStatus.IDLE_REASON_FINISHED:
-//                        if (mCallback != null)
-//                            mCallback.onCompletion();
-//                        break;
-//                    default:
-//                        setMetadataFromRemote();
-//                        if (mCallback != null)
-//                            mCallback.onPlaybackStatusChanged(mState);
-//                        break;
-//                }
-//                break;
+            case MediaStatus.PLAYER_STATE_IDLE:
+                final int idleReason = mCastSession.getRemoteMediaClient().getIdleReason();
+                switch (idleReason) {
+                    case MediaStatus.IDLE_REASON_ERROR:
+                        if (mCallback != null)
+                            mCallback.onError(new Exception("Error: " + idleReason), true);
+                        break;
+                    case MediaStatus.IDLE_REASON_INTERRUPTED:
+                    case MediaStatus.IDLE_REASON_CANCELED:
+                        // TODO: What should happen here?
+                        mState = PlaybackStateCompat.STATE_NONE;
+                        if (mCallback != null)
+                            mCallback.onPlaybackStatusChanged(mState);
+                        break;
+                    case MediaStatus.IDLE_REASON_FINISHED:
+                        if (mCallback != null)
+                            mCallback.onCompletion();
+                        break;
+                    default:
+                        setMetadataFromRemote();
+                        if (mCallback != null)
+                            mCallback.onPlaybackStatusChanged(mState);
+                        break;
+                }
+                break;
             case MediaStatus.PLAYER_STATE_BUFFERING:
                 mState = PlaybackStateCompat.STATE_BUFFERING;
                 setMetadataFromRemote();
                 if (mCallback != null)
                     mCallback.onPlaybackStatusChanged(mState);
                 break;
-            case RemoteMediaClient.RESUME_STATE_PLAY:
             case MediaStatus.PLAYER_STATE_PLAYING:
                 mState = PlaybackStateCompat.STATE_PLAYING;
                 setMetadataFromRemote();
