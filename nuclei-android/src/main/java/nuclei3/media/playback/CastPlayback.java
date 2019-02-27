@@ -465,6 +465,11 @@ public class CastPlayback extends BasePlayback implements Playback {
                 setMetadataFromRemote();
                 if (mCallback != null)
                     mCallback.onPlaybackStatusChanged(mState);
+                try {
+                    loadMedia(mMediaMetadata, true);
+                } catch (JSONException e) {
+
+                }
                 break;
             case MediaStatus.PLAYER_STATE_PAUSED:
                 mState = PlaybackStateCompat.STATE_PAUSED;
