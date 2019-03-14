@@ -55,6 +55,7 @@ public class ButtonBarView extends FrameLayout {
     private final ArrayMap<Item, ValueAnimator> mLabelAnimators = new ArrayMap<>();
     private boolean mStateRestored;
     private boolean mAlwaysLabeled;
+    private int mTextSize;
 
     public ButtonBarView(Context context) {
         super(context);
@@ -105,6 +106,7 @@ public class ButtonBarView extends FrameLayout {
 
         mSelectedTint = a.getColor(R.styleable.ButtonBarView_selected_color, ResourcesCompat.getColor(getResources(), R.color.black, context.getTheme()));
         mUnselectedTint = a.getColor(R.styleable.ButtonBarView_unselected_color, ResourcesCompat.getColor(getResources(), R.color.grey, context.getTheme()));
+        mTextSize = a.getInt(R.styleable.ButtonBarView_label_text_size, 14);
 
         if (a.hasValue(R.styleable.ButtonBarView_buttons_background)) {
             final int color = a.getColor(R.styleable.ButtonBarView_buttons_background, Color.WHITE);
@@ -120,6 +122,10 @@ public class ButtonBarView extends FrameLayout {
 
     public void setAlwaysLabeled(boolean alwaysLabeled) {
         mAlwaysLabeled = alwaysLabeled;
+    }
+
+    public void setTextSize(int textSize) {
+        mTextSize = textSize;
     }
 
     @Override
@@ -207,13 +213,23 @@ public class ButtonBarView extends FrameLayout {
             if (selected) {
                 mSelectedItem = pos;
                 item.imageView.setColorFilter(mSelectedTint, PorterDuff.Mode.SRC_ATOP);
-                if (item.textView != null)
+                if (item.textView != null) {
                     item.textView.setTextColor(mSelectedTint);
+                    if (mAlwaysLabeled) {
+                        item.textView.setTextSize(mTextSize);
+                        item.textView.setVisibility(VISIBLE);
+                    }
+                }
                 setSelected(item, true);
             } else {
                 item.imageView.setColorFilter(mUnselectedTint, PorterDuff.Mode.SRC_ATOP);
-                if (item.textView != null)
+                if (item.textView != null) {
                     item.textView.setTextColor(mUnselectedTint);
+                    if (mAlwaysLabeled) {
+                        item.textView.setTextSize(mTextSize);
+                        item.textView.setVisibility(VISIBLE);
+                    }
+                }
                 setSelected(item, false);
             }
             pos++;
@@ -253,7 +269,7 @@ public class ButtonBarView extends FrameLayout {
                         item.textView.setTextSize(animatedValue);
                     }
                 });
-                animator.setIntValues(0, 14);
+                animator.setIntValues(0, mTextSize);
                 animator.start();
             }
         } else {
@@ -275,7 +291,7 @@ public class ButtonBarView extends FrameLayout {
                             item.textView.setVisibility(View.GONE);
                     }
                 });
-                animator.setIntValues(14, 0);
+                animator.setIntValues(mTextSize, 0);
                 animator.start();
             }
         }

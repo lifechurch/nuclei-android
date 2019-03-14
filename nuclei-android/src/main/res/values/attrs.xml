@@ -42,6 +42,7 @@
         <attr name="buttons_background" format="color" />
         <attr name="selected_color" format="color" />
         <attr name="unselected_color" format="color" />
+        <attr name="label_text_size" format="integer" />
     </declare-styleable>
 
 </resources>
