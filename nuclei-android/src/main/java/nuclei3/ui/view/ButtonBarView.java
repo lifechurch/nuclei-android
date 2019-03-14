@@ -54,6 +54,7 @@ public class ButtonBarView extends FrameLayout {
     private AdapterObserver mObserver;
     private final ArrayMap<Item, ValueAnimator> mLabelAnimators = new ArrayMap<>();
     private boolean mStateRestored;
+    private boolean mAlwaysLabeled;
 
     public ButtonBarView(Context context) {
         super(context);
@@ -115,6 +116,10 @@ public class ButtonBarView extends FrameLayout {
         }
 
         a.recycle();
+    }
+
+    public void setAlwaysLabeled(boolean alwaysLabeled) {
+        mAlwaysLabeled = alwaysLabeled;
     }
 
     @Override
@@ -227,7 +232,7 @@ public class ButtonBarView extends FrameLayout {
     }
 
     private void setSelected(final Item item, boolean selected) {
-        if (mItems.length < 5)
+        if (mItems.length < 5 || mAlwaysLabeled)
             return;
         if (selected) {
             item.imageView.setColorFilter(mSelectedTint, PorterDuff.Mode.SRC_ATOP);
