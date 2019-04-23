@@ -1,6 +1,6 @@
 apply plugin: 'com.android.library'
 
-def versionId = "3.1.12"
+def versionId = "3.1.17"
 
 def isTest = false
 List<String> names = gradle.startParameter.taskNames
@@ -53,7 +53,7 @@ dependencies {
     }
 
     // play services
-    compile "com.google.android.gms:play-services-cast:16.0.3"
+    compile "com.google.android.gms:play-services-cast:$rootProject.ext.playServicesVersion"
     compile "com.firebase:firebase-jobdispatcher:0.8.3"
 
     // arch
