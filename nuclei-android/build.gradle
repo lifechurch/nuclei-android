@@ -1,6 +1,6 @@
 apply plugin: 'com.android.library'
 
-def versionId = "3.1.17"
+def versionId = "3.1.19"
 
 def isTest = false
 List<String> names = gradle.startParameter.taskNames
@@ -47,13 +47,8 @@ dependencies {
     // glide image library
     compile "com.github.bumptech.glide:glide:$rootProject.ext.glideVersion"
 
-    // google cast
-    compile ("com.google.android.libraries.cast.companionlibrary:ccl:2.9.1") {
-        exclude group: "com.google.android.gms"
-    }
-
     // play services
-    compile "com.google.android.gms:play-services-cast:$rootProject.ext.playServicesVersion"
+    compile "com.google.android.gms:play-services-cast-framework:16.1.2"
     compile "com.firebase:firebase-jobdispatcher:0.8.3"
 
     // arch

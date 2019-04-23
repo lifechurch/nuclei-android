@@ -1,18 +1,18 @@
 /*
-* Copyright (C) 2014 The Android Open Source Project
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright (C) 2014 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package nuclei3.media;
 
@@ -35,13 +35,13 @@ import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.support.v7.media.MediaRouter;
 
-import com.google.android.gms.cast.ApplicationMetadata;
-import com.google.android.libraries.cast.companionlibrary.cast.VideoCastManager;
-import com.google.android.libraries.cast.companionlibrary.cast.callbacks.VideoCastConsumerImpl;
-
 import java.lang.ref.WeakReference;
 import java.util.List;
 
+import com.google.android.gms.cast.framework.CastContext;
+import com.google.android.gms.cast.framework.CastSession;
+import com.google.android.gms.cast.framework.SessionManager;
+import com.google.android.gms.cast.framework.SessionManagerListener;
 import nuclei3.media.playback.Playback;
 import nuclei3.media.playback.PlaybackFactory;
 import nuclei3.media.playback.PlaybackManager;
@@ -91,30 +91,32 @@ public class MediaService extends MediaBrowserServiceCompat implements
 
     public static final String MEDIA_ID = "media_id";
 
-    PlaybackManager mPlaybackManager;
+    private PlaybackManager mPlaybackManager;
 
-    MediaSessionCompat mSession;
-    MediaNotificationManager mMediaNotificationManager;
-    Bundle mSessionExtras;
-    final DelayedStopHandler mDelayedStopHandler = new DelayedStopHandler(this);
-    MediaRouter mMediaRouter;
-    PackageValidator mPackageValidator;
+    private MediaSessionCompat mSession;
+    private MediaNotificationManager mMediaNotificationManager;
+    private Bundle mSessionExtras;
+    private final DelayedStopHandler mDelayedStopHandler = new DelayedStopHandler(this);
+    private MediaRouter mMediaRouter;
+    private PackageValidator mPackageValidator;
 
-    boolean mIsConnectedToCar;
-    BroadcastReceiver mCarConnectionReceiver;
+    private boolean mIsConnectedToCar;
+    private BroadcastReceiver mCarConnectionReceiver;
+
+    private SessionManager mCastSessionManager;
+    private SessionManagerListener<CastSession> mCastSessionListener;
 
     /**
      * Consumer responsible for switching the Playback instances depending on whether
      * it is connected to a remote player.
      */
-    private final VideoCastConsumerImpl mCastConsumer = new VideoCastConsumerImpl() {
+    private final class CastSessionListener implements SessionManagerListener<CastSession> {
 
         @Override
-        public void onApplicationConnected(ApplicationMetadata appMetadata, String sessionId,
-                                           boolean wasLaunched) {
+        public void onSessionStarted(CastSession session, String sessionId) {
             if (mSession != null && mPlaybackManager != null) {
                 // In case we are casting, send the device name as an extra on MediaSession metadata.
-                final String deviceName = VideoCastManager.getInstance().getDeviceName();
+                final String deviceName = session.getCastDevice().getFriendlyName();
                 mSessionExtras.putString(EXTRA_CONNECTED_CAST, deviceName);
                 mSession.setExtras(mSessionExtras);
                 // Now we can switch to CastPlayback
@@ -126,17 +128,42 @@ public class MediaService extends MediaBrowserServiceCompat implements
         }
 
         @Override
-        public void onDisconnectionReason(int reason) {
-            LOG.d("onDisconnectionReason");
-            // This is our final chance to update the underlying stream position
-            // In onDisconnected(), the underlying CastPlayback#mVideoCastConsumer
-            // is disconnected and hence we update our local value of stream position
-            // to the latest position.
-            mPlaybackManager.getPlayback().updateLastKnownStreamPosition();
+        public void onSessionStarting(CastSession castSession) {
+
         }
 
         @Override
-        public void onDisconnected() {
+        public void onSessionEnding(CastSession castSession) {
+
+        }
+
+        @Override
+        public void onSessionResumed(CastSession castSession, boolean b) {
+
+        }
+
+        @Override
+        public void onSessionResumeFailed(CastSession castSession, int i) {
+
+        }
+
+        @Override
+        public void onSessionResuming(CastSession castSession, String s) {
+
+        }
+
+        @Override
+        public void onSessionStartFailed(CastSession castSession, int i) {
+
+        }
+
+        @Override
+        public void onSessionSuspended(CastSession castSession, int i) {
+
+        }
+
+        @Override
+        public void onSessionEnded(CastSession session, int error) {
             LOG.d("onDisconnected");
             if (mSession != null && mPlaybackManager != null) {
                 mSessionExtras.remove(EXTRA_CONNECTED_CAST);
@@ -146,7 +173,9 @@ public class MediaService extends MediaBrowserServiceCompat implements
                 mSession.sendSessionEvent(createCastEvent(""), Bundle.EMPTY);
             }
         }
-    };
+    }
+
+    ;
 
     /*
      * (non-Javadoc)
@@ -161,9 +190,14 @@ public class MediaService extends MediaBrowserServiceCompat implements
 
         boolean casting = false;
         try {
-            VideoCastManager.getInstance().addVideoCastConsumer(mCastConsumer);
-            casting = VideoCastManager.getInstance().isConnected() || VideoCastManager.getInstance().isConnecting();
-        } catch (IllegalStateException err) {
+            mCastSessionManager =
+                    CastContext.getSharedInstance(this).getSessionManager();
+            mCastSessionListener = new CastSessionListener();
+            mCastSessionManager.addSessionManagerListener(mCastSessionListener,
+                    CastSession.class);
+            casting = mCastSessionManager.getCurrentSession() != null
+                    && (mCastSessionManager.getCurrentSession().isConnected() || mCastSessionManager.getCurrentSession().isConnecting());
+        } catch (Exception err) {
             LOG.e("Error registering cast consumer : " + err.getMessage());
         }
 
@@ -188,7 +222,7 @@ public class MediaService extends MediaBrowserServiceCompat implements
         mSessionExtras = new Bundle();
 
         if (casting) {
-            mSessionExtras.putString(EXTRA_CONNECTED_CAST, VideoCastManager.getInstance().getDeviceName());
+            mSessionExtras.putString(EXTRA_CONNECTED_CAST, mCastSessionManager.getCurrentCastSession().getCastDevice().getFriendlyName());
             mMediaRouter.setMediaSessionCompat(mSession);
             playback = PlaybackFactory.createCastPlayback(MediaService.this);
         } else
@@ -220,7 +254,7 @@ public class MediaService extends MediaBrowserServiceCompat implements
                 if (CMD_PAUSE.equals(command)) {
                     mPlaybackManager.handlePauseRequest();
                 } else if (CMD_STOP_CASTING.equals(command)) {
-                    VideoCastManager.getInstance().disconnect();
+                    mCastSessionManager.endCurrentSession(true);
                 }
             } else {
                 // Try to handle the intent as a media button event wrapped by MediaButtonReceiver
@@ -242,7 +276,7 @@ public class MediaService extends MediaBrowserServiceCompat implements
         mPlaybackManager.handleStopRequest(null);
         mMediaNotificationManager.stopNotification();
         try {
-            VideoCastManager.getInstance().removeVideoCastConsumer(mCastConsumer);
+            mCastSessionManager.removeSessionManagerListener(mCastSessionListener, CastSession.class);
         } catch (IllegalStateException e) {
             LOG.w("Error removing cast video consumer : " + e.getMessage());
         }
