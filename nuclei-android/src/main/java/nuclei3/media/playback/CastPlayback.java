@@ -420,6 +420,8 @@ public class CastPlayback extends BasePlayback implements Playback {
     }
 
     private void updatePlaybackState() {
+        if (mCastSessionManager.getCurrentCastSession() == null || mCastSessionManager.getCurrentCastSession().getRemoteMediaClient() == null)
+            return;
         final int status = mCastSessionManager.getCurrentCastSession().getRemoteMediaClient().getPlayerState();
 
         // Convert the remote playback states to media playback states.

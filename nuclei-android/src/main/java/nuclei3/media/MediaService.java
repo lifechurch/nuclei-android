@@ -195,8 +195,9 @@ public class MediaService extends MediaBrowserServiceCompat implements
             mCastSessionListener = new CastSessionListener();
             mCastSessionManager.addSessionManagerListener(mCastSessionListener,
                     CastSession.class);
-            casting = mCastSessionManager.getCurrentSession().isConnected() || mCastSessionManager.getCurrentSession().isConnecting();
-        } catch (IllegalStateException err) {
+            casting = mCastSessionManager.getCurrentSession() != null
+                    && (mCastSessionManager.getCurrentSession().isConnected() || mCastSessionManager.getCurrentSession().isConnecting());
+        } catch (Exception err) {
             LOG.e("Error registering cast consumer : " + err.getMessage());
         }
 
