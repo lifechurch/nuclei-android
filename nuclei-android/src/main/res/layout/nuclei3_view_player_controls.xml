@@ -2,6 +2,7 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical">
@@ -55,6 +56,7 @@
             android:layout_height="48dp"
             android:layout_gravity="center_vertical"
             android:background="?android:selectableItemBackground"
+            android:contentDescription="@string/ccl_skip_previous"
             android:gravity="center"
             android:scaleType="centerInside"
             android:src="@drawable/ic_skip_previous_black_24dp"/>
@@ -64,6 +66,7 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:layout_gravity="center_vertical"
+            android:contentDescription="@string/ccl_rewind"
             android:background="?android:selectableItemBackground"
             android:gravity="center"
             android:scaleType="centerInside"
@@ -71,19 +74,21 @@
 
         <ImageView
             android:id="@+id/btn_play"
+            android:contentDescription="@string/ccl_play"
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:layout_gravity="center_vertical"
             android:background="?android:selectableItemBackground"
             android:gravity="center"
             android:scaleType="centerInside"
-            android:src="@drawable/ic_play_arrow"/>
+            app:srcCompat="@drawable/ic_play_arrow"/>
 
         <ImageView
             android:id="@+id/btn_fastforward"
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:layout_gravity="center_vertical"
+            android:contentDescription="@string/ccl_forward"
             android:background="?android:selectableItemBackground"
             android:gravity="center"
             android:scaleType="centerInside"
@@ -99,6 +104,7 @@
             android:background="?android:selectableItemBackground"
             android:gravity="center"
             android:scaleType="centerInside"
+            android:contentDescription="@string/ccl_skip_next"
             android:src="@drawable/ic_skip_next_black_24dp"/>
 
         <android.support.v4.widget.Space
