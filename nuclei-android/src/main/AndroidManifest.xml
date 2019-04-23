@@ -34,10 +34,6 @@
 
         <service android:name="nuclei3.notifications.NotificationIntentService" />
 
-        <!-- Service that keeps track of reconnecting to Cast when wifi is enabled. -->
-        <service
-            android:name="com.google.android.libraries.cast.companionlibrary.cast.reconnection.ReconnectionService"/>
-
         <!-- A receiver that will receive media buttons and send as
             intents to your MediaBrowserServiceCompat implementation.
             Required on pre-Lollipop. More information at

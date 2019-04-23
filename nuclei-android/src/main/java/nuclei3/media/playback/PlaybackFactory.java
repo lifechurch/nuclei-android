@@ -21,7 +21,7 @@ public class PlaybackFactory {
     }
 
     protected Playback onCreateCastPlayback(MediaService service) {
-        return new CastPlayback();
+        return new CastPlayback(service.getApplicationContext());
     }
 
     protected Playback onCreatePlayback(MediaService service) {
