@@ -32,15 +32,10 @@ import android.util.AttributeSet;
 import android.util.Log;
 
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.Priority;
 import com.bumptech.glide.RequestManager;
-import com.bumptech.glide.load.data.DataFetcher;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
-import com.bumptech.glide.load.model.stream.StreamModelLoader;
 import com.bumptech.glide.request.target.BitmapImageViewTarget;
 
-import java.io.IOException;
-import java.io.InputStream;
 
 import io.nuclei3.R;
 
@@ -134,8 +129,9 @@ public class NucleiImageView extends AppCompatImageView {
     private void setPlaceHolder() {
         if (mPlaceholderId > 0) {
             if (mCircle || mRadius > 0) {
-                Glide.with(getContext()).load(mPlaceholderId)
+                Glide.with(getContext())
                         .asBitmap()
+                        .load(mPlaceholderId)
                         .diskCacheStrategy(getStrategy())
                         .into(newTarget());
             } else
@@ -165,16 +161,19 @@ public class NucleiImageView extends AppCompatImageView {
 
             @Override
             public void onLoadStarted(Drawable placeholder) {
+                super.onLoadStarted(placeholder);
                 view.setImageDrawable(newDrawable(placeholder));
             }
 
             @Override
             public void onLoadCleared(Drawable placeholder) {
+                super.onLoadCleared(placeholder);
                 view.setImageDrawable(newDrawable(placeholder));
             }
 
             @Override
-            public void onLoadFailed(Exception e, Drawable errorDrawable) {
+            public void onLoadFailed(Drawable errorDrawable) {
+                super.onLoadFailed(errorDrawable);
                 view.setImageDrawable(newDrawable(errorDrawable));
             }
 
@@ -243,7 +242,7 @@ public class NucleiImageView extends AppCompatImageView {
         int downloadStatus = mDownloadState == -1 ? sDefaultDownloadState : mDownloadState;
         if (downloadStatus == DOWNLOAD_STATE_NONE) {
             if (mPlaceholderId == 0) {
-                Glide.clear(this);
+                Glide.with(this).clear(this);
                 setImageDrawable(null);
             } else {
                 setPlaceHolder();
@@ -256,7 +255,7 @@ public class NucleiImageView extends AppCompatImageView {
             RequestManager mgr = Glide.with(getContext());
             if (uri == null) {
                 if (mPlaceholderId == 0) {
-                    Glide.clear(this);
+                    Glide.with(this).clear(this);
                     setImageDrawable(null);
                 } else {
                     setPlaceHolder();
@@ -264,67 +263,37 @@ public class NucleiImageView extends AppCompatImageView {
             } else {
                 if (mCircle || mRadius > 0) {
                     if (mPlaceholderId != 0) {
-                        if (downloadStatus == DOWNLOAD_STATE_CACHE_ONLY)
-                            mgr.using(CACHE_MODEL_LOADER)
-                                    .load(uri)
-                                    .asBitmap()
-                                    .diskCacheStrategy(getStrategy())
-                                    .placeholder(mPlaceholderId)
-                                    .error(mPlaceholderId)
-                                    .fallback(mPlaceholderId)
-                                    .into(newTarget());
-                        else
-                            mgr.load(uri)
-                                    .asBitmap()
-                                    .diskCacheStrategy(getStrategy())
-                                    .placeholder(mPlaceholderId)
-                                    .error(mPlaceholderId)
-                                    .fallback(mPlaceholderId)
-                                    .into(newTarget());
+                        mgr.asBitmap()
+                                .onlyRetrieveFromCache(downloadStatus == DOWNLOAD_STATE_CACHE_ONLY)
+                                .load(uri)
+                                .diskCacheStrategy(getStrategy())
+                                .placeholder(mPlaceholderId)
+                                .error(mPlaceholderId)
+                                .fallback(mPlaceholderId)
+                                .into(newTarget());
                     } else {
-                        if (downloadStatus == DOWNLOAD_STATE_CACHE_ONLY)
-                            mgr.using(CACHE_MODEL_LOADER)
-                                    .load(uri)
-                                    .asBitmap()
-                                    .diskCacheStrategy(getStrategy())
-                                    .into(newTarget());
-                        else
-                            mgr.load(uri)
-                                    .asBitmap()
-                                    .diskCacheStrategy(getStrategy())
-                                    .into(newTarget());
+                        mgr.asBitmap()
+                                .onlyRetrieveFromCache(downloadStatus == DOWNLOAD_STATE_CACHE_ONLY)
+                                .load(uri)
+                                .diskCacheStrategy(getStrategy())
+                                .into(newTarget());
                     }
                 } else {
                     if (mPlaceholderId != 0) {
-                        if (downloadStatus == DOWNLOAD_STATE_CACHE_ONLY)
-                            mgr.using(CACHE_MODEL_LOADER)
-                                    .load(uri)
-                                    .asBitmap()
-                                    .diskCacheStrategy(getStrategy())
-                                    .placeholder(mPlaceholderId)
-                                    .error(mPlaceholderId)
-                                    .fallback(mPlaceholderId)
-                                    .into(this);
-                        else
-                            mgr.load(uri)
-                                    .asBitmap()
-                                    .diskCacheStrategy(getStrategy())
-                                    .placeholder(mPlaceholderId)
-                                    .error(mPlaceholderId)
-                                    .fallback(mPlaceholderId)
-                                    .into(this);
+                        mgr.asBitmap()
+                                .onlyRetrieveFromCache(downloadStatus == DOWNLOAD_STATE_CACHE_ONLY)
+                                .load(uri)
+                                .diskCacheStrategy(getStrategy())
+                                .placeholder(mPlaceholderId)
+                                .error(mPlaceholderId)
+                                .fallback(mPlaceholderId)
+                                .into(this);
                     } else {
-                        if (downloadStatus == DOWNLOAD_STATE_CACHE_ONLY)
-                            mgr.using(CACHE_MODEL_LOADER)
-                                    .load(uri)
-                                    .asBitmap()
-                                    .diskCacheStrategy(getStrategy())
-                                    .into(this);
-                        else
-                            mgr.load(uri)
-                                    .asBitmap()
-                                    .diskCacheStrategy(getStrategy())
-                                    .into(this);
+                        mgr.asBitmap()
+                                .onlyRetrieveFromCache(downloadStatus == DOWNLOAD_STATE_CACHE_ONLY)
+                                .load(uri)
+                                .diskCacheStrategy(getStrategy())
+                                .into(this);
                     }
                 }
             }
@@ -359,7 +328,7 @@ public class NucleiImageView extends AppCompatImageView {
         super.onDetachedFromWindow();
         mSet = false;
         try {
-            Glide.clear(this);
+            Glide.with(this).clear(this);
         } catch (IllegalArgumentException err) {
             Log.e(TAG, "Error onDetachedFromWindow", err);
         }
@@ -384,30 +353,5 @@ public class NucleiImageView extends AppCompatImageView {
         void onDrawable(NucleiImageView imageView, Drawable drawable);
 
     }
-
-    private static final StreamModelLoader<Uri> CACHE_MODEL_LOADER = new StreamModelLoader<Uri>() {
-        @Override
-        public DataFetcher<InputStream> getResourceFetcher(final Uri model, int width, int height) {
-            return new DataFetcher<InputStream>() {
-                @Override
-                public InputStream loadData(Priority priority) throws Exception {
-                    throw new IOException();
-                }
-
-                @Override
-                public void cleanup() {
-                }
-
-                @Override
-                public String getId() {
-                    return model.toString();
-                }
-
-                @Override
-                public void cancel() {
-                }
-            };
-        }
-    };
 
 }
