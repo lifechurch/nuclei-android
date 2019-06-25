@@ -772,8 +772,6 @@ public class ExoPlayerPlayback extends BasePlayback
         if (LOG.isLoggable(Log.DEBUG))
             LOG.d("relaxResources. releaseMediaPlayer=" + releaseMediaPlayer);
 
-        mService.stopForeground(true);
-
         // stop and release the Media Player, if it's available
         if (releaseMediaPlayer && mMediaPlayer != null) {
             mSurface = null;

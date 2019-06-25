@@ -157,7 +157,6 @@ public class MediaNotificationManager extends BroadcastReceiver {
             } catch (IllegalArgumentException ex) {
                 // ignore if the receiver is not registered.
             }
-            mService.stopForeground(true);
         }
     }
 
@@ -231,14 +230,13 @@ public class MediaNotificationManager extends BroadcastReceiver {
         public void onPlaybackStateChanged(@NonNull PlaybackStateCompat state) {
             mPlaybackState = state;
             LOG.d("Received new playback state ", state);
+            Notification notification = createNotification();
+            if (notification != null) {
+                mNotificationManager.notify(NOTIFICATION_ID, notification);
+            }
             if (state.getState() == PlaybackStateCompat.STATE_STOPPED
                     || state.getState() == PlaybackStateCompat.STATE_NONE) {
                 stopNotification();
-            } else {
-                Notification notification = createNotification();
-                if (notification != null) {
-                    mNotificationManager.notify(NOTIFICATION_ID, notification);
-                }
             }
         }
 
@@ -359,7 +357,6 @@ public class MediaNotificationManager extends BroadcastReceiver {
         LOG.d("updateNotificationPlaybackState. mPlaybackState=", mPlaybackState);
         if (mPlaybackState == null || !mStarted) {
             LOG.d("updateNotificationPlaybackState. cancelling notification!");
-            mService.stopForeground(true);
             return;
         }
         if (mPlaybackState.getState() == PlaybackStateCompat.STATE_PLAYING
