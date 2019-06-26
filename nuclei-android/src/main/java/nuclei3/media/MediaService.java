@@ -375,6 +375,7 @@ public class MediaService extends MediaBrowserServiceCompat implements
         Playback playback = mPlaybackManager.getPlayback();
         if (playback != null)
             MediaProvider.getInstance().onPlaybackPause(playback, id);
+        stopForeground(false);
     }
 
     /**
