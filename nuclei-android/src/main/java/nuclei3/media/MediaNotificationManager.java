@@ -23,6 +23,9 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.os.RemoteException;
 import android.support.annotation.NonNull;
 import android.support.v4.app.NotificationManagerCompat;
@@ -61,6 +64,15 @@ public class MediaNotificationManager extends BroadcastReceiver {
     private MediaSessionCompat.Token mSessionToken;
     private MediaControllerCompat mController;
     private MediaControllerCompat.TransportControls mTransportControls;
+    private static final int UPDATE_DELAY = 1000;
+    private long mLastNotificationUpdate;
+    private Handler mUpdateHandler = new Handler(Looper.getMainLooper(), new Handler.Callback() {
+        @Override
+        public boolean handleMessage(Message msg) {
+            updateNotificationNow();
+            return true;
+        }
+    });
 
     PlaybackStateCompat mPlaybackState;
     MediaMetadataCompat mMetadata;
@@ -120,7 +132,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
             mPlaybackState = mController.getPlaybackState();
 
             // The notification must be updated after setting started to true
-            mRunningNotification = createNotification();
+            mRunningNotification = getNewNotification();
             if (mRunningNotification != null) {
                 mController.registerCallback(mCb);
                 IntentFilter filter = new IntentFilter();
@@ -230,13 +242,11 @@ public class MediaNotificationManager extends BroadcastReceiver {
         public void onPlaybackStateChanged(@NonNull PlaybackStateCompat state) {
             mPlaybackState = state;
             LOG.d("Received new playback state ", state);
-            Notification notification = createNotification();
-            if (notification != null) {
-                mNotificationManager.notify(NOTIFICATION_ID, notification);
-            }
             if (state.getState() == PlaybackStateCompat.STATE_STOPPED
                     || state.getState() == PlaybackStateCompat.STATE_NONE) {
                 stopNotification();
+            } else {
+                suggestNotificationUpdate();
             }
         }
 
@@ -244,10 +254,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
         public void onMetadataChanged(MediaMetadataCompat metadata) {
             mMetadata = metadata;
             LOG.d("Received new metadata ", metadata);
-            Notification notification = createNotification();
-            if (notification != null) {
-                mNotificationManager.notify(NOTIFICATION_ID, notification);
-            }
+            suggestNotificationUpdate();
         }
 
         @Override
@@ -261,6 +268,30 @@ public class MediaNotificationManager extends BroadcastReceiver {
             }
         }
     };
+
+    private Notification getNewNotification() {
+        Notification newNotification = null;
+        if (System.currentTimeMillis() - mLastNotificationUpdate > UPDATE_DELAY) {
+            newNotification = createNotification();
+        }
+        return newNotification;
+    }
+
+    private void suggestNotificationUpdate() {
+        if (System.currentTimeMillis() - mLastNotificationUpdate > UPDATE_DELAY) {
+            updateNotificationNow();
+        } else {
+            mUpdateHandler.removeCallbacksAndMessages(null);
+            mUpdateHandler.sendEmptyMessageDelayed(0, UPDATE_DELAY);
+        }
+        mLastNotificationUpdate = System.currentTimeMillis();
+    }
+
+    private void updateNotificationNow() {
+        Notification notification = createNotification();
+        if (notification != null)
+            mNotificationManager.notify(NOTIFICATION_ID, notification);
+    }
 
     Notification createNotification() {
         LOG.d("updateNotificationMetadata. mMetadata=", mMetadata);
