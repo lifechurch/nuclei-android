@@ -762,8 +762,8 @@ public class ExoPlayerPlayback extends BasePlayback
     }
 
     /**
-     * Releases resources used by the service for playback. This includes the
-     * "foreground service" status, the wake locks and possibly the MediaPlayer.
+     * Releases resources used by the service for playback. This includes
+     * the wake locks and possibly the MediaPlayer.
      *
      * @param releaseMediaPlayer Indicates whether the Media Player should also
      *                           be released or not

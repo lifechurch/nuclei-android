@@ -289,7 +289,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
 
     private void updateNotificationNow() {
         Notification notification = createNotification();
-        if (notification != null)
+        if (notification != null && mNotificationManager != null)
             mNotificationManager.notify(NOTIFICATION_ID, notification);
     }
 
