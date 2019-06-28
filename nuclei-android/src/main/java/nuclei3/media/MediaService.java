@@ -276,7 +276,8 @@ public class MediaService extends MediaBrowserServiceCompat implements
         mPlaybackManager.handleStopRequest(null);
         mMediaNotificationManager.stopNotification();
         try {
-            mCastSessionManager.removeSessionManagerListener(mCastSessionListener, CastSession.class);
+            if (mCastSessionManager != null && mCastSessionListener != null)
+                mCastSessionManager.removeSessionManagerListener(mCastSessionListener, CastSession.class);
         } catch (IllegalStateException e) {
             LOG.w("Error removing cast video consumer : " + e.getMessage());
         }
