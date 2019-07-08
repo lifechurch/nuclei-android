@@ -23,6 +23,7 @@ import android.content.OperationApplicationException;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.RemoteException;
+import androidx.loader.content.CursorLoader;
 
 import java.util.ArrayList;
 
@@ -152,12 +153,12 @@ public class Query<T> {
         return new android.content.CursorLoader(CONTEXT, uri.toUri(), projection, selection, args, sort);
     }
 
-    android.support.v4.content.CursorLoader executeSupportLoader(String[] args, String sort) {
+    CursorLoader executeSupportLoader(String[] args, String sort) {
         if (opType != QUERY_OPERATION_SELECT)
             throw new IllegalArgumentException("Not a select query");
         if (args != null && placeholders != args.length)
             throw new IllegalArgumentException("Invalid selection args");
-        return new android.support.v4.content.CursorLoader(CONTEXT, uri.toUri(), projection, selection, args, sort);
+        return new CursorLoader(CONTEXT, uri.toUri(), projection, selection, args, sort);
     }
 
     @Deprecated

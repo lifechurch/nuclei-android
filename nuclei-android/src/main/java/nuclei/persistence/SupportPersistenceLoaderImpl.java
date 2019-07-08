@@ -17,11 +17,11 @@ package nuclei.persistence;
 
 import android.database.Cursor;
 import android.os.Bundle;
-import android.support.v4.app.LoaderManager;
-import android.support.v4.content.Loader;
-import android.support.v4.util.SparseArrayCompat;
+import androidx.loader.app.LoaderManager;
+import androidx.loader.content.Loader;
+import androidx.collection.SparseArrayCompat;
 
-import static android.support.v4.app.LoaderManager.LoaderCallbacks;
+import static androidx.loader.app.LoaderManager.LoaderCallbacks;
 
 public class SupportPersistenceLoaderImpl implements LoaderCallbacks<Cursor>, PersistenceLoader {
 

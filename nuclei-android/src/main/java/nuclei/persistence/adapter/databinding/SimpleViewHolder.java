@@ -1,6 +1,6 @@
 package nuclei.persistence.adapter.databinding;
 
-import android.databinding.ViewDataBinding;
+import androidx.databinding.ViewDataBinding;
 import android.view.View;
 
 import nuclei.persistence.adapter.PersistenceAdapter;

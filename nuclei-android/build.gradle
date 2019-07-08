@@ -1,15 +1,6 @@
 apply plugin: 'com.android.library'
-apply plugin: "nuclei.gradle"
 
-def versionId = "2.3.7-NO_MEDIA_SERVICE"
-
-def isTest = false
-List<String> names = gradle.startParameter.taskNames
-for (String name : names) {
-    if (name.toLowerCase().contains("test")) {
-        isTest = true;
-    }
-}
+def versionId = "2.3.8-NO_MEDIA_SERVICE"
 
 android {
     compileSdkVersion rootProject.ext.compileSdkVersion
@@ -21,9 +12,7 @@ android {
         versionCode 1
         versionName "1.0"
 
-        multiDexEnabled = isTest
-
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -42,55 +31,21 @@ android {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
 
     // glide image library
     compile "com.github.bumptech.glide:glide:$rootProject.ext.glideVersion"
 
-    // play services
-    compile "com.google.android.gms:play-services-gcm:$rootProject.ext.playServicesVersion"
-
     // support libraries
-    compile "com.android.support:appcompat-v7:$rootProject.ext.supportLibVersion"
-    compile "com.android.support:recyclerview-v7:$rootProject.ext.supportLibVersion"
-    compile "com.android.support:design:$rootProject.ext.supportLibVersion"
-
-    provided ("com.android.databinding:library:1.3.1") {
-        exclude group: "com.android.databinding"
-    }
-    provided "com.android.databinding:baseLibrary:2.3.3"
-
-    // okhttp3
+    compile 'androidx.appcompat:appcompat:1.0.2'
+    compile 'androidx.recyclerview:recyclerview:1.0.0'
+    compile 'com.google.android.material:material:1.0.0'
     compile 'com.squareup.okhttp3:okhttp:' + rootProject.ext.okHttpVersion
 
-    // Testing-only dependencies
-    androidTestCompile ("com.android.support.test:runner:$rootProject.ext.espressoRunnerVersion") {
-        exclude group: "com.android.support", module: "support-annotations"
+    compileOnly ('androidx.databinding:databinding-runtime:3.4.1') {
+        exclude group: "com.android.databinding"
     }
-    androidTestCompile ("com.android.support.test:rules:$rootProject.ext.espressoRulesVersion") {
-        exclude group: "com.android.support", module: "support-annotations"
-    }
-    androidTestCompile ("com.android.support.test.espresso:espresso-core:$rootProject.ext.espressoVersion") {
-        exclude group: "com.android.support", module: "support-annotations"
-    }
-    androidTestCompile ("com.android.support.test.espresso:espresso-intents:$rootProject.ext.espressoVersion") {
-        exclude group: "com.android.support", module: "support-annotations"
-    }
-    androidTestCompile ("com.android.support.test.espresso:espresso-contrib:$rootProject.ext.espressoVersion") {
-        exclude group: "com.android.support", module: "appcompat"
-        exclude group: "com.android.support", module: "appcompat-v7"
-        exclude group: "com.android.support", module: "design"
-        exclude group: "com.android.support", module: "support-v4"
-        exclude group: "com.android.support", module: "support-annotations"
-        exclude module: "recyclerview-v7"
-    }
-    androidTestCompile ("com.android.support.test.espresso:espresso-web:$rootProject.ext.espressoVersion") {
-        exclude group: "com.android.support", module: "appcompat"
-        exclude group: "com.android.support", module: "appcompat-v7"
-        exclude group: "com.android.support", module: "support-annotations"
-    }
-
+    compileOnly 'androidx.databinding:databinding-common:3.4.1'
 }
 
 ext {
