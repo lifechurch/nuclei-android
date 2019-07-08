@@ -1,14 +1,14 @@
 package nuclei3.notifications;
 
 import android.app.Notification;
-import android.arch.persistence.room.Room;
+import androidx.room.Room;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
-import android.support.annotation.WorkerThread;
-import android.support.v4.app.NotificationManagerCompat;
-import android.support.v4.util.ArrayMap;
+import androidx.annotation.WorkerThread;
+import androidx.core.app.NotificationManagerCompat;
+import androidx.collection.ArrayMap;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -60,7 +60,6 @@ public abstract class NotificationManager {
     public abstract NotificationBuilder getBuilder();
 
     protected void onPrepareTaskScheduler(TaskScheduler.Builder builder) {
-        builder.setWindowDelay(1, 60);
     }
 
     protected abstract boolean prepareNotificationMessage(NotificationMessage message, List<NotificationData> data);

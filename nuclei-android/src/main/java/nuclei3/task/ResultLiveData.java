@@ -1,6 +1,6 @@
 package nuclei3.task;
 
-import android.arch.lifecycle.LiveData;
+import androidx.lifecycle.LiveData;
 
 public class ResultLiveData<T> extends LiveData<T> {
 

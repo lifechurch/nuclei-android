@@ -16,7 +16,7 @@
 package nuclei3.task.http;
 
 import android.app.Application;
-import android.support.annotation.VisibleForTesting;
+import androidx.annotation.VisibleForTesting;
 
 import java.io.File;
 import java.io.IOException;

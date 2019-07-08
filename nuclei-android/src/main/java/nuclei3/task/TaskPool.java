@@ -19,9 +19,9 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.support.annotation.NonNull;
-import android.support.v4.util.ArrayMap;
-import android.support.v4.util.Pools;
+import androidx.annotation.NonNull;
+import androidx.collection.ArrayMap;
+import androidx.core.util.Pools;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;

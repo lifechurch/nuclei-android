@@ -19,7 +19,7 @@ import android.annotation.TargetApi;
 import android.app.job.JobParameters;
 import android.app.job.JobService;
 import android.os.BaseBundle;
-import android.support.v4.util.ArrayMap;
+import androidx.collection.ArrayMap;
 
 import nuclei3.task.http.Http;
 import nuclei3.task.http.HttpTask;

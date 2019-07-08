@@ -17,7 +17,7 @@ package nuclei3.ui.view;
 
 import android.content.Context;
 import android.content.res.Resources;
-import android.support.v7.widget.ListPopupWindow;
+import androidx.appcompat.widget.ListPopupWindow;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -42,7 +42,7 @@ public class PopupMenu extends ListPopupWindow {
 
         final Resources res = context.getResources();
         mPopupMaxWidth = Math.max(res.getDisplayMetrics().widthPixels / 2,
-                res.getDimensionPixelSize(android.support.v7.appcompat.R.dimen.abc_config_prefDialogWidth));
+                res.getDimensionPixelSize(R.dimen.abc_config_prefDialogWidth));
     }
 
     @Override

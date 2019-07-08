@@ -6,6 +6,7 @@ buildscript {
         maven { url 'https://dl.bintray.com/lifechurch/maven/' }
         maven { url 'https://maven.google.com' }
         mavenLocal()
+        google()
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:3.3.0'
@@ -18,6 +19,7 @@ allprojects {
     repositories {
         jcenter()
         maven { url 'https://maven.google.com' }
+        google()
     }
 }
 

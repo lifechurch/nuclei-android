@@ -1,12 +1,12 @@
 /**
  * Copyright 2016 YouVersion
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,28 +15,17 @@
  */
 package nuclei3.task;
 
-import android.annotation.TargetApi;
-import android.app.job.JobInfo;
-import android.app.job.JobScheduler;
-import android.content.ComponentName;
 import android.content.Context;
 import android.os.Build;
-import android.os.Bundle;
-import android.os.Parcelable;
-import android.os.PersistableBundle;
-import android.support.v4.util.ArrayMap;
-
-import com.firebase.jobdispatcher.Constraint;
-import com.firebase.jobdispatcher.FirebaseJobDispatcher;
-import com.firebase.jobdispatcher.GooglePlayDriver;
-import com.firebase.jobdispatcher.Job;
-import com.firebase.jobdispatcher.Lifetime;
-import com.firebase.jobdispatcher.Trigger;
+import androidx.collection.ArrayMap;
+import androidx.work.*;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 
-import java.io.Serializable;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A class for scheduling tasks.  If API 21+, it will default to the JobScheduler service,
@@ -50,16 +39,12 @@ import java.util.Map;
  * http://developer.android.com/reference/android/app/job/JobScheduler.html<br />
  * <br />
  * Two additional classes assist in these instructions:<br />
- * @see TaskGcmService (for GCM support)
+ * @see TaskWorker (for GCM support)
  * @see TaskJobService (for API 21+ support)
  */
 public final class TaskScheduler {
 
     protected static final String TASK_NAME = "__task__name__";
-
-    public static final int NETWORK_STATE_ANY = 1;
-    public static final int NETWORK_STATE_CONNECTED = 2;
-    public static final int NETWORK_STATE_UNMETERED = 3;
 
     public static final int TASK_ONE_OFF = 1;
     public static final int TASK_PERIODIC = 2;
@@ -85,145 +70,26 @@ public final class TaskScheduler {
     }
 
     public void schedule(Context context) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !mBuilder.mForceGcm) {
-            onScheduleJobL(context);
-        } else {
-            onSchedulePreL(context);
-        }
-    }
-
-    public static void cancel(Context context, nuclei3.task.Task<?> task, boolean forceGcm) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !forceGcm) {
-            cancelL(context, task);
-        } else {
-            cancelPreL(context, task);
-        }
+        onScheduleJob(context);
     }
 
     public static void cancel(Context context, nuclei3.task.Task<?> task) {
-        cancel(context, task, false);
+        WorkManager.getInstance().cancelAllWorkByTag(task.getTaskTag());
     }
 
     private static void cancelPreL(Context context, nuclei3.task.Task<?> task) {
-        FirebaseJobDispatcher dispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(context));
-        dispatcher.cancel(task.getTaskTag());
-    }
-
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    private static void cancelL(Context context, nuclei3.task.Task<?> task) {
-        JobScheduler jobScheduler = (JobScheduler) context.getSystemService(Context.JOB_SCHEDULER_SERVICE);
-        jobScheduler.cancel(task.getTaskId());
-    }
-
-    public static void cancelAll(Context context, boolean forceGcm) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !forceGcm) {
-            cancelAllL(context);
-        } else {
-            cancelAllPreL(context);
-        }
+        WorkManager.getInstance().cancelAllWorkByTag(task.getTaskTag());
     }
 
     public static void cancelAll(Context context) {
-        cancelAll(context, false);
+        WorkManager.getInstance().cancelAllWork();
     }
 
-    private static void cancelAllPreL(Context context) {
-        FirebaseJobDispatcher dispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(context));
-        dispatcher.cancelAll();
-    }
-
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    private static void cancelAllL(Context context) {
-        JobScheduler jobScheduler = (JobScheduler) context.getSystemService(Context.JOB_SCHEDULER_SERVICE);
-        jobScheduler.cancelAll();
-    }
-
-    private void onSchedulePreL(Context context) {
-        FirebaseJobDispatcher dispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(context));
-        Job.Builder builder = dispatcher.newJobBuilder();
-
-        switch (mBuilder.mTaskType) {
-            case TASK_ONE_OFF:
-                builder.setRecurring(false);
-                if (mBuilder.mWindowStartDelaySecondsSet || mBuilder.mWindowEndDelaySecondsSet)
-                    builder.setTrigger(Trigger.executionWindow((int) mBuilder.mWindowStartDelaySeconds, (int) mBuilder.mWindowEndDelaySeconds));
-                break;
-            case TASK_PERIODIC:
-                builder.setRecurring(true);
-                //builder.setTrigger(Trigger.NOW);
-//                builder = new PeriodicTask.Builder()
-//                        .setFlex(mBuilder.mFlexInSeconds)
-//                        .setPeriod(mBuilder.mPeriodInSeconds);
-                // TODO:?
-                break;
-            default:
-                throw new IllegalArgumentException();
-        }
-
+    private void onScheduleJob(Context context) {
+        WorkRequest.Builder<?, ?> builder;
         ArrayMap<String, Object> map = new ArrayMap<>();
         mBuilder.mTask.serialize(map);
-        Bundle extras = new Bundle();
-        for (Map.Entry<String, Object> entry : map.entrySet()) {
-            Object v = entry.getValue();
-            if (v == null)
-                continue;
-            if (v instanceof Integer)
-                extras.putInt(entry.getKey(), (int) v);
-            else if (v instanceof Double)
-                extras.putDouble(entry.getKey(), (double) v);
-            else if (v instanceof Long)
-                extras.putLong(entry.getKey(), (long) v);
-            else if (v instanceof String)
-                extras.putString(entry.getKey(), (String) v);
-            else if (v instanceof String[])
-                extras.putStringArray(entry.getKey(), (String[]) v);
-            else if (v instanceof boolean[])
-                extras.putBooleanArray(entry.getKey(), (boolean[]) v);
-            else if (v instanceof double[])
-                extras.putDoubleArray(entry.getKey(), (double[]) v);
-            else if (v instanceof long[])
-                extras.putLongArray(entry.getKey(), (long[]) v);
-            else if (v instanceof int[])
-                extras.putIntArray(entry.getKey(), (int[]) v);
-            else if (v instanceof Parcelable)
-                extras.putParcelable(entry.getKey(), (Parcelable) v);
-            else if (v instanceof Serializable)
-                extras.putSerializable(entry.getKey(), (Serializable) v);
-            else
-                throw new IllegalArgumentException("Invalid Type: " + entry.getKey());
-        }
-        extras.putString(TASK_NAME, mBuilder.mTask.getClass().getName());
-
-        if (mBuilder.mPersisted)
-            builder.setLifetime(Lifetime.FOREVER);
-        if (mBuilder.mRequiresCharging)
-            builder.addConstraint(Constraint.DEVICE_CHARGING);
-        builder.setTag(mBuilder.mTask.getTaskTag());
-
-        builder.setReplaceCurrent(mBuilder.mUpdateCurrent);
-        builder.setExtras(extras);
-        builder.setService(TaskGcmService.class);
-
-        switch (mBuilder.mNetworkState) {
-            case NETWORK_STATE_ANY:
-            case NETWORK_STATE_CONNECTED:
-                builder.addConstraint(Constraint.ON_ANY_NETWORK);
-                break;
-            case NETWORK_STATE_UNMETERED:
-                builder.addConstraint(Constraint.ON_UNMETERED_NETWORK);
-                break;
-        }
-
-        dispatcher.mustSchedule(builder.build());
-    }
-
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    private void onScheduleJobL(Context context) {
-        JobInfo.Builder builder = new JobInfo.Builder(mBuilder.mTask.getTaskId(), new ComponentName(context, TaskJobService.class));
-
-        ArrayMap<String, Object> map = new ArrayMap<>();
-        mBuilder.mTask.serialize(map);
-        PersistableBundle extras = new PersistableBundle();
+        Data.Builder extras = new Data.Builder();
         for (Map.Entry<String, Object> entry : map.entrySet()) {
             Object v = entry.getValue();
             if (v == null)
@@ -253,44 +119,39 @@ public final class TaskScheduler {
 
         switch (mBuilder.mTaskType) {
             case TASK_ONE_OFF:
-                if (mBuilder.mWindowStartDelaySecondsSet)
-                    builder.setMinimumLatency(mBuilder.mWindowStartDelaySeconds * 1000);
-                if (mBuilder.mWindowEndDelaySecondsSet)
-                    builder.setOverrideDeadline(mBuilder.mWindowEndDelaySeconds * 1000);
+                builder = new OneTimeWorkRequest.Builder(TaskWorker.class);
+                ((OneTimeWorkRequest.Builder) builder).setInitialDelay(mBuilder.mPeriodInSeconds, TimeUnit.SECONDS);
                 break;
             case TASK_PERIODIC:
-                builder.setPeriodic(mBuilder.mPeriodInSeconds * 1000);
+                builder = new PeriodicWorkRequest.Builder(TaskWorker.class, mBuilder.mPeriodInSeconds, TimeUnit.SECONDS);
                 break;
             default:
                 throw new IllegalArgumentException();
         }
+        builder.addTag(mBuilder.mTask.getTaskTag());
+        builder.setInputData(extras.build());
 
-        builder.setExtras(extras)
-                .setPersisted(mBuilder.mPersisted)
-                .setRequiresCharging(mBuilder.mRequiresCharging)
-                .setRequiresDeviceIdle(mBuilder.mRequiresDeviceIdle);
-
-        switch (mBuilder.mNetworkState) {
-            case NETWORK_STATE_ANY:
-            case NETWORK_STATE_CONNECTED:
-                builder.setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY);
-                break;
-            case NETWORK_STATE_UNMETERED:
-                builder.setRequiredNetworkType(JobInfo.NETWORK_TYPE_UNMETERED);
-                break;
+        Constraints.Builder constraintsBuilder = new Constraints.Builder();
+        if (mBuilder.mNetworkState != null) {
+            constraintsBuilder.setRequiredNetworkType(mBuilder.mNetworkState);
         }
-
-        switch (mBuilder.mBackoffPolicy) {
-            case BACKOFF_POLICY_EXPONENTIAL:
-                builder.setBackoffCriteria(mBuilder.mInitialBackoffMillis, JobInfo.BACKOFF_POLICY_EXPONENTIAL);
-                break;
-            case BACKOFF_POLICY_LINEAR:
-                builder.setBackoffCriteria(mBuilder.mInitialBackoffMillis, JobInfo.BACKOFF_POLICY_LINEAR);
-                break;
+        constraintsBuilder.setRequiresCharging(mBuilder.mRequiresCharging);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            constraintsBuilder.setRequiresDeviceIdle(mBuilder.mRequiresDeviceIdle);
         }
-
-        JobScheduler jobScheduler = (JobScheduler) context.getSystemService(Context.JOB_SCHEDULER_SERVICE);
-        jobScheduler.schedule(builder.build());
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            switch (mBuilder.mBackoffPolicy) {
+                case BACKOFF_POLICY_EXPONENTIAL:
+                    builder.setBackoffCriteria(BackoffPolicy.EXPONENTIAL, Duration.of(mBuilder.mInitialBackoffMillis, ChronoUnit.MILLIS));
+                    break;
+                case BACKOFF_POLICY_LINEAR:
+                    builder.setBackoffCriteria(BackoffPolicy.LINEAR, Duration.of(mBuilder.mInitialBackoffMillis, ChronoUnit.MILLIS));
+                    break;
+            }
+        }
+        if (mBuilder.mUpdateCurrent)
+            WorkManager.getInstance().cancelAllWorkByTag(mBuilder.mTask.getTaskTag());
+        WorkManager.getInstance().enqueue(builder.build());
     }
 
     public static Builder newBuilder(nuclei3.task.Task task, int type) {
@@ -300,43 +161,19 @@ public final class TaskScheduler {
     public static final class Builder {
 
         final nuclei3.task.Task mTask;
-        int mNetworkState = -1;
+        NetworkType mNetworkState = null;
         boolean mRequiresDeviceIdle;
         boolean mRequiresCharging;
         boolean mUpdateCurrent;
         boolean mPersisted;
-        long mWindowStartDelaySeconds = -1L;
-        boolean mWindowStartDelaySecondsSet;
-        long mWindowEndDelaySeconds = -1L;
-        boolean mWindowEndDelaySecondsSet;
-        long mFlexInSeconds;
-        long mPeriodInSeconds;
         int mTaskType = TASK_ONE_OFF;
         int mBackoffPolicy = -1;
+        int mPeriodInSeconds;
         long mInitialBackoffMillis;
-        boolean mForceGcm;
 
         Builder(nuclei3.task.Task task, int type) {
             mTask = task;
             mTaskType = type;
-        }
-
-        public Builder setFlex(long flexInSeconds) {
-            mFlexInSeconds = flexInSeconds;
-            return this;
-        }
-
-        public Builder setPeriod(long periodInSeconds) {
-            mPeriodInSeconds = periodInSeconds;
-            return this;
-        }
-
-        public Builder setWindowDelay(long windowStartDelaySeconds, long windowEndDelaySeconds) {
-            mWindowStartDelaySeconds = windowStartDelaySeconds;
-            mWindowStartDelaySecondsSet = true;
-            mWindowEndDelaySeconds = windowEndDelaySeconds;
-            mWindowEndDelaySecondsSet = true;
-            return this;
         }
 
         public Builder setRequiresDeviceIdle(boolean requiresDeviceIdle) {
@@ -344,7 +181,7 @@ public final class TaskScheduler {
             return this;
         }
 
-        public Builder setRequiredNetwork(int state) {
+        public Builder setRequiredNetwork(NetworkType state) {
             mNetworkState = state;
             return this;
         }
@@ -374,8 +211,8 @@ public final class TaskScheduler {
             return this;
         }
 
-        public Builder setForceGcm(boolean forceGcm) {
-            mForceGcm = forceGcm;
+        public Builder setPeriodInSeconds(int periodInSeconds) {
+            this.mPeriodInSeconds = periodInSeconds;
             return this;
         }
 
