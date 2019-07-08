@@ -762,8 +762,8 @@ public class ExoPlayerPlayback extends BasePlayback
     }
 
     /**
-     * Releases resources used by the service for playback. This includes the
-     * "foreground service" status, the wake locks and possibly the MediaPlayer.
+     * Releases resources used by the service for playback. This includes
+     * the wake locks and possibly the MediaPlayer.
      *
      * @param releaseMediaPlayer Indicates whether the Media Player should also
      *                           be released or not
@@ -771,8 +771,6 @@ public class ExoPlayerPlayback extends BasePlayback
     private void relaxResources(boolean releaseMediaPlayer) {
         if (LOG.isLoggable(Log.DEBUG))
             LOG.d("relaxResources. releaseMediaPlayer=" + releaseMediaPlayer);
-
-        mService.stopForeground(true);
 
         // stop and release the Media Player, if it's available
         if (releaseMediaPlayer && mMediaPlayer != null) {
