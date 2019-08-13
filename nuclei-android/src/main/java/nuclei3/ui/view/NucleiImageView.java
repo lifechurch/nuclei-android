@@ -15,6 +15,7 @@
  */
 package nuclei3.ui.view;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
@@ -329,8 +330,19 @@ public class NucleiImageView extends AppCompatImageView {
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         mSet = false;
+        boolean clearCtx = true;
         try {
-            Glide.with(getContext()).clear(this);
+            Context ctx = getContext();
+            if (ctx == null)
+                clearCtx = false;
+            if (getContext() instanceof Activity) {
+                Activity act = (Activity) getContext();
+                if (act.isFinishing() || act.isDestroyed()) {
+                    clearCtx = false;
+                }
+            }
+            if (clearCtx)
+                Glide.with(ctx).clear(this);
         } catch (IllegalArgumentException err) {
             Log.e(TAG, "Error onDetachedFromWindow", err);
         }
