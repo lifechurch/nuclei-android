@@ -24,10 +24,12 @@ import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+
 import androidx.annotation.ColorInt;
 import androidx.core.graphics.drawable.RoundedBitmapDrawable;
 import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory;
 import androidx.appcompat.widget.AppCompatImageView;
+
 import android.util.AttributeSet;
 import android.util.Log;
 
@@ -328,7 +330,7 @@ public class NucleiImageView extends AppCompatImageView {
         super.onDetachedFromWindow();
         mSet = false;
         try {
-            Glide.with(this).clear(this);
+            Glide.with(getContext()).clear(this);
         } catch (IllegalArgumentException err) {
             Log.e(TAG, "Error onDetachedFromWindow", err);
         }

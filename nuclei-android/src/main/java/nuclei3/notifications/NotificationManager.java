@@ -1,11 +1,14 @@
 package nuclei3.notifications;
 
 import android.app.Notification;
+
 import androidx.room.Room;
+
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
+
 import androidx.annotation.WorkerThread;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.collection.ArrayMap;
@@ -175,39 +178,32 @@ public abstract class NotificationManager {
     }
 
     public void removeMessages(final String group) {
-        try {
-            DB.runInTransaction(new Runnable() {
-                @Override
-                public void run() {
-                    List<NotificationMessage> messages = getMessages(group);
-                    DB.notificationsDao().deleteMessages(group);
-                    NotificationManagerCompat managerCompat = NotificationManagerCompat.from(CONTEXT);
-                    for (int i = 0, len = messages.size(); i < len; i++) {
-                        NotificationMessage message = messages.get(i);
-                        managerCompat.cancel(getTag(message), message.id);
-                    }
-                    managerCompat.cancel(getTag(group), getId(group));
+        DB.runInTransaction(new Runnable() {
+            @Override
+            public void run() {
+                List<NotificationMessage> messages = getMessages(group);
+                DB.notificationsDao().deleteMessages(group);
+                NotificationManagerCompat managerCompat = NotificationManagerCompat.from(CONTEXT);
+                for (int i = 0, len = messages.size(); i < len; i++) {
+                    NotificationMessage message = messages.get(i);
+                    managerCompat.cancel(getTag(message), message.id);
                 }
-            });
-        } catch (Exception e) {
-
-        }
+                managerCompat.cancel(getTag(group), getId(group));
+            }
+        });
     }
 
     public void removeMessage(final NotificationMessage message) {
-        try {
-            DB.runInTransaction(new Runnable() {
-                @Override
-                public void run() {
-                    DB.notificationsDao().deleteMessage(message);
-                    NotificationManagerCompat.from(CONTEXT).cancel(getTag(message), message.id);
-                    if (getMessageCount(message.groupKey) == 1) {
-                        show();
-                    }
+        DB.runInTransaction(new Runnable() {
+            @Override
+            public void run() {
+                DB.notificationsDao().deleteMessage(message);
+                NotificationManagerCompat.from(CONTEXT).cancel(getTag(message), message.id);
+                if (getMessageCount(message.groupKey) == 1) {
+                    show();
                 }
-            });
-        } catch (Exception e) {
-        }
+            }
+        });
     }
 
     public NotificationMessage getMessage(long clientId) {
