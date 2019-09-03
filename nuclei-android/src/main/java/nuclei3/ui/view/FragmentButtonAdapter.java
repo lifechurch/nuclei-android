@@ -15,9 +15,9 @@
  */
 package nuclei3.ui.view;
 
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
 public abstract class FragmentButtonAdapter extends ButtonAdapter implements ButtonBarView.OnItemSelectedListener {
 

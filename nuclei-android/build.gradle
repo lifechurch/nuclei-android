@@ -1,6 +1,6 @@
 apply plugin: 'com.android.library'
 
-def versionId = "3.1.59"
+def versionId = "3.1.63"
 
 def isTest = false
 List<String> names = gradle.startParameter.taskNames
@@ -22,7 +22,7 @@ android {
 
         multiDexEnabled = isTest
 
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -41,56 +41,56 @@ android {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    testCompile 'junit:junit:4.12'
+    testImplementation 'junit:junit:4.12'
 
     // glide image library
-    compile "com.github.bumptech.glide:glide:$rootProject.ext.glideVersion"
+    api "com.github.bumptech.glide:glide:$rootProject.ext.glideVersion"
 
     // play services
-    compile "com.google.android.gms:play-services-cast-framework:16.1.2"
-    compile "com.firebase:firebase-jobdispatcher:0.8.3"
+    api "com.google.android.gms:play-services-cast-framework:16.1.2"
+
+    api "androidx.work:work-runtime:2.0.1"
 
     // arch
-    compile "android.arch.lifecycle:extensions:$rootProject.ext.appArchVersion"
-    compile "android.arch.persistence.room:runtime:$rootProject.ext.appArchVersion"
+    api 'androidx.lifecycle:lifecycle-extensions:2.0.0'
+    api 'androidx.room:room-runtime:2.1.0'
 
     // support libraries
-    compile "com.android.support:support-compat:$rootProject.ext.supportLibVersion"
-    compile "com.android.support:support-v4:$rootProject.ext.supportLibVersion"
-    compile "com.android.support:appcompat-v7:$rootProject.ext.supportLibVersion"
-    compile "com.android.support:mediarouter-v7:$rootProject.ext.supportLibVersion"
-    compile "com.android.support:recyclerview-v7:$rootProject.ext.supportLibVersion"
-    compile "com.android.support:design:$rootProject.ext.supportLibVersion"
+    api 'androidx.core:core:1.0.2'
+    api 'androidx.legacy:legacy-support-v4:1.0.0'
+    api 'androidx.appcompat:appcompat:1.0.2'
+    api 'androidx.mediarouter:mediarouter:1.0.0'
+    api 'androidx.recyclerview:recyclerview:1.0.0'
+    api 'com.google.android.material:material:1.0.0'
 
-    provided ("com.android.databinding:library:1.3.1") {
-        exclude group: "com.android.databinding"
+    compileOnly ('androidx.databinding:databinding-runtime:3.4.1') {
+        exclude group: "androidx.databinding"
     }
-    provided "com.android.databinding:baseLibrary:3.0.0"
+    compileOnly 'androidx.databinding:databinding-common:3.4.1'
 
-    annotationProcessor "android.arch.lifecycle:compiler:$rootProject.ext.appArchVersion"
-    annotationProcessor "android.arch.persistence.room:compiler:$rootProject.ext.appArchVersion"
+    annotationProcessor 'androidx.lifecycle:lifecycle-compiler:2.0.0'
+    annotationProcessor 'androidx.room:room-compiler:2.1.0'
 
     // exoplayer
-    compile "com.google.android.exoplayer:exoplayer:$rootProject.ext.exoPlayerVersion"
+    api "com.google.android.exoplayer:exoplayer:$rootProject.ext.exoPlayerVersion"
 
     // okhttp3
-    compile 'com.squareup.okhttp3:okhttp:' + rootProject.ext.okHttpVersion
+    api 'com.squareup.okhttp3:okhttp:' + rootProject.ext.okHttpVersion
 
     // Testing-only dependencies
-    androidTestCompile ("com.android.support.test:runner:$rootProject.ext.espressoRunnerVersion") {
+    androidTestImplementation ('androidx.test:runner:1.1.0') {
         exclude group: "com.android.support", module: "support-annotations"
     }
-    androidTestCompile ("com.android.support.test:rules:$rootProject.ext.espressoRulesVersion") {
+    androidTestImplementation ('androidx.test:rules:1.1.0') {
         exclude group: "com.android.support", module: "support-annotations"
     }
-    androidTestCompile ("com.android.support.test.espresso:espresso-core:$rootProject.ext.espressoVersion") {
+    androidTestImplementation ('androidx.test.espresso:espresso-core:3.1.0') {
         exclude group: "com.android.support", module: "support-annotations"
     }
-    androidTestCompile ("com.android.support.test.espresso:espresso-intents:$rootProject.ext.espressoVersion") {
+    androidTestImplementation ('androidx.test.espresso:espresso-intents:3.1.0') {
         exclude group: "com.android.support", module: "support-annotations"
     }
-    androidTestCompile ("com.android.support.test.espresso:espresso-contrib:$rootProject.ext.espressoVersion") {
+    androidTestImplementation ('androidx.test.espresso:espresso-contrib:3.1.0') {
         exclude group: "com.android.support", module: "appcompat"
         exclude group: "com.android.support", module: "appcompat-v7"
         exclude group: "com.android.support", module: "design"
@@ -98,7 +98,7 @@ dependencies {
         exclude group: "com.android.support", module: "support-annotations"
         exclude module: "recyclerview-v7"
     }
-    androidTestCompile ("com.android.support.test.espresso:espresso-web:$rootProject.ext.espressoVersion") {
+    androidTestImplementation ('androidx.test.espresso:espresso-web:3.1.0') {
         exclude group: "com.android.support", module: "appcompat"
         exclude group: "com.android.support", module: "appcompat-v7"
         exclude group: "com.android.support", module: "support-annotations"

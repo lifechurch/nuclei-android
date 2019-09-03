@@ -18,7 +18,7 @@ package nuclei3.adapter;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.v4.util.LruCache;
+import androidx.collection.LruCache;
 
 import java.util.AbstractList;
 import java.util.HashSet;

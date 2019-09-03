@@ -21,7 +21,7 @@ import android.os.Build;
 import android.os.StrictMode;
 
 import io.nuclei3.BuildConfig;
-import nuclei3.task.TaskGcmService;
+import nuclei3.task.TaskWorker;
 import nuclei3.task.http.Http;
 import nuclei3.logs.Logs;
 import nuclei3.task.TaskJobService;
@@ -49,7 +49,7 @@ public class NucleiApplication extends Application {
         Tasks.initialize(this);
         initializeHttp();
 
-        TaskGcmService.initialize(Tasks.get(TaskPool.DEFAULT_POOL));
+        TaskWorker.initialize(Tasks.get(TaskPool.DEFAULT_POOL));
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
             onInitializeL();
 

@@ -107,7 +107,7 @@
             android:contentDescription="@string/cast_skip_next"
             android:src="@drawable/ic_skip_next_black_24dp"/>
 
-        <android.support.v4.widget.Space
+        <androidx.legacy.widget.Space
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"/>

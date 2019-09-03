@@ -16,7 +16,7 @@
 package nuclei3.task;
 
 import android.content.Context;
-import android.support.v4.util.ArrayMap;
+import androidx.collection.ArrayMap;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -186,9 +186,9 @@ public abstract class Task<T> implements Runnable {
         onDiscarded();
     }
 
-    protected final void deliverResult(TaskGcmService service) {
+    protected final void deliverResult(TaskWorker service) {
         if (service == null)
-            throw new NullPointerException("TaskGcmService can't be null");
+            throw new NullPointerException("TaskWorker can't be null");
         onDetach();
         onResultDelivered();
     }

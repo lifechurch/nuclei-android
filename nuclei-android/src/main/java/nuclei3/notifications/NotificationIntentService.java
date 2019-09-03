@@ -23,20 +23,20 @@ public class NotificationIntentService extends IntentService {
     protected void onHandleIntent(Intent intent) {
         if (intent == null)
             return;
-        String groupKey = intent.hasExtra(EXTRA_GROUP_KEY)
-                ? intent.getStringExtra(EXTRA_GROUP_KEY)
-                : null;
-        if (intent.hasExtra(EXTRA_CLEAR_ALL)) {
-            try {
+        try {
+            String groupKey = intent.hasExtra(EXTRA_GROUP_KEY)
+                    ? intent.getStringExtra(EXTRA_GROUP_KEY)
+                    : null;
+            if (intent.hasExtra(EXTRA_CLEAR_ALL)) {
                 NotificationManager.getInstance().removeMessages(groupKey);
-            } catch (Exception e) {
-                LOG.e("Error clearing messages", e);
+            } else {
+                long clientId = intent.getLongExtra(EXTRA_CLEAR_ID, -1);
+                NotificationMessage message = NotificationManager.getInstance().getMessage(clientId);
+                if (message != null)
+                    NotificationManager.getInstance().removeMessage(message);
             }
-        } else {
-            long clientId = intent.getLongExtra(EXTRA_CLEAR_ID, -1);
-            NotificationMessage message = NotificationManager.getInstance().getMessage(clientId);
-            if (message != null)
-                NotificationManager.getInstance().removeMessage(message);
+        } catch (Exception e) {
+            LOG.e("Error clearing messages", e);
         }
     }
 

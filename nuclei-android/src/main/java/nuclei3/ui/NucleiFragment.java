@@ -17,10 +17,10 @@ package nuclei3.ui;
 
 import android.annotation.TargetApi;
 import android.app.Fragment;
-import android.arch.lifecycle.LifecycleRegistry;
-import android.arch.lifecycle.LifecycleRegistryOwner;
+import androidx.lifecycle.LifecycleRegistry;
+import androidx.lifecycle.LifecycleRegistryOwner;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 import nuclei3.logs.Log;
 import nuclei3.logs.Logs;

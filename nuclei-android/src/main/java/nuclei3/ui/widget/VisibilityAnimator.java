@@ -20,7 +20,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import nuclei3.android.AnimationUtils;
 import nuclei3.android.ViewOffsetBehavior;
-import android.support.design.widget.CoordinatorLayout;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import android.view.View;
 
 import java.lang.ref.WeakReference;

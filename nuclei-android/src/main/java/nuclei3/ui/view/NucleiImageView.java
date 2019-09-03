@@ -15,6 +15,7 @@
  */
 package nuclei3.ui.view;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
@@ -24,10 +25,12 @@ import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.support.annotation.ColorInt;
-import android.support.v4.graphics.drawable.RoundedBitmapDrawable;
-import android.support.v4.graphics.drawable.RoundedBitmapDrawableFactory;
-import android.support.v7.widget.AppCompatImageView;
+
+import androidx.annotation.ColorInt;
+import androidx.core.graphics.drawable.RoundedBitmapDrawable;
+import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory;
+import androidx.appcompat.widget.AppCompatImageView;
+
 import android.util.AttributeSet;
 import android.util.Log;
 
@@ -327,8 +330,19 @@ public class NucleiImageView extends AppCompatImageView {
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         mSet = false;
+        boolean clearCtx = true;
         try {
-            Glide.with(this).clear(this);
+            Context ctx = getContext();
+            if (ctx == null)
+                clearCtx = false;
+            if (getContext() instanceof Activity) {
+                Activity act = (Activity) getContext();
+                if (act.isFinishing() || act.isDestroyed()) {
+                    clearCtx = false;
+                }
+            }
+            if (clearCtx)
+                Glide.with(ctx).clear(this);
         } catch (IllegalArgumentException err) {
             Log.e(TAG, "Error onDetachedFromWindow", err);
         }
