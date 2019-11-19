@@ -1,6 +1,8 @@
 apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-android'
 
-def versionId = "3.1.63"
+def versionId = "3.1.77"
 
 def isTest = false
 List<String> names = gradle.startParameter.taskNames
@@ -103,6 +105,9 @@ dependencies {
         exclude group: "com.android.support", module: "appcompat-v7"
         exclude group: "com.android.support", module: "support-annotations"
     }
+    implementation "androidx.core:core-ktx:+"
+    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.0.0"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 
 }
 
@@ -134,3 +139,6 @@ apply from: '../bintray.gradle'
 apply from: '../maven.gradle'
 
 System.out.println("********** MULTIDEX: " + android.defaultConfig.multiDexEnabled)
+repositories {
+    mavenCentral()
+}

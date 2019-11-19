@@ -197,7 +197,7 @@ public abstract class PackageTargetManager implements Parcelable {
     /**
      * Create an intent with package specific modifications
      *
-     * @param authority The file authority provider to be used for sharing files
+     * @param authority             The file authority provider to be used for sharing files
      * @param permissionRequestCode Some packages may require we put files on external storage,
      *                              this is the permission request code that will be used to request that permission
      */
@@ -250,25 +250,17 @@ public abstract class PackageTargetManager implements Parcelable {
         if (mFile != null) {
             if (ContextCompat.checkSelfPermission(activity, android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
                     == PackageManager.PERMISSION_GRANTED) {
+                File file = ShareUtil.newShareFile(new File(activity.getExternalFilesDir(null), ".nuclei3"), mFile.getName());
+                try {
+                    onCopyFile(mFile, file);
+                    mFile.delete();
+                    mFile = file;
+                } catch (IOException err) {
+                    LOG.e("Error copying file for sharing", err);
+                }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    File file = ShareUtil.newShareFile(new File(Environment.getExternalStorageDirectory(), ".nuclei3"), mFile.getName());
-                    try {
-                        onCopyFile(mFile, file);
-                        mFile.delete();
-                        mFile = file;
-                    } catch (IOException err) {
-                        LOG.e("Error copying file for sharing", err);
-                    }
                     onSetFileProvider(activity, packageName, authority, intent);
                 } else {
-                    File file = ShareUtil.newShareFile(new File(Environment.getExternalStorageDirectory(), ".nuclei3"), mFile.getName());
-                    try {
-                        onCopyFile(mFile, file);
-                        mFile.delete();
-                        mFile = file;
-                    } catch (IOException err) {
-                        LOG.e("Error copying file for sharing", err);
-                    }
                     intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(mFile));
                 }
             } else {
@@ -313,9 +305,9 @@ public abstract class PackageTargetManager implements Parcelable {
             intent.setData(Uri.parse("mailto:"));
         } else if (!TextUtils.isEmpty(mSms)) {
             //if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
-                intent.putExtra("sms_body", text);
-                intent.putExtra("address", mSms);
-                intent.putExtra(Intent.EXTRA_PHONE_NUMBER, new String[]{mSms});
+            intent.putExtra("sms_body", text);
+            intent.putExtra("address", mSms);
+            intent.putExtra(Intent.EXTRA_PHONE_NUMBER, new String[]{mSms});
             //}
             intent.setData(Uri.parse("smsto:" + mSms));
         }
