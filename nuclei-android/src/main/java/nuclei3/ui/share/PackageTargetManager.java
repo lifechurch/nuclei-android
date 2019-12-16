@@ -250,7 +250,8 @@ public abstract class PackageTargetManager implements Parcelable {
         if (mFile != null) {
             if (ContextCompat.checkSelfPermission(activity, android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
                     == PackageManager.PERMISSION_GRANTED) {
-                File file = ShareUtil.newShareFile(new File(activity.getExternalFilesDir(null), ".nuclei3"), mFile.getName());
+                File externalRoot = activity.getExternalFilesDir(null);
+                File file = ShareUtil.newShareFile(new File(externalRoot, ".nuclei3"), mFile.getName());
                 try {
                     onCopyFile(mFile, file);
                     mFile.delete();
@@ -314,27 +315,31 @@ public abstract class PackageTargetManager implements Parcelable {
     }
 
     protected void onSetFileProvider(Context context, String packageName, String authority, Intent intent) {
-        if (mUri != null || mFile != null) {
-            Uri uri = mUri;
-            String type = "*/*";
-            if (mFile != null) {
-                uri = FileProvider.getUriForFile(context, authority, mFile);
-                final int lastDot = mFile.getName().lastIndexOf('.');
-                if (lastDot >= 0) {
-                    String extension = mFile.getName().substring(lastDot + 1);
-                    String mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
-                    if (mimeType != null)
-                        type = mimeType;
+        try {
+            if (mUri != null || mFile != null) {
+                Uri uri = mUri;
+                String type = "*/*";
+                if (mFile != null) {
+                    uri = FileProvider.getUriForFile(context, authority, mFile);
+                    final int lastDot = mFile.getName().lastIndexOf('.');
+                    if (lastDot >= 0) {
+                        String extension = mFile.getName().substring(lastDot + 1);
+                        String mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
+                        if (mimeType != null)
+                            type = mimeType;
+                    }
                 }
+                intent.setDataAndType(intent.getData(), type);
+                intent.putExtra(Intent.EXTRA_STREAM, uri);
+                if (packageName != null) {
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    context.grantUriPermission(packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                }
+            } else {
+                intent.setType("text/plain");
             }
-            intent.setDataAndType(intent.getData(), type);
-            intent.putExtra(Intent.EXTRA_STREAM, uri);
-            if (packageName != null) {
-                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                context.grantUriPermission(packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            }
-        } else {
-            intent.setType("text/plain");
+        } catch (Exception e) {
+            LOG.e("Error settings file provider", e);
         }
     }
 
