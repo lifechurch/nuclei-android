@@ -74,15 +74,15 @@ public final class TaskScheduler {
     }
 
     public static void cancel(Context context, nuclei3.task.Task<?> task) {
-        WorkManager.getInstance().cancelAllWorkByTag(task.getTaskTag());
+        WorkManager.getInstance(context).cancelAllWorkByTag(task.getTaskTag());
     }
 
     private static void cancelPreL(Context context, nuclei3.task.Task<?> task) {
-        WorkManager.getInstance().cancelAllWorkByTag(task.getTaskTag());
+        WorkManager.getInstance(context).cancelAllWorkByTag(task.getTaskTag());
     }
 
     public static void cancelAll(Context context) {
-        WorkManager.getInstance().cancelAllWork();
+        WorkManager.getInstance(context).cancelAllWork();
     }
 
     private void onScheduleJob(Context context) {
@@ -150,8 +150,8 @@ public final class TaskScheduler {
             }
         }
         if (mBuilder.mUpdateCurrent)
-            WorkManager.getInstance().cancelAllWorkByTag(mBuilder.mTask.getTaskTag());
-        WorkManager.getInstance().enqueue(builder.build());
+            WorkManager.getInstance(context).cancelAllWorkByTag(mBuilder.mTask.getTaskTag());
+        WorkManager.getInstance(context).enqueue(builder.build());
     }
 
     public static Builder newBuilder(nuclei3.task.Task task, int type) {
