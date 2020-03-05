@@ -27,12 +27,18 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.os.RemoteException;
+
 import androidx.annotation.NonNull;
+
 import android.support.v4.media.MediaBrowserCompat.MediaItem;
+
+import androidx.core.content.ContextCompat;
 import androidx.media.MediaBrowserServiceCompat;
 import androidx.media.session.MediaButtonReceiver;
+
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
+
 import androidx.mediarouter.media.MediaRouter;
 
 import java.lang.ref.WeakReference;
@@ -42,6 +48,7 @@ import com.google.android.gms.cast.framework.CastContext;
 import com.google.android.gms.cast.framework.CastSession;
 import com.google.android.gms.cast.framework.SessionManager;
 import com.google.android.gms.cast.framework.SessionManagerListener;
+
 import nuclei3.media.playback.Playback;
 import nuclei3.media.playback.PlaybackFactory;
 import nuclei3.media.playback.PlaybackManager;
@@ -243,6 +250,7 @@ public class MediaService extends MediaBrowserServiceCompat implements
 
         registerCarConnectionReceiver();
 
+        onNotificationRequired();
     }
 
     @Override
@@ -265,6 +273,8 @@ public class MediaService extends MediaBrowserServiceCompat implements
         // nothing is playing.
         mDelayedStopHandler.removeCallbacksAndMessages(null);
         mDelayedStopHandler.sendEmptyMessageDelayed(0, STOP_DELAY);
+
+        onNotificationRequired();
         return START_STICKY;
     }
 
@@ -354,11 +364,17 @@ public class MediaService extends MediaBrowserServiceCompat implements
             // The service needs to continue running even after the bound client (usually a
             // MediaController) disconnects, otherwise the music playback will stop.
             // Calling startService(Intent) will keep the service running until it is explicitly killed.
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(new Intent(getApplicationContext(), MediaService.class));
-                onNotificationRequired();
-            } else
-                startService(new Intent(getApplicationContext(), MediaService.class));
+
+            Intent serviceIntent = new Intent(getApplicationContext(), MediaService.class);
+
+            try {
+                stopService(serviceIntent);
+            } catch (Exception e) {
+                LOG.e("error stopping media service", e);
+            }
+
+            ContextCompat.startForegroundService(getApplicationContext(), serviceIntent);
+            onNotificationRequired();
 
         } catch (Exception e) {
             LOG.e("Error starting media service", e);
