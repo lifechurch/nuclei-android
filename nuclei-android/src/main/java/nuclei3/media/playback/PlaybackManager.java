@@ -228,10 +228,20 @@ public class PlaybackManager implements Playback.Callback {
         }
 
         float audioSpeed;
-        if (mPlayback instanceof CastPlayback)
+        if (mPlayback != null) {
+            if (mPlayback instanceof CastPlayback) {
+                audioSpeed = 1;
+            } else {
+                final MediaId id = mPlayback.getCurrentMediaId();
+                if (id != null && id.type == MediaId.TYPE_AUDIO) {
+                    audioSpeed = mServiceCallback.getAudioSpeed();
+                } else {
+                    audioSpeed = 1;
+                }
+            }
+        } else {
             audioSpeed = 1;
-        else
-            audioSpeed = mServiceCallback.getAudioSpeed();
+        }
 
         //noinspection ResourceType
         stateBuilder.setState(state, position, audioSpeed, SystemClock.elapsedRealtime());
