@@ -36,6 +36,8 @@ import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import androidx.core.app.NotificationCompat;
 
+import java.util.Objects;
+
 import io.nuclei3.R;
 import nuclei3.ui.util.ViewUtil;
 import nuclei3.logs.Log;
@@ -59,6 +61,8 @@ public class MediaNotificationManager extends BroadcastReceiver {
     public static final String ACTION_NEXT = "nuclei.NEXT";
     public static final String ACTION_STOP_CASTING = "nuclei.STOP_CAST";
     public static final String ACTION_CANCEL = "nuclei.CANCEL";
+
+    public static final String NO_NOTIFICATION_TITLE = "NO_NOTIFICATION";
 
     private final MediaService mService;
     private MediaSessionCompat.Token mSessionToken;
@@ -295,7 +299,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
 
     Notification createNotification() {
         LOG.d("updateNotificationMetadata. mMetadata=", mMetadata);
-        if (mMetadata == null || mPlaybackState == null) {
+        if (mMetadata == null || mPlaybackState == null || Objects.requireNonNull(mMetadata.getDescription().getTitle()).toString().equals(NO_NOTIFICATION_TITLE)) {
             return null;
         }
 
